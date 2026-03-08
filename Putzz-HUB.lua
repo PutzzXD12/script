@@ -1,8 +1,8 @@
---// PUTZZDEV-HUB V4 (HP EDITION) - RAINBOW + ANALOG TOUCH
+--// PUTZZDEV-HUB V4 (HP EDITION) - LINE MODEL SCREENSHOT
 -- Desain: Modern Glassmorphism + Rainbow Effects + Touch Friendly
--- ESP: Line dari ATAS (seperti tali) + Box Skeleton Style
--- Fitur: ESP, Fly (Analog Touch), Speed, NoClip, Invisible, Teleport
--- Menu Button: Huruf "P" di samping kiri (buka/tutup)
+-- ESP: Line dari KARAKTER ke TARGET (seperti screenshot)
+-- Fitur: ESP, Fly (Simple), Speed, NoClip, Invisible, Teleport
+-- Menu Button: Huruf "P" di samping kiri
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -20,19 +20,11 @@ local skeletonEnabled = false
 local ESPTable = {}
 local SkeletonESP = {}
 
--- FLY (Analog Touch)
+-- FLY (Simple version - pakai yang Anda minta)
 local flyEnabled = false
-local tpwalking = false
-local nowe = false
-local speeds = 1
-
--- Untuk analog touch
-local upActive = false
-local downActive = false
-local forwardActive = false
-local backwardActive = false
-local leftActive = false
-local rightActive = false
+local flySpeed = 50
+local bv = nil
+local bg = nil
 
 -- Speed
 local speedEnabled = false
@@ -80,10 +72,6 @@ spawn(function()
             end
             tpBtn.BackgroundColor3 = themeColor
             openBtn.BackgroundColor3 = themeColor
-            for _, btn in ipairs(analogBtns) do
-                btn.BackgroundColor3 = themeColor
-            end
-            speedLabel.TextColor3 = themeColor
         end
     end
 end)
@@ -115,7 +103,7 @@ local function setInvisible(state)
     end
 end
 
--- ================== FUNGSI ESP BOX (SKELETON STYLE) ==================
+-- ================== FUNGSI ESP BOX ==================
 local function createESP(player)
     if player == LocalPlayer then return end
 
@@ -123,7 +111,7 @@ local function createESP(player)
     local boxLines = {}
     for i = 1, 4 do
         local line = Drawing.new("Line")
-        line.Thickness = 2.5
+        line.Thickness = 2
         line.Color = lineColor
         line.Visible = false
         table.insert(boxLines, line)
@@ -147,9 +135,9 @@ local function createESP(player)
     dist.OutlineColor = Color3.fromRGB(0,0,0)
     dist.Visible = false
 
-    -- LINE dari ATAS (seperti tali)
+    -- LINE dari KARAKTER ke TARGET (seperti screenshot)
     local line = Drawing.new("Line")
-    line.Thickness = 2.5
+    line.Thickness = 1.5  -- Tipis seperti screenshot
     line.Color = lineColor
     line.Visible = false
 
@@ -186,7 +174,7 @@ local function createSkeleton(player)
     
     for i = 1, #connections do
         local line = Drawing.new("Line")
-        line.Thickness = 2.5
+        line.Thickness = 2
         line.Color = lineColor
         line.Visible = false
         table.insert(lines, {line, connections[i][1], connections[i][2]})
@@ -291,12 +279,16 @@ RunService.RenderStepped:Connect(function()
                         dist.Visible = true
                     end
 
-                    -- LINE dari ATAS (seperti tali)
+                    -- LINE dari KARAKTER ke TARGET (seperti screenshot)
                     if lineEnabled then
-                        line.From = Vector2.new(pos.X, 0)  -- Dari atas layar
-                        line.To = Vector2.new(pos.X, pos.Y)  -- Ke target
-                        line.Visible = true
-                        line.Color = lineColor
+                        local myChar = LocalPlayer.Character
+                        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                            local myPos = Camera:WorldToViewportPoint(myChar.HumanoidRootPart.Position)
+                            line.From = Vector2.new(myPos.X, myPos.Y)  -- Dari karakter kita
+                            line.To = Vector2.new(pos.X, pos.Y)       -- Ke target
+                            line.Visible = true
+                            line.Color = lineColor
+                        end
                     else
                         line.Visible = false
                     end
@@ -378,119 +370,34 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
--- ================== FLY SYSTEM (ANALOG TOUCH) ==================
-local function toggleFly()
-    local speaker = game:GetService("Players").LocalPlayer
-    
-    if nowe == true then
-        nowe = false
+-- ================== FUNGSI FLY (YANG ANDA MINTA) ==================
+local function startFly()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-        -- Reset all active states
-        upActive = false
-        downActive = false
-        forwardActive = false
-        backwardActive = false
-        leftActive = false
-        rightActive = false
+    bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+    bv.Parent = hrp
 
-        -- Enable all states
-        for _, state in ipairs({
-            Enum.HumanoidStateType.Climbing,
-            Enum.HumanoidStateType.FallingDown,
-            Enum.HumanoidStateType.Flying,
-            Enum.HumanoidStateType.Freefall,
-            Enum.HumanoidStateType.GettingUp,
-            Enum.HumanoidStateType.Jumping,
-            Enum.HumanoidStateType.Landed,
-            Enum.HumanoidStateType.Physics,
-            Enum.HumanoidStateType.PlatformStanding,
-            Enum.HumanoidStateType.Ragdoll,
-            Enum.HumanoidStateType.Running,
-            Enum.HumanoidStateType.RunningNoPhysics,
-            Enum.HumanoidStateType.Seated,
-            Enum.HumanoidStateType.StrafingNoPhysics,
-            Enum.HumanoidStateType.Swimming
-        }) do
-            speaker.Character.Humanoid:SetStateEnabled(state, true)
+    bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    bg.Parent = hrp
+
+    -- Loop untuk fly
+    spawn(function()
+        while flyEnabled and bv and bg do
+            task.wait()
+            bg.CFrame = Camera.CFrame
+            bv.Velocity = Camera.CFrame.LookVector * flySpeed
         end
-        
-        speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
-        
-        pcall(function()
-            game.Players.LocalPlayer.Character.Animate.Disabled = false
-        end)
-        
-        tpwalking = false
-    else 
-        nowe = true
+    end)
+end
 
-        -- Disable all states
-        for _, state in ipairs({
-            Enum.HumanoidStateType.Climbing,
-            Enum.HumanoidStateType.FallingDown,
-            Enum.HumanoidStateType.Flying,
-            Enum.HumanoidStateType.Freefall,
-            Enum.HumanoidStateType.GettingUp,
-            Enum.HumanoidStateType.Jumping,
-            Enum.HumanoidStateType.Landed,
-            Enum.HumanoidStateType.Physics,
-            Enum.HumanoidStateType.PlatformStanding,
-            Enum.HumanoidStateType.Ragdoll,
-            Enum.HumanoidStateType.Running,
-            Enum.HumanoidStateType.RunningNoPhysics,
-            Enum.HumanoidStateType.Seated,
-            Enum.HumanoidStateType.StrafingNoPhysics,
-            Enum.HumanoidStateType.Swimming
-        }) do
-            speaker.Character.Humanoid:SetStateEnabled(state, false)
-        end
-        
-        speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
-        
-        pcall(function()
-            game.Players.LocalPlayer.Character.Animate.Disabled = true
-        end)
-        
-        -- Start movement loop
-        spawn(function()
-            while nowe do
-                task.wait()
-                local chr = LocalPlayer.Character
-                if not chr or not chr:FindFirstChild("HumanoidRootPart") then continue end
-                
-                local hrp = chr.HumanoidRootPart
-                local moveVector = Vector3.new(0, 0, 0)
-                
-                -- Forward/Backward
-                if forwardActive then
-                    moveVector = moveVector + Camera.CFrame.LookVector * speeds
-                end
-                if backwardActive then
-                    moveVector = moveVector - Camera.CFrame.LookVector * speeds
-                end
-                
-                -- Left/Right
-                if leftActive then
-                    moveVector = moveVector - Camera.CFrame.RightVector * speeds
-                end
-                if rightActive then
-                    moveVector = moveVector + Camera.CFrame.RightVector * speeds
-                end
-                
-                -- Up/Down
-                if upActive then
-                    moveVector = moveVector + Vector3.new(0, speeds, 0)
-                end
-                if downActive then
-                    moveVector = moveVector - Vector3.new(0, speeds, 0)
-                end
-                
-                if moveVector.Magnitude > 0 then
-                    hrp.CFrame = hrp.CFrame + moveVector
-                end
-            end
-        end)
-    end
+local function stopFly()
+    if bv then bv:Destroy() bv = nil end
+    if bg then bg:Destroy() bg = nil end
 end
 
 -- ================== FUNGSI NOCLIP ==================
@@ -528,20 +435,6 @@ local function teleportToPlayer(targetName)
     return false
 end
 
--- ================== FUNGSI SPEED CONTROL ==================
-local function increaseSpeed()
-    speeds = speeds + 1
-    if speeds > 10 then speeds = 10 end
-    return speeds
-end
-
-local function decreaseSpeed()
-    if speeds > 1 then
-        speeds = speeds - 1
-    end
-    return speeds
-end
-
 -- ================== CHARACTER ADDED HANDLER ==================
 game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
     wait(0.7)
@@ -551,118 +444,88 @@ game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
     end)
 end)
 
--- ================== GUI MODERN HP EDITION ==================
+-- ================== GUI KEREN ==================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "PutzzdevHub_V4_HP"
+ScreenGui.Name = "PutzzdevHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 100
 
--- ===== MAIN CONTAINER =====
+-- Main frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 380, 0, 600)  -- Lebih besar untuk HP
-mainFrame.Position = UDim2.new(0.5, -190, 0.5, -300)
-mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-mainFrame.BackgroundTransparency = 0.15
+mainFrame.Size = UDim2.new(0, 350, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -240)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
-mainFrame.ClipsDescendants = true
 
--- GLASS EFFECT
-local glassEffect = Instance.new("Frame")
-glassEffect.Parent = mainFrame
-glassEffect.Size = UDim2.new(1, 0, 1, 0)
-glassEffect.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-glassEffect.BackgroundTransparency = 0.95
-glassEffect.BorderSizePixel = 0
+local corner = Instance.new("UICorner")
+corner.Parent = mainFrame
+corner.CornerRadius = UDim.new(0, 16)
 
--- CORNER
-local mainCorner = Instance.new("UICorner")
-mainCorner.Parent = mainFrame
-mainCorner.CornerRadius = UDim.new(0, 20)
+-- Gradient
+local gradient = Instance.new("UIGradient")
+gradient.Parent = mainFrame
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+})
+gradient.Rotation = 45
 
--- BORDER NEON
-local border = Instance.new("Frame")
-border.Parent = mainFrame
-border.Size = UDim2.new(1, 0, 1, 0)
-border.BackgroundTransparency = 1
-border.BorderSizePixel = 3
-border.BorderColor3 = themeColor
-
--- ===== HEADER =====
+-- Header
 local header = Instance.new("Frame")
 header.Parent = mainFrame
-header.Size = UDim2.new(1, 0, 0, 70)
-header.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-header.BackgroundTransparency = 0.3
-header.BorderSizePixel = 0
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.Parent = header
-headerCorner.CornerRadius = UDim.new(0, 20)
+header.Size = UDim2.new(1, 0, 0, 55)
+header.BackgroundTransparency = 1
 
 local title = Instance.new("TextLabel")
 title.Parent = header
 title.Size = UDim2.new(1, 0, 1, 0)
 title.BackgroundTransparency = 1
-title.Text = "PUTZZDEV"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Text = "PUTZZDEV-HUB"
+title.TextColor3 = Color3.fromRGB(0, 200, 255)
 title.Font = Enum.Font.GothamBlack
 title.TextSize = 28
-title.TextStrokeTransparency = 0
-title.TextStrokeColor3 = themeColor
+title.TextStrokeTransparency = 0.5
 
--- ===== TAB BAR =====
+-- Tab bar
 local tabBar = Instance.new("Frame")
 tabBar.Parent = mainFrame
-tabBar.Size = UDim2.new(1, -20, 0, 50)
-tabBar.Position = UDim2.new(0, 10, 0, 80)
-tabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-tabBar.BackgroundTransparency = 0.3
-tabBar.BorderSizePixel = 0
-
-local tabCorner = Instance.new("UICorner")
-tabCorner.Parent = tabBar
-tabCorner.CornerRadius = UDim.new(0, 12)
+tabBar.Size = UDim2.new(1, 0, 0, 45)
+tabBar.Position = UDim2.new(0, 0, 0, 55)
+tabBar.BackgroundTransparency = 1
 
 local tabs = {}
 local contents = {}
-local analogBtns = {}
 
 local function createTab(name, icon, idx)
     local btn = Instance.new("TextButton")
     btn.Parent = tabBar
-    btn.Size = UDim2.new(0.25, -2, 1, -6)
-    btn.Position = UDim2.new((idx-1)*0.25, 5, 0, 3)
-    btn.BackgroundColor3 = themeColor
-    btn.BackgroundTransparency = 0.7
+    btn.Size = UDim2.new(0.25, 0, 1, 0)
+    btn.Position = UDim2.new((idx-1)*0.25, 0, 0, 0)
+    btn.BackgroundTransparency = 1
     btn.Text = icon.." "..name
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.Parent = btn
-    btnCorner.CornerRadius = UDim.new(0, 10)
+    btn.TextSize = 15
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -20, 1, -210)
-    content.Position = UDim2.new(0, 10, 0, 135)
+    content.Size = UDim2.new(1, -10, 1, -110)
+    content.Position = UDim2.new(0, 5, 0, 105)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
-    content.ScrollBarThickness = 6
-    content.ScrollBarImageColor3 = themeColor
+    content.ScrollBarThickness = 5
     content.CanvasSize = UDim2.new(0, 0, 0, 0)
     content.Visible = false
-    content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
     local layout = Instance.new("UIListLayout")
     layout.Parent = content
-    layout.Padding = UDim.new(0, 10)
+    layout.Padding = UDim.new(0, 8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
     table.insert(tabs, btn)
@@ -670,12 +533,10 @@ local function createTab(name, icon, idx)
 
     btn.MouseButton1Click:Connect(function()
         for i, b in ipairs(tabs) do
-            b.BackgroundTransparency = 0.7
-            b.TextColor3 = Color3.fromRGB(200, 200, 200)
+            b.TextColor3 = Color3.fromRGB(180, 180, 180)
             contents[i].Visible = false
         end
-        btn.BackgroundTransparency = 0.3
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextColor3 = Color3.fromRGB(0, 200, 255)
         content.Visible = true
     end)
     
@@ -692,34 +553,34 @@ local tabMisc = createTab("MISC", "⚙️", 4)
 local function createModernButton(parent, text, icon, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 55)
+    frame.Size = UDim2.new(0.95, 0, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     frame.BackgroundTransparency = 0.3
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 45, 1, 0)
-    iconLabel.Position = UDim2.new(0, 10, 0, 0)
+    iconLabel.Size = UDim2.new(0, 35, 1, 0)
+    iconLabel.Position = UDim2.new(0, 8, 0, 0)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = themeColor
     iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 24
+    iconLabel.TextSize = 20
 
     local btn = Instance.new("TextButton")
     btn.Parent = frame
-    btn.Size = UDim2.new(1, -55, 1, 0)
-    btn.Position = UDim2.new(0, 55, 0, 0)
+    btn.Size = UDim2.new(1, -45, 1, 0)
+    btn.Position = UDim2.new(0, 43, 0, 0)
     btn.BackgroundTransparency = 1
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(220, 220, 220)
     btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
+    btn.TextSize = 16
     btn.TextXAlignment = Enum.TextXAlignment.Left
 
     btn.MouseButton1Click:Connect(callback)
@@ -730,52 +591,52 @@ end
 local function createModernToggle(parent, text, icon, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 55)
+    frame.Size = UDim2.new(0.95, 0, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     frame.BackgroundTransparency = 0.3
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 45, 1, 0)
-    iconLabel.Position = UDim2.new(0, 10, 0, 0)
+    iconLabel.Size = UDim2.new(0, 35, 1, 0)
+    iconLabel.Position = UDim2.new(0, 8, 0, 0)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = themeColor
     iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 24
+    iconLabel.TextSize = 20
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
-    label.Size = UDim2.new(0.5, -55, 1, 0)
-    label.Position = UDim2.new(0, 55, 0, 0)
+    label.Size = UDim2.new(0.5, -45, 1, 0)
+    label.Position = UDim2.new(0, 43, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 18
+    label.TextSize = 16
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     -- Toggle switch
     local switch = Instance.new("Frame")
     switch.Parent = frame
-    switch.Size = UDim2.new(0, 60, 0, 30)
-    switch.Position = UDim2.new(1, -70, 0.5, -15)
+    switch.Size = UDim2.new(0, 50, 0, 26)
+    switch.Position = UDim2.new(1, -60, 0.5, -13)
     switch.BackgroundColor3 = default and themeColor or Color3.fromRGB(80, 80, 90)
     switch.BorderSizePixel = 0
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.Parent = switch
-    switchCorner.CornerRadius = UDim.new(0, 15)
+    switchCorner.CornerRadius = UDim.new(0, 13)
 
     local circle = Instance.new("Frame")
     circle.Parent = switch
-    circle.Size = UDim2.new(0, 26, 0, 26)
-    circle.Position = default and UDim2.new(1, -28, 0.5, -13) or UDim2.new(0.05, 0, 0.5, -13)
+    circle.Size = UDim2.new(0, 22, 0, 22)
+    circle.Position = default and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)
     circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     circle.BorderSizePixel = 0
 
@@ -793,145 +654,21 @@ local function createModernToggle(parent, text, icon, default, callback)
     click.MouseButton1Click:Connect(function()
         state = not state
         TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -28, 0.5, -13) or UDim2.new(0.05, 0, 0.5, -13)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)}):Play()
         callback(state)
     end)
     
     return frame
 end
 
--- ===== FUNGSI ANALOG BUTTON =====
-local function createAnalogButton(parent, text, icon, activeVar, color)
-    local frame = Instance.new("Frame")
-    frame.Parent = parent
-    frame.Size = UDim2.new(0.45, 0, 0, 70)
-    frame.BackgroundColor3 = color or themeColor
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 0
-
-    local corner = Instance.new("UICorner")
-    corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 15)
-
-    local btn = Instance.new("TextButton")
-    btn.Parent = frame
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = icon.."\n"..text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 18
-    btn.TextWrapped = true
-
-    table.insert(analogBtns, frame)
-
-    btn.MouseButton1Down:Connect(function()
-        _G[activeVar] = true
-        frame.BackgroundTransparency = 0
-    end)
-
-    btn.MouseButton1Up:Connect(function()
-        _G[activeVar] = false
-        frame.BackgroundTransparency = 0.3
-    end)
-
-    btn.MouseLeave:Connect(function()
-        _G[activeVar] = false
-        frame.BackgroundTransparency = 0.3
-    end)
-
-    return frame
-end
-
--- ===== SPEED DISPLAY =====
-local speedLabel
-local plusBtn, minusBtn
-
-local function createSpeedDisplay(parent)
-    local frame = Instance.new("Frame")
-    frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 55)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 0
-
-    local corner = Instance.new("UICorner")
-    corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 12)
-
-    local label = Instance.new("TextLabel")
-    label.Parent = frame
-    label.Size = UDim2.new(0.5, -10, 1, 0)
-    label.Position = UDim2.new(0, 15, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = "Speed:"
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 20
-    label.TextXAlignment = Enum.TextXAlignment.Left
-
-    speedLabel = Instance.new("TextLabel")
-    speedLabel.Parent = frame
-    speedLabel.Size = UDim2.new(0, 50, 0, 40)
-    speedLabel.Position = UDim2.new(0.5, -15, 0.5, -20)
-    speedLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    speedLabel.Text = tostring(speeds)
-    speedLabel.TextColor3 = themeColor
-    speedLabel.Font = Enum.Font.GothamBlack
-    speedLabel.TextSize = 24
-
-    local speedCorner = Instance.new("UICorner")
-    speedCorner.Parent = speedLabel
-    speedCorner.CornerRadius = UDim.new(0, 8)
-
-    minusBtn = Instance.new("TextButton")
-    minusBtn.Parent = frame
-    minusBtn.Size = UDim2.new(0, 45, 0, 45)
-    minusBtn.Position = UDim2.new(0.7, -25, 0.5, -22.5)
-    minusBtn.BackgroundColor3 = themeColor
-    minusBtn.BackgroundTransparency = 0.2
-    minusBtn.Text = "-"
-    minusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    minusBtn.Font = Enum.Font.GothamBlack
-    minusBtn.TextSize = 30
-
-    local minusCorner = Instance.new("UICorner")
-    minusCorner.Parent = minusBtn
-    minusCorner.CornerRadius = UDim.new(0, 10)
-
-    plusBtn = Instance.new("TextButton")
-    plusBtn.Parent = frame
-    plusBtn.Size = UDim2.new(0, 45, 0, 45)
-    plusBtn.Position = UDim2.new(0.85, -25, 0.5, -22.5)
-    plusBtn.BackgroundColor3 = themeColor
-    plusBtn.BackgroundTransparency = 0.2
-    plusBtn.Text = "+"
-    plusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    plusBtn.Font = Enum.Font.GothamBlack
-    plusBtn.TextSize = 30
-
-    local plusCorner = Instance.new("UICorner")
-    plusCorner.Parent = plusBtn
-    plusCorner.CornerRadius = UDim.new(0, 10)
-
-    minusBtn.MouseButton1Click:Connect(function()
-        local newSpeed = decreaseSpeed()
-        speedLabel.Text = tostring(newSpeed)
-    end)
-
-    plusBtn.MouseButton1Click:Connect(function()
-        local newSpeed = increaseSpeed()
-        speedLabel.Text = tostring(newSpeed)
-    end)
-
-    return frame
-end
-
 -- ===== ISI TAB MAIN =====
 createModernToggle(tabMain, "Fly Mode", "🦅", false, function(s)
     flyEnabled = s
-    nowe = s
-    toggleFly()
+    if s then
+        startFly()
+    else
+        stopFly()
+    end
 end)
 
 createModernToggle(tabMain, "Speed Boost", "⚡", false, function(s)
@@ -953,7 +690,7 @@ createModernToggle(tabESP, "ESP Box", "📦", false, function(s)
     espEnabled = s
 end)
 
-createModernToggle(tabESP, "ESP Line (Tali)", "📏", false, function(s)
+createModernToggle(tabESP, "ESP Line", "📏", false, function(s)
     lineEnabled = s
 end)
 
@@ -966,47 +703,40 @@ createModernToggle(tabESP, "ESP Skeleton", "🦴", false, function(s)
 end)
 
 -- ===== ISI TAB MOVE =====
--- Speed Control
-createSpeedDisplay(tabMove)
+-- Info kontrol
+local infoFrame = Instance.new("Frame")
+infoFrame.Parent = tabMove
+infoFrame.Size = UDim2.new(0.95, 0, 0, 80)
+infoFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+infoFrame.BackgroundTransparency = 0.3
+infoFrame.BorderSizePixel = 0
 
--- Analog Control Grid
-local gridFrame = Instance.new("Frame")
-gridFrame.Parent = tabMove
-gridFrame.Size = UDim2.new(0.95, 0, 0, 220)
-gridFrame.BackgroundTransparency = 1
+local infoCorner = Instance.new("UICorner")
+infoCorner.Parent = infoFrame
+infoCorner.CornerRadius = UDim.new(0, 10)
 
--- Baris 1: Kosong, Atas, Kosong
-local upBtn = createAnalogButton(gridFrame, "ATAS", "⬆️", "upActive", Color3.fromRGB(255, 100, 100))
-upBtn.Position = UDim2.new(0.275, 0, 0, 0)
-
--- Baris 2: Kiri, Tengah, Kanan
-local leftBtn = createAnalogButton(gridFrame, "KIRI", "⬅️", "leftActive", Color3.fromRGB(100, 255, 100))
-leftBtn.Position = UDim2.new(0, 0, 0.35, 0)
-
-local forwardBtn = createAnalogButton(gridFrame, "MAJU", "⬆️", "forwardActive", Color3.fromRGB(100, 100, 255))
-forwardBtn.Position = UDim2.new(0.275, 0, 0.35, 0)
-
-local rightBtn = createAnalogButton(gridFrame, "KANAN", "➡️", "rightActive", Color3.fromRGB(255, 255, 100))
-rightBtn.Position = UDim2.new(0.55, 0, 0.35, 0)
-
--- Baris 3: Kosong, Bawah, Kosong
-local downBtn = createAnalogButton(gridFrame, "BAWAH", "⬇️", "downActive", Color3.fromRGB(100, 255, 255))
-downBtn.Position = UDim2.new(0.275, 0, 0.7, 0)
-
-local backwardBtn = createAnalogButton(gridFrame, "MUNDUR", "⬇️", "backwardActive", Color3.fromRGB(255, 255, 255))
-backwardBtn.Position = UDim2.new(0.55, 0, 0.7, 0)
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Parent = infoFrame
+infoLabel.Size = UDim2.new(1, -20, 1, -10)
+infoLabel.Position = UDim2.new(0, 10, 0, 5)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Text = "⌨️ FLY CONTROL:\nWASD = Gerak | Otomatis maju sesuai arah kamera"
+infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+infoLabel.Font = Enum.Font.Gotham
+infoLabel.TextSize = 14
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Teleport
 local tpFrame = Instance.new("Frame")
 tpFrame.Parent = tabMove
-tpFrame.Size = UDim2.new(0.95, 0, 0, 110)
+tpFrame.Size = UDim2.new(0.95, 0, 0, 100)
 tpFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 tpFrame.BackgroundTransparency = 0.3
 tpFrame.BorderSizePixel = 0
 
 local tpCorner = Instance.new("UICorner")
 tpCorner.Parent = tpFrame
-tpCorner.CornerRadius = UDim.new(0, 12)
+tpCorner.CornerRadius = UDim.new(0, 10)
 
 local tpTitle = Instance.new("TextLabel")
 tpTitle.Parent = tpFrame
@@ -1016,38 +746,38 @@ tpTitle.BackgroundTransparency = 1
 tpTitle.Text = "📞 Teleport"
 tpTitle.TextColor3 = themeColor
 tpTitle.Font = Enum.Font.GothamBold
-tpTitle.TextSize = 18
+tpTitle.TextSize = 16
 tpTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 local tpInput = Instance.new("TextBox")
 tpInput.Parent = tpFrame
-tpInput.Size = UDim2.new(0.65, -10, 0, 45)
+tpInput.Size = UDim2.new(0.65, -10, 0, 40)
 tpInput.Position = UDim2.new(0, 10, 0, 40)
 tpInput.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 tpInput.PlaceholderText = "Nama player..."
 tpInput.Text = ""
 tpInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpInput.Font = Enum.Font.Gotham
-tpInput.TextSize = 16
+tpInput.TextSize = 14
 
 local tpInputCorner = Instance.new("UICorner")
 tpInputCorner.Parent = tpInput
-tpInputCorner.CornerRadius = UDim.new(0, 8)
+tpInputCorner.CornerRadius = UDim.new(0, 6)
 
 local tpBtn = Instance.new("TextButton")
 tpBtn.Parent = tpFrame
-tpBtn.Size = UDim2.new(0.3, -5, 0, 45)
+tpBtn.Size = UDim2.new(0.3, -5, 0, 40)
 tpBtn.Position = UDim2.new(0.7, 0, 0, 40)
 tpBtn.BackgroundColor3 = themeColor
 tpBtn.BackgroundTransparency = 0.2
 tpBtn.Text = "GO"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 20
+tpBtn.TextSize = 18
 
 local tpBtnCorner = Instance.new("UICorner")
 tpBtnCorner.Parent = tpBtn
-tpBtnCorner.CornerRadius = UDim.new(0, 8)
+tpBtnCorner.CornerRadius = UDim.new(0, 6)
 
 tpBtn.MouseButton1Click:Connect(function()
     teleportToPlayer(tpInput.Text)
@@ -1086,34 +816,49 @@ end)
 -- Credit
 local credit = Instance.new("TextLabel")
 credit.Parent = mainFrame
-credit.Size = UDim2.new(1, 0, 0, 30)
-credit.Position = UDim2.new(0, 0, 1, -30)
+credit.Size = UDim2.new(1, 0, 0, 25)
+credit.Position = UDim2.new(0, 0, 1, -25)
 credit.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 credit.BackgroundTransparency = 0.3
-credit.Text = "developer by putzz 🔥 | HP EDITION"
+credit.Text = "developer by putzz 🔥 | line dari karakter"
 credit.TextColor3 = Color3.fromRGB(150, 150, 150)
 credit.Font = Enum.Font.Gotham
-credit.TextSize = 14
+credit.TextSize = 12
 
 local creditCorner = Instance.new("UICorner")
 creditCorner.Parent = credit
-creditCorner.CornerRadius = UDim.new(0, 20)
+creditCorner.CornerRadius = UDim.new(0, 16)
 
 -- Aktifkan tab pertama
-tabs[1].BackgroundTransparency = 0.3
-tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
 contents[1].Visible = true
+
+-- Set canvas size
+local function updateCanvas()
+    for _, content in pairs(contents) do
+        local height = 0
+        for _, child in pairs(content:GetChildren()) do
+            if child:IsA("Frame") then
+                height = height + child.Size.Y.Offset + 8
+            end
+        end
+        content.CanvasSize = UDim2.new(0, 0, 0, height + 10)
+    end
+end
+
+wait(0.1)
+updateCanvas()
 
 -- ================= OPEN / CLOSE BUTTON =================
 local openBtn = Instance.new("TextButton")
 openBtn.Parent = ScreenGui
-openBtn.Size = UDim2.new(0, 60, 0, 60)
-openBtn.Position = UDim2.new(0, 10, 0.5, -30)
+openBtn.Size = UDim2.new(0, 50, 0, 50)
+openBtn.Position = UDim2.new(0, 15, 0.5, -25)
 openBtn.BackgroundColor3 = themeColor
 openBtn.Text = "P"
 openBtn.TextColor3 = Color3.new(1,1,1)
 openBtn.Font = Enum.Font.GothamBlack
-openBtn.TextSize = 30
+openBtn.TextSize = 24
 openBtn.AutoButtonColor = true
 openBtn.ZIndex = 10
 
@@ -1124,7 +869,7 @@ corner.CornerRadius = UDim.new(1,0)
 local stroke = Instance.new("UIStroke")
 stroke.Parent = openBtn
 stroke.Color = Color3.fromRGB(255,255,255)
-stroke.Thickness = 2
+stroke.Thickness = 1.5
 
 -- toggle
 local menuOpen = true
@@ -1135,11 +880,11 @@ openBtn.MouseButton1Click:Connect(function()
 	if menuOpen then
 		mainFrame.Visible = true
 		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
-			Position = UDim2.new(0.5,-190,0.5,-300)
+			Position = UDim2.new(0.5,-175,0.5,-240)
 		}):Play()
 	else
 		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
-			Position = UDim2.new(0.5,-190,1,0)
+			Position = UDim2.new(0.5,-175,1,0)
 		}):Play()
 
 		task.wait(0.3)
@@ -1149,18 +894,18 @@ end)
 
 -- Animasi hover
 openBtn.MouseEnter:Connect(function()
-    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 65, 0, 65)}):Play()
+    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 55, 0, 55)}):Play()
 end)
 
 openBtn.MouseLeave:Connect(function()
-    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
+    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 50, 0, 50)}):Play()
 end)
 
 -- Notifikasi
 local notif = Instance.new("Frame")
 notif.Parent = ScreenGui
-notif.Size = UDim2.new(0, 350, 0, 90)
-notif.Position = UDim2.new(0.5, -175, 0, -100)
+notif.Size = UDim2.new(0, 320, 0, 70)
+notif.Position = UDim2.new(0.5, -160, 0, -80)
 notif.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 notif.BackgroundTransparency = 0.1
 notif.BorderSizePixel = 0
@@ -1168,32 +913,32 @@ notif.ClipsDescendants = true
 
 local notifCorner = Instance.new("UICorner")
 notifCorner.Parent = notif
-notifCorner.CornerRadius = UDim.new(0, 15)
+notifCorner.CornerRadius = UDim.new(0, 12)
 
 local notifText = Instance.new("TextLabel")
 notifText.Parent = notif
-notifText.Size = UDim2.new(1, 0, 0.5, 0)
-notifText.Position = UDim2.new(0, 0, 0, 10)
+notifText.Size = UDim2.new(1, 0, 0.6, 0)
+notifText.Position = UDim2.new(0, 0, 0, 5)
 notifText.BackgroundTransparency = 1
-notifText.Text = "✨ PUTZZDEV HP ✨"
+notifText.Text = "✨ PUTZZDEV ✨"
 notifText.TextColor3 = themeColor
 notifText.Font = Enum.Font.GothamBlack
-notifText.TextSize = 26
+notifText.TextSize = 22
 
 local notifSub = Instance.new("TextLabel")
 notifSub.Parent = notif
 notifSub.Size = UDim2.new(1, 0, 0.3, 0)
-notifSub.Position = UDim2.new(0, 0, 0, 50)
+notifSub.Position = UDim2.new(0, 0, 0, 40)
 notifSub.BackgroundTransparency = 1
-notifSub.Text = "Analog Touch + Line Tali"
+notifSub.Text = "Line dari karakter + Fly Simple"
 notifSub.TextColor3 = lineColor
 notifSub.Font = Enum.Font.Gotham
-notifSub.TextSize = 16
+notifSub.TextSize = 14
 
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -175, 0, 20)}):Play()
-wait(2.5)
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -175, 0, -100)}):Play()
+TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -160, 0, 15)}):Play()
+wait(2)
+TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -160, 0, -80)}):Play()
 wait(0.5)
 notif:Destroy()
 
-print("✅ PutzzDev HP Edition Loaded! - Analog Touch + Line Tali | Tekan 'P'")
+print("✅ PutzzDev Loaded! - Line dari karakter + Fly Simple | Tekan 'P'")
