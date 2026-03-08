@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB FINAL (ALL FEATURES + INVISIBLE + 6 WARNA)
+--// PUTZZDEV-HUB FINAL (ALL FEATURES + INVISIBLE + COLOR DI MOVE)
 -- Ukuran: Sedang (350x450), semua fitur siap pakai
 
 local Players = game:GetService("Players")
@@ -329,8 +329,8 @@ ScreenGui.DisplayOrder = 100
 -- Main frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 350, 0, 550)  -- Tinggi ditambah untuk 6 warna
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 350, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -240)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -389,7 +389,7 @@ local function createTab(name, icon, idx)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -180)  -- Kurangi tinggi untuk 6 warna
+    content.Size = UDim2.new(1, -10, 1, -110)
     content.Position = UDim2.new(0, 5, 0, 105)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -422,54 +422,6 @@ local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
 local tabMove = createTab("MOVE", "🏃", 3)
 local tabMisc = createTab("MISC", "⚙️", 4)
-
--- ===== 6 TOMBOL WARNA =====
-local colorFrame = Instance.new("Frame")
-colorFrame.Parent = mainFrame
-colorFrame.Size = UDim2.new(0.9, 0, 0, 40)
-colorFrame.Position = UDim2.new(0.05, 0, 0, 500)  -- Posisi di bawah konten
-colorFrame.BackgroundTransparency = 1
-
-local colors = {
-    {Color3.fromRGB(255, 0, 0), "Merah"},
-    {Color3.fromRGB(0, 255, 0), "Hijau"},
-    {Color3.fromRGB(0, 0, 255), "Biru"},
-    {Color3.fromRGB(255, 255, 0), "Kuning"},
-    {Color3.fromRGB(255, 165, 0), "Orange"},
-    {Color3.fromRGB(128, 0, 128), "Ungu"}
-}
-
-local function changeThemeColor(color)
-    mainFrame.BackgroundColor3 = color
-    title.TextColor3 = color
-    -- Update gradient
-    local grad = mainFrame:FindFirstChildOfClass("UIGradient")
-    if grad then
-        grad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, color),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-        })
-    end
-end
-
-for i, colorData in ipairs(colors) do
-    local btn = Instance.new("TextButton")
-    btn.Parent = colorFrame
-    btn.Size = UDim2.new(0.15, 0, 0.8, 0)
-    btn.Position = UDim2.new((i-1)*0.16, 0, 0.1, 0)
-    btn.BackgroundColor3 = colorData[1]
-    btn.Text = ""
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    
-    local corner = Instance.new("UICorner")
-    corner.Parent = btn
-    corner.CornerRadius = UDim.new(0, 6)
-    
-    btn.MouseButton1Click:Connect(function()
-        changeThemeColor(colorData[1])
-    end)
-end
 
 -- Fungsi buat button
 local function createButton(parent, text, callback)
@@ -558,6 +510,35 @@ local function createToggle(parent, text, default, callback)
     return frame
 end
 
+-- ================== FUNGSI GANTI WARNA RANDOM ==================
+local colorToggleState = false
+local colorList = {
+    Color3.fromRGB(255, 0, 0),    -- Merah
+    Color3.fromRGB(0, 255, 0),    -- Hijau
+    Color3.fromRGB(0, 0, 255),    -- Biru
+    Color3.fromRGB(255, 255, 0),  -- Kuning
+    Color3.fromRGB(255, 165, 0),  -- Orange
+    Color3.fromRGB(255, 192, 203), -- Pink
+    Color3.fromRGB(128, 0, 128),  -- Ungu
+    Color3.fromRGB(0, 255, 255),  -- Cyan
+    Color3.fromRGB(255, 255, 255) -- Putih
+}
+
+local function changeRandomColor()
+    local randomColor = colorList[math.random(1, #colorList)]
+    mainFrame.BackgroundColor3 = randomColor
+    title.TextColor3 = randomColor
+    
+    -- Update gradient
+    local grad = mainFrame:FindFirstChildOfClass("UIGradient")
+    if grad then
+        grad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, randomColor),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+        })
+    end
+end
+
 -- ===== TAB MAIN =====
 createToggle(tabMain, "Fly", false, function(s)
     flyEnabled = s
@@ -599,6 +580,35 @@ createButton(tabMove, "⬇ Turun (Fly)", function()
     if flyEnabled then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Velocity = hrp.Velocity - Vector3.new(0, 50, 0) end
+    end
+end)
+
+-- FITUR WARNA DI DALEM TAB MOVE (TOGGLE)
+createToggle(tabMove, "🎨 Ganti Warna Random", false, function(s)
+    colorToggleState = s
+    if s then
+        -- Langsung ganti warna saat toggle ON
+        changeRandomColor()
+    else
+        -- Kembalikan ke warna default
+        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        title.TextColor3 = Color3.fromRGB(0, 200, 255)
+        local grad = mainFrame:FindFirstChildOfClass("UIGradient")
+        if grad then
+            grad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+            })
+        end
+    end
+end)
+
+-- Loop untuk ganti warna terus menerus jika toggle ON
+task.spawn(function()
+    while task.wait(0.5) do
+        if colorToggleState then
+            changeRandomColor()
+        end
     end
 end)
 
@@ -698,7 +708,7 @@ openBtn.MouseButton1Click:Connect(function()
 	if menuOpen then
 		mainFrame.Visible = true
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
-			Position = UDim2.new(0.5,-175,0.5,-275)
+			Position = UDim2.new(0.5,-175,0.5,-240)
 		}):Play()
 	else
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
@@ -711,4 +721,4 @@ openBtn.MouseButton1Click:Connect(function()
 
 end)
 
-print("Putzzdev-HUB + 6 Color")
+print("Putzzdev-HUB + Color di MOVE")
