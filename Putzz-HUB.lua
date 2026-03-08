@@ -2,7 +2,7 @@
 -- Desain: Modern Glassmorphism + Neon Effects
 -- ESP: Skeleton Style (Box & Line pake garis tebal) - LINE HIJAU
 -- Fitur: ESP, Fly, Speed, NoClip, Invisible, Teleport
--- Menu Button: Inisial "Putzz" di samping kiri
+-- Menu Button: Huruf "P" di samping kiri (buka/tutup dengan animasi)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -402,11 +402,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 100
 
--- ===== MAIN CONTAINER =====
+-- ===== MAIN CONTAINER (UKURAN SEDANG) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 400, 0, 520)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -260)
+mainFrame.Size = UDim2.new(0, 350, 0, 450)  -- Ukuran sedang (350x450)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -425,7 +425,7 @@ glassEffect.BorderSizePixel = 0
 -- CORNER
 local mainCorner = Instance.new("UICorner")
 mainCorner.Parent = mainFrame
-mainCorner.CornerRadius = UDim.new(0, 20)
+mainCorner.CornerRadius = UDim.new(0, 16)
 
 -- BORDER NEON
 local border = Instance.new("Frame")
@@ -438,14 +438,14 @@ border.BorderColor3 = themeColor
 -- ===== HEADER GLASS =====
 local header = Instance.new("Frame")
 header.Parent = mainFrame
-header.Size = UDim2.new(1, 0, 0, 70)
+header.Size = UDim2.new(1, 0, 0, 60)
 header.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 header.BackgroundTransparency = 0.3
 header.BorderSizePixel = 0
 
 local headerCorner = Instance.new("UICorner")
 headerCorner.Parent = header
-headerCorner.CornerRadius = UDim.new(0, 20)
+headerCorner.CornerRadius = UDim.new(0, 16)
 
 -- Gradient header
 local headerGradient = Instance.new("UIGradient")
@@ -464,47 +464,22 @@ title.BackgroundTransparency = 1
 title.Text = "PUTZZDEV"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 32
+title.TextSize = 24
 title.TextStrokeTransparency = 0
 title.TextStrokeColor3 = themeColor
-
-local titleShadow = Instance.new("TextLabel")
-titleShadow.Parent = header
-titleShadow.Size = UDim2.new(1, 2, 1, 2)
-titleShadow.Position = UDim2.new(0, 2, 0, 2)
-titleShadow.BackgroundTransparency = 1
-titleShadow.Text = "PUTZZDEV"
-titleShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
-titleShadow.Font = Enum.Font.GothamBlack
-titleShadow.TextSize = 32
-titleShadow.TextTransparency = 0.5
-
--- ===== CONTROL BUTTONS =====
-local closeBtn = Instance.new("ImageButton")
-closeBtn.Parent = header
-closeBtn.Size = UDim2.new(0, 35, 0, 35)
-closeBtn.Position = UDim2.new(1, -45, 0.5, -17.5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-closeBtn.BackgroundTransparency = 0.3
-closeBtn.Image = "rbxassetid://6031280882"
-closeBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.Parent = closeBtn
-closeCorner.CornerRadius = UDim.new(0, 10)
 
 -- ===== TAB BAR MODERN =====
 local tabBar = Instance.new("Frame")
 tabBar.Parent = mainFrame
-tabBar.Size = UDim2.new(1, -20, 0, 50)
-tabBar.Position = UDim2.new(0, 10, 0, 80)
+tabBar.Size = UDim2.new(1, -20, 0, 45)
+tabBar.Position = UDim2.new(0, 10, 0, 65)
 tabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 tabBar.BackgroundTransparency = 0.3
 tabBar.BorderSizePixel = 0
 
 local tabCorner = Instance.new("UICorner")
 tabCorner.Parent = tabBar
-tabCorner.CornerRadius = UDim.new(0, 12)
+tabCorner.CornerRadius = UDim.new(0, 10)
 
 local tabs = {}
 local contents = {}
@@ -512,34 +487,36 @@ local contents = {}
 local function createTab(name, icon, idx)
     local btn = Instance.new("TextButton")
     btn.Parent = tabBar
-    btn.Size = UDim2.new(0.25, -2, 1, -10)
-    btn.Position = UDim2.new((idx-1)*0.25, 5, 0, 5)
+    btn.Size = UDim2.new(0.25, -2, 1, -6)
+    btn.Position = UDim2.new((idx-1)*0.25, 5, 0, 3)
     btn.BackgroundColor3 = themeColor
     btn.BackgroundTransparency = 0.7
     btn.Text = icon.." "..name
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
+    btn.TextSize = 14
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.Parent = btn
-    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.CornerRadius = UDim.new(0, 8)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -20, 1, -170)
-    content.Position = UDim2.new(0, 10, 0, 140)
+    content.Size = UDim2.new(1, -20, 1, -150)
+    content.Position = UDim2.new(0, 10, 0, 115)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
-    content.ScrollBarThickness = 5
+    content.ScrollBarThickness = 4
     content.ScrollBarImageColor3 = themeColor
     content.CanvasSize = UDim2.new(0, 0, 0, 0)
     content.Visible = false
+    content.AutomaticCanvasSize = Enum.AutomaticSize.Y  -- Auto scroll
 
     local layout = Instance.new("UIListLayout")
     layout.Parent = content
-    layout.Padding = UDim.new(0, 10)
+    layout.Padding = UDim.new(0, 8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
 
     table.insert(tabs, btn)
     table.insert(contents, content)
@@ -568,34 +545,34 @@ local tabMisc = createTab("MISC", "💎", 4)
 local function createModernButton(parent, text, icon, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 55)
+    frame.Size = UDim2.new(0.95, 0, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     frame.BackgroundTransparency = 0.3
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 40, 1, 0)
-    iconLabel.Position = UDim2.new(0, 10, 0, 0)
+    iconLabel.Size = UDim2.new(0, 35, 1, 0)
+    iconLabel.Position = UDim2.new(0, 8, 0, 0)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = themeColor
     iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 24
+    iconLabel.TextSize = 20
 
     local btn = Instance.new("TextButton")
     btn.Parent = frame
-    btn.Size = UDim2.new(1, -50, 1, 0)
-    btn.Position = UDim2.new(0, 50, 0, 0)
+    btn.Size = UDim2.new(1, -45, 1, 0)
+    btn.Position = UDim2.new(0, 43, 0, 0)
     btn.BackgroundTransparency = 1
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(220, 220, 220)
     btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
+    btn.TextSize = 16
     btn.TextXAlignment = Enum.TextXAlignment.Left
 
     btn.MouseButton1Click:Connect(callback)
@@ -606,52 +583,52 @@ end
 local function createModernToggle(parent, text, icon, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 55)
+    frame.Size = UDim2.new(0.95, 0, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     frame.BackgroundTransparency = 0.3
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 40, 1, 0)
-    iconLabel.Position = UDim2.new(0, 10, 0, 0)
+    iconLabel.Size = UDim2.new(0, 35, 1, 0)
+    iconLabel.Position = UDim2.new(0, 8, 0, 0)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = themeColor
     iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 24
+    iconLabel.TextSize = 20
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
-    label.Size = UDim2.new(0.6, -40, 1, 0)
-    label.Position = UDim2.new(0, 50, 0, 0)
+    label.Size = UDim2.new(0.5, -40, 1, 0)
+    label.Position = UDim2.new(0, 43, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 18
+    label.TextSize = 16
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     -- Toggle switch modern
     local switch = Instance.new("Frame")
     switch.Parent = frame
-    switch.Size = UDim2.new(0, 50, 0, 26)
-    switch.Position = UDim2.new(1, -60, 0.5, -13)
+    switch.Size = UDim2.new(0, 46, 0, 24)
+    switch.Position = UDim2.new(1, -56, 0.5, -12)
     switch.BackgroundColor3 = default and themeColor or Color3.fromRGB(80, 80, 90)
     switch.BorderSizePixel = 0
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.Parent = switch
-    switchCorner.CornerRadius = UDim.new(0, 13)
+    switchCorner.CornerRadius = UDim.new(0, 12)
 
     local circle = Instance.new("Frame")
     circle.Parent = switch
-    circle.Size = UDim2.new(0, 22, 0, 22)
-    circle.Position = default and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)
+    circle.Size = UDim2.new(0, 20, 0, 20)
+    circle.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)
     circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     circle.BorderSizePixel = 0
 
@@ -669,7 +646,7 @@ local function createModernToggle(parent, text, icon, default, callback)
     click.MouseButton1Click:Connect(function()
         state = not state
         TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)}):Play()
         callback(state)
     end)
     
@@ -694,7 +671,7 @@ createModernToggle(tabMain, "NoClip", "🔄", false, function(s)
     noclipEnabled = s
 end)
 
-createModernToggle(tabMain, "Invisible Mode", "👻", false, function(s)
+createModernToggle(tabMain, "Invisible", "👻", false, function(s)
     invisibleEnabled = s
     setInvisible(s)
 end)
@@ -734,55 +711,55 @@ end)
 -- Teleport input
 local tpFrame = Instance.new("Frame")
 tpFrame.Parent = tabMove
-tpFrame.Size = UDim2.new(0.95, 0, 0, 100)
+tpFrame.Size = UDim2.new(0.95, 0, 0, 90)
 tpFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 tpFrame.BackgroundTransparency = 0.3
 tpFrame.BorderSizePixel = 0
 
 local tpCorner = Instance.new("UICorner")
 tpCorner.Parent = tpFrame
-tpCorner.CornerRadius = UDim.new(0, 12)
+tpCorner.CornerRadius = UDim.new(0, 10)
 
 local tpTitle = Instance.new("TextLabel")
 tpTitle.Parent = tpFrame
-tpTitle.Size = UDim2.new(1, -20, 0, 30)
-tpTitle.Position = UDim2.new(0, 10, 0, 10)
+tpTitle.Size = UDim2.new(1, -20, 0, 25)
+tpTitle.Position = UDim2.new(0, 10, 0, 5)
 tpTitle.BackgroundTransparency = 1
 tpTitle.Text = "📞 Teleport ke Player"
 tpTitle.TextColor3 = themeColor
 tpTitle.Font = Enum.Font.GothamBold
-tpTitle.TextSize = 16
+tpTitle.TextSize = 14
 tpTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 local tpInput = Instance.new("TextBox")
 tpInput.Parent = tpFrame
-tpInput.Size = UDim2.new(0.7, -10, 0, 40)
-tpInput.Position = UDim2.new(0, 10, 0, 45)
+tpInput.Size = UDim2.new(0.65, -10, 0, 35)
+tpInput.Position = UDim2.new(0, 10, 0, 35)
 tpInput.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 tpInput.PlaceholderText = "Nama player..."
 tpInput.Text = ""
 tpInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpInput.Font = Enum.Font.Gotham
-tpInput.TextSize = 16
+tpInput.TextSize = 14
 
 local tpInputCorner = Instance.new("UICorner")
 tpInputCorner.Parent = tpInput
-tpInputCorner.CornerRadius = UDim.new(0, 8)
+tpInputCorner.CornerRadius = UDim.new(0, 6)
 
 local tpBtn = Instance.new("TextButton")
 tpBtn.Parent = tpFrame
-tpBtn.Size = UDim2.new(0.25, -5, 0, 40)
-tpBtn.Position = UDim2.new(0.75, 0, 0, 45)
+tpBtn.Size = UDim2.new(0.3, -5, 0, 35)
+tpBtn.Position = UDim2.new(0.7, 0, 0, 35)
 tpBtn.BackgroundColor3 = themeColor
 tpBtn.BackgroundTransparency = 0.2
 tpBtn.Text = "GO"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 18
+tpBtn.TextSize = 16
 
 local tpBtnCorner = Instance.new("UICorner")
 tpBtnCorner.Parent = tpBtn
-tpBtnCorner.CornerRadius = UDim.new(0, 8)
+tpBtnCorner.CornerRadius = UDim.new(0, 6)
 
 tpBtn.MouseButton1Click:Connect(function()
     teleportToPlayer(tpInput.Text)
@@ -817,96 +794,81 @@ end)
 -- Credit
 local credit = Instance.new("TextLabel")
 credit.Parent = mainFrame
-credit.Size = UDim2.new(1, 0, 0, 30)
-credit.Position = UDim2.new(0, 0, 1, -30)
+credit.Size = UDim2.new(1, 0, 0, 25)
+credit.Position = UDim2.new(0, 0, 1, -25)
 credit.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 credit.BackgroundTransparency = 0.3
 credit.Text = "developer by putzz 🔥 | green line"
 credit.TextColor3 = Color3.fromRGB(150, 150, 150)
 credit.Font = Enum.Font.Gotham
-credit.TextSize = 14
+credit.TextSize = 12
 
 local creditCorner = Instance.new("UICorner")
 creditCorner.Parent = credit
-creditCorner.CornerRadius = UDim.new(0, 20)
-
--- Set canvas size
-local function updateCanvas()
-    for _, content in pairs(contents) do
-        local height = 0
-        for _, child in pairs(content:GetChildren()) do
-            if child:IsA("Frame") then
-                height = height + child.Size.Y.Offset + 10
-            end
-        end
-        content.CanvasSize = UDim2.new(0, 0, 0, height + 20)
-    end
-end
-
-wait(0.1)
-updateCanvas()
+creditCorner.CornerRadius = UDim.new(0, 16)
 
 -- Aktifkan tab pertama
 tabs[1].BackgroundTransparency = 0.3
 tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
 contents[1].Visible = true
 
--- Button functions
-closeBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    toggleBtn.Visible = true
-end)
+-- ================= OPEN / CLOSE BUTTON =================
+local openBtn = Instance.new("TextButton")
+openBtn.Parent = ScreenGui
+openBtn.Size = UDim2.new(0, 50, 0, 50)
+openBtn.Position = UDim2.new(0, 15, 0.5, -25)
+openBtn.BackgroundColor3 = themeColor
+openBtn.Text = "P"
+openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.Font = Enum.Font.GothamBlack
+openBtn.TextSize = 24
+openBtn.AutoButtonColor = true
+openBtn.ZIndex = 10
 
--- ===== MENU BUTTON "Putzz" DI SAMPING KIRI =====
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Parent = ScreenGui
-toggleBtn.Size = UDim2.new(0, 70, 0, 70)
-toggleBtn.Position = UDim2.new(0, 10, 0.5, -35)
-toggleBtn.BackgroundColor3 = themeColor
-toggleBtn.BackgroundTransparency = 0.2
-toggleBtn.Text = "Putzz"
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Font = Enum.Font.GothamBlack
-toggleBtn.TextSize = 16
-toggleBtn.Visible = false
+local corner = Instance.new("UICorner")
+corner.Parent = openBtn
+corner.CornerRadius = UDim.new(1,0)
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.Parent = toggleBtn
-toggleCorner.CornerRadius = UDim.new(0, 35)
+local stroke = Instance.new("UIStroke")
+stroke.Parent = openBtn
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Thickness = 1.5
 
--- Efek glow untuk tombol
-local toggleGlow = Instance.new("Frame")
-toggleGlow.Parent = toggleBtn
-toggleGlow.Size = UDim2.new(1, 4, 1, 4)
-toggleGlow.Position = UDim2.new(0, -2, 0, -2)
-toggleGlow.BackgroundTransparency = 1
-toggleGlow.BorderSizePixel = 2
-toggleGlow.BorderColor3 = themeColor
-toggleGlow.ZIndex = 0
+-- toggle
+local menuOpen = true
 
-local toggleGlowCorner = Instance.new("UICorner")
-toggleGlowCorner.Parent = toggleGlow
-toggleGlowCorner.CornerRadius = UDim.new(0, 37)
+openBtn.MouseButton1Click:Connect(function()
+	menuOpen = not menuOpen
 
-toggleBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = true
-    toggleBtn.Visible = false
+	if menuOpen then
+		mainFrame.Visible = true
+		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
+			Position = UDim2.new(0.5,-175,0.5,-225)
+		}):Play()
+	else
+		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
+			Position = UDim2.new(0.5,-175,1,0)
+		}):Play()
+
+		task.wait(0.3)
+		mainFrame.Visible = false
+	end
 end)
 
 -- Animasi hover untuk tombol
-toggleBtn.MouseEnter:Connect(function()
-    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 80, 0, 80)}):Play()
+openBtn.MouseEnter:Connect(function()
+    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 55, 0, 55)}):Play()
 end)
 
-toggleBtn.MouseLeave:Connect(function()
-    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 70, 0, 70)}):Play()
+openBtn.MouseLeave:Connect(function()
+    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 50, 0, 50)}):Play()
 end)
 
 -- Notifikasi masuk
 local notif = Instance.new("Frame")
 notif.Parent = ScreenGui
-notif.Size = UDim2.new(0, 350, 0, 70)
-notif.Position = UDim2.new(0.5, -175, 0, -80)
+notif.Size = UDim2.new(0, 300, 0, 60)
+notif.Position = UDim2.new(0.5, -150, 0, -70)
 notif.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 notif.BackgroundTransparency = 0.1
 notif.BorderSizePixel = 0
@@ -914,7 +876,7 @@ notif.ClipsDescendants = true
 
 local notifCorner = Instance.new("UICorner")
 notifCorner.Parent = notif
-notifCorner.CornerRadius = UDim.new(0, 15)
+notifCorner.CornerRadius = UDim.new(0, 12)
 
 local notifText = Instance.new("TextLabel")
 notifText.Parent = notif
@@ -924,26 +886,22 @@ notifText.BackgroundTransparency = 1
 notifText.Text = "✨ PutzzDev V3 ✨"
 notifText.TextColor3 = themeColor
 notifText.Font = Enum.Font.GothamBlack
-notifText.TextSize = 24
+notifText.TextSize = 20
 
 local notifSub = Instance.new("TextLabel")
 notifSub.Parent = notif
 notifSub.Size = UDim2.new(1, 0, 0.3, 0)
-notifSub.Position = UDim2.new(0, 0, 0, 40)
+notifSub.Position = UDim2.new(0, 0, 0, 35)
 notifSub.BackgroundTransparency = 1
 notifSub.Text = "Green Line Edition"
 notifSub.TextColor3 = lineColor
 notifSub.Font = Enum.Font.Gotham
-notifSub.TextSize = 16
+notifSub.TextSize = 14
 
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -175, 0, 20)}):Play()
-wait(2.5)
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -175, 0, -80)}):Play()
+TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 15)}):Play()
+wait(2)
+TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -70)}):Play()
 wait(0.5)
 notif:Destroy()
 
-print("✅ PutzzDev V3 Loaded! - Green Line Edition | Tombol 'Putzz' di samping kiri")
-
--- Sembunyikan mainFrame dan tampilkan toggleBtn saat mulai (agar tombol Putzz langsung terlihat)
-mainFrame.Visible = true -- Ubah ke false kalo mau langsung tombol doang
-toggleBtn.Visible = false -- Ubah ke true kalo mau langsung tombol doang
+print("✅ PutzzDev V3 Loaded! - Green Line Edition | Tekan 'P' untuk buka/tutup")
