@@ -1,7 +1,8 @@
 --// PUTZZDEV-HUB V3 (ULTIMATE EDITION) - FULL CODE
 -- Desain: Modern Glassmorphism + Neon Effects
--- ESP: Skeleton Style (Box & Line pake garis tebal)
+-- ESP: Skeleton Style (Box & Line pake garis tebal) - LINE HIJAU
 -- Fitur: ESP, Fly, Speed, NoClip, Invisible, Teleport
+-- Menu Button: Inisial "Putzz" di samping kiri
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -39,7 +40,7 @@ local originalTransparency = {}
 
 -- Warna tema
 local themeColor = Color3.fromRGB(0, 200, 255) -- Cyan
-local accentColor = Color3.fromRGB(255, 100, 0) -- Oranye untuk skeleton
+local lineColor = Color3.fromRGB(0, 255, 0) -- HIJAU untuk line
 
 -- ================== FUNGSI INVISIBLE ==================
 local function setInvisible(state)
@@ -77,7 +78,7 @@ local function createESP(player)
     for i = 1, 4 do
         local line = Drawing.new("Line")
         line.Thickness = 2.5
-        line.Color = Color3.fromRGB(0, 255, 0)  -- Hijau untuk box
+        line.Color = lineColor  -- HIJAU
         line.Visible = false
         table.insert(boxLines, line)
     end
@@ -100,10 +101,10 @@ local function createESP(player)
     dist.OutlineColor = Color3.fromRGB(0,0,0)
     dist.Visible = false
 
-    -- LINE (style skeleton)
+    -- LINE (style skeleton) - WARNA HIJAU
     local line = Drawing.new("Line")
     line.Thickness = 2.5
-    line.Color = accentColor  -- Oranye
+    line.Color = lineColor  -- HIJAU
     line.Visible = false
 
     -- HEALTH BAR
@@ -140,7 +141,7 @@ local function createSkeleton(player)
     for i = 1, #connections do
         local line = Drawing.new("Line")
         line.Thickness = 2.5
-        line.Color = accentColor  -- Oranye
+        line.Color = lineColor  -- HIJAU
         line.Visible = false
         table.insert(lines, {line, connections[i][1], connections[i][2]})
     end
@@ -214,25 +215,25 @@ RunService.RenderStepped:Connect(function()
                         boxLines[1].From = Vector2.new(leftX, topY)
                         boxLines[1].To = Vector2.new(rightX, topY)
                         boxLines[1].Visible = true
-                        boxLines[1].Color = Color3.fromRGB(0, 255, 0)
+                        boxLines[1].Color = lineColor  -- HIJAU
                         
                         -- Garis kanan
                         boxLines[2].From = Vector2.new(rightX, topY)
                         boxLines[2].To = Vector2.new(rightX, bottomY)
                         boxLines[2].Visible = true
-                        boxLines[2].Color = Color3.fromRGB(0, 255, 0)
+                        boxLines[2].Color = lineColor  -- HIJAU
                         
                         -- Garis bawah
                         boxLines[3].From = Vector2.new(rightX, bottomY)
                         boxLines[3].To = Vector2.new(leftX, bottomY)
                         boxLines[3].Visible = true
-                        boxLines[3].Color = Color3.fromRGB(0, 255, 0)
+                        boxLines[3].Color = lineColor  -- HIJAU
                         
                         -- Garis kiri
                         boxLines[4].From = Vector2.new(leftX, bottomY)
                         boxLines[4].To = Vector2.new(leftX, topY)
                         boxLines[4].Visible = true
-                        boxLines[4].Color = Color3.fromRGB(0, 255, 0)
+                        boxLines[4].Color = lineColor  -- HIJAU
                     end
 
                     -- NAMA
@@ -249,11 +250,12 @@ RunService.RenderStepped:Connect(function()
                         dist.Visible = true
                     end
 
-                    -- LINE (style skeleton)
+                    -- LINE (style skeleton) - WARNA HIJAU
                     if lineEnabled then
                         line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
                         line.To = Vector2.new(pos.X, pos.Y)
                         line.Visible = true
+                        line.Color = lineColor  -- HIJAU
                     else
                         line.Visible = false
                     end
@@ -490,19 +492,6 @@ closeBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
 local closeCorner = Instance.new("UICorner")
 closeCorner.Parent = closeBtn
 closeCorner.CornerRadius = UDim.new(0, 10)
-
-local minBtn = Instance.new("ImageButton")
-minBtn.Parent = header
-minBtn.Size = UDim2.new(0, 35, 0, 35)
-minBtn.Position = UDim2.new(1, -90, 0.5, -17.5)
-minBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
-minBtn.BackgroundTransparency = 0.3
-minBtn.Image = "rbxassetid://6031280882"
-minBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
-
-local minCorner = Instance.new("UICorner")
-minCorner.Parent = minBtn
-minCorner.CornerRadius = UDim.new(0, 10)
 
 -- ===== TAB BAR MODERN =====
 local tabBar = Instance.new("Frame")
@@ -832,7 +821,7 @@ credit.Size = UDim2.new(1, 0, 0, 30)
 credit.Position = UDim2.new(0, 0, 1, -30)
 credit.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 credit.BackgroundTransparency = 0.3
-credit.Text = "developer by putzz 🔥 | skeleton style"
+credit.Text = "developer by putzz 🔥 | green line"
 credit.TextColor3 = Color3.fromRGB(150, 150, 150)
 credit.Font = Enum.Font.Gotham
 credit.TextSize = 14
@@ -865,30 +854,52 @@ contents[1].Visible = true
 -- Button functions
 closeBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
+    toggleBtn.Visible = true
 end)
 
-minBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-end)
-
--- Toggle button (Floating)
-local toggleBtn = Instance.new("ImageButton")
+-- ===== MENU BUTTON "Putzz" DI SAMPING KIRI =====
+local toggleBtn = Instance.new("TextButton")
 toggleBtn.Parent = ScreenGui
-toggleBtn.Size = UDim2.new(0, 60, 0, 60)
-toggleBtn.Position = UDim2.new(0, 20, 0.5, -30)
+toggleBtn.Size = UDim2.new(0, 70, 0, 70)
+toggleBtn.Position = UDim2.new(0, 10, 0.5, -35)
 toggleBtn.BackgroundColor3 = themeColor
 toggleBtn.BackgroundTransparency = 0.2
-toggleBtn.Image = "rbxassetid://6031280882"
-toggleBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "Putzz"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.GothamBlack
+toggleBtn.TextSize = 16
 toggleBtn.Visible = false
 
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.Parent = toggleBtn
-toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.CornerRadius = UDim.new(0, 35)
+
+-- Efek glow untuk tombol
+local toggleGlow = Instance.new("Frame")
+toggleGlow.Parent = toggleBtn
+toggleGlow.Size = UDim2.new(1, 4, 1, 4)
+toggleGlow.Position = UDim2.new(0, -2, 0, -2)
+toggleGlow.BackgroundTransparency = 1
+toggleGlow.BorderSizePixel = 2
+toggleGlow.BorderColor3 = themeColor
+toggleGlow.ZIndex = 0
+
+local toggleGlowCorner = Instance.new("UICorner")
+toggleGlowCorner.Parent = toggleGlow
+toggleGlowCorner.CornerRadius = UDim.new(0, 37)
 
 toggleBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = true
     toggleBtn.Visible = false
+end)
+
+-- Animasi hover untuk tombol
+toggleBtn.MouseEnter:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 80, 0, 80)}):Play()
+end)
+
+toggleBtn.MouseLeave:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 70, 0, 70)}):Play()
 end)
 
 -- Notifikasi masuk
@@ -920,8 +931,8 @@ notifSub.Parent = notif
 notifSub.Size = UDim2.new(1, 0, 0.3, 0)
 notifSub.Position = UDim2.new(0, 0, 0, 40)
 notifSub.BackgroundTransparency = 1
-notifSub.Text = "Skeleton Style ESP"
-notifSub.TextColor3 = accentColor
+notifSub.Text = "Green Line Edition"
+notifSub.TextColor3 = lineColor
 notifSub.Font = Enum.Font.Gotham
 notifSub.TextSize = 16
 
@@ -931,4 +942,8 @@ TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -175, 
 wait(0.5)
 notif:Destroy()
 
-print("✅ PutzzDev V3 Loaded! - Skeleton Style ESP | Tekan tombol X untuk minimize")
+print("✅ PutzzDev V3 Loaded! - Green Line Edition | Tombol 'Putzz' di samping kiri")
+
+-- Sembunyikan mainFrame dan tampilkan toggleBtn saat mulai (agar tombol Putzz langsung terlihat)
+mainFrame.Visible = true -- Ubah ke false kalo mau langsung tombol doang
+toggleBtn.Visible = false -- Ubah ke true kalo mau langsung tombol doang
