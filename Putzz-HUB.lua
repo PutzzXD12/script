@@ -107,41 +107,31 @@ end
 local function createESP(player)
     if player == LocalPlayer then return end
 
-    -- 4 Line untuk membuat box
-    local boxLines = {}
-    for i = 1, 4 do
-        local line = Drawing.new("Line")
-        line.Thickness = 2
-        line.Color = lineColor
-        line.Visible = false
-        table.insert(boxLines, line)
-    end
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Color = Color3.fromRGB(0,255,0)
+    box.Filled = false
+    box.Visible = false
 
-    -- NAMA
     local name = Drawing.new("Text")
     name.Size = 16
     name.Color = Color3.new(1,1,1)
     name.Center = true
     name.Outline = true
-    name.OutlineColor = Color3.fromRGB(0,0,0)
     name.Visible = false
 
-    -- JARAK
     local dist = Drawing.new("Text")
     dist.Size = 13
     dist.Color = Color3.new(1,1,1)
     dist.Center = true
     dist.Outline = true
-    dist.OutlineColor = Color3.fromRGB(0,0,0)
     dist.Visible = false
 
-    -- LINE dari KARAKTER ke TARGET (seperti screenshot)
     local line = Drawing.new("Line")
-    line.Thickness = 1.5  -- Tipis seperti screenshot
-    line.Color = lineColor
+    line.Thickness = 1
+    line.Color = Color3.fromRGB(255,255,255)
     line.Visible = false
 
-    -- HEALTH BAR
     local healthBg = Drawing.new("Square")
     healthBg.Thickness = 1
     healthBg.Color = Color3.fromRGB(30,30,30)
@@ -154,7 +144,7 @@ local function createESP(player)
     healthFg.Filled = true
     healthFg.Visible = false
 
-    ESPTable[player] = {boxLines, name, dist, line, healthBg, healthFg}
+    ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
 end
 
 -- ================== ESP SKELETON ==================
@@ -169,13 +159,14 @@ local function createSkeleton(player)
         {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
         {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
         {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-        {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+        {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
+        {"LeftShoulder", "RightHip"}, {"RightShoulder", "LeftHip"}
     }
     
     for i = 1, #connections do
         local line = Drawing.new("Line")
-        line.Thickness = 2
-        line.Color = lineColor
+        line.Thickness = 2.5
+        line.Color = Color3.fromRGB(255, 100, 0)
         line.Visible = false
         table.insert(lines, {line, connections[i][1], connections[i][2]})
     end
@@ -192,28 +183,6 @@ local function updateSkeleton(player, lines)
         end
         return
     end
-    
-    for _, lineData in pairs(lines) do
-        local line, part1Name, part2Name = unpack(lineData)
-        local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
-        local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
-        
-        if part1 and part2 then
-            local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
-            local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
-            
-            if vis1 and vis2 then
-                line.From = Vector2.new(pos1.X, pos1.Y)
-                line.To = Vector2.new(pos2.X, pos2.Y)
-                line.Visible = skeletonEnabled
-            else
-                line.Visible = false
-            end
-        else
-            line.Visible = false
-        end
-    end
-end
 
 -- ================== RENDER STEP ==================
 RunService.RenderStepped:Connect(function()
