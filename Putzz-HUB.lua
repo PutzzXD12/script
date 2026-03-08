@@ -1,8 +1,5 @@
---// PUTZZDEV-HUB V4 (HP EDITION) - LINE MODEL SCREENSHOT
--- Desain: Modern Glassmorphism + Rainbow Effects + Touch Friendly
--- ESP: Line dari KARAKTER ke TARGET (seperti screenshot)
--- Fitur: ESP, Fly (Simple), Speed, NoClip, Invisible, Teleport
--- Menu Button: Huruf "P" di samping kiri
+--// PUTZZDEV-HUB FINAL (ALL FEATURES + INVISIBLE + 6 WARNA)
+-- Ukuran: Sedang (350x450), semua fitur siap pakai
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -20,9 +17,9 @@ local skeletonEnabled = false
 local ESPTable = {}
 local SkeletonESP = {}
 
--- FLY (Simple version - pakai yang Anda minta)
+-- Fly
 local flyEnabled = false
-local flySpeed = 50
+local flySpeed = 60
 local bv = nil
 local bg = nil
 
@@ -34,47 +31,9 @@ local fastSpeed = 60
 -- NoClip
 local noclipEnabled = false
 
--- INVISIBLE
+-- INVISIBLE (Transparan)
 local invisibleEnabled = false
 local originalTransparency = {}
-
--- Rainbow Variables
-local rainbowHue = 0
-local rainbowSpeed = 0.05
-local isRainbow = true
-
--- Warna tema
-local themeColor = Color3.fromRGB(0, 200, 255)
-local lineColor = Color3.fromRGB(0, 255, 0) -- HIJAU untuk line
-
--- ================== FUNGSI RAINBOW ==================
-local function getRainbowColor()
-    rainbowHue = (rainbowHue + rainbowSpeed) % 1
-    return Color3.fromHSV(rainbowHue, 1, 1)
-end
-
--- Rainbow loop
-spawn(function()
-    while isRainbow and task.wait(0.05) do
-        themeColor = getRainbowColor()
-        
-        if mainFrame then
-            border.BorderColor3 = themeColor
-            title.TextStrokeColor3 = themeColor
-            for i, btn in ipairs(tabs) do
-                if contents[i].Visible then
-                    btn.BackgroundColor3 = themeColor
-                    btn.BackgroundTransparency = 0.3
-                else
-                    btn.BackgroundColor3 = themeColor
-                    btn.BackgroundTransparency = 0.7
-                end
-            end
-            tpBtn.BackgroundColor3 = themeColor
-            openBtn.BackgroundColor3 = themeColor
-        end
-    end
-end)
 
 -- ================== FUNGSI INVISIBLE ==================
 local function setInvisible(state)
@@ -82,6 +41,7 @@ local function setInvisible(state)
     if not char then return end
     
     if state then
+        -- Simpan transparency asli dan set jadi 0.9 (hampir transparan)
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
                 originalTransparency[part] = part.Transparency
@@ -94,6 +54,7 @@ local function setInvisible(state)
             humanoid.Transparency = 0.9
         end
     else
+        -- Kembalikan transparency asli
         for part, trans in pairs(originalTransparency) do
             if part and part.Parent then
                 part.Transparency = trans
@@ -183,12 +144,40 @@ local function updateSkeleton(player, lines)
         end
         return
     end
+    
+    for _, lineData in pairs(lines) do
+        local line, part1Name, part2Name = unpack(lineData)
+        local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
+        local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
+        
+        if part1 and part2 then
+            local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
+            local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
+            
+            if vis1 and vis2 then
+                line.From = Vector2.new(pos1.X, pos1.Y)
+                line.To = Vector2.new(pos2.X, pos2.Y)
+                line.Visible = skeletonEnabled
+                
+                if player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
+                    line.Color = Color3.fromRGB(255, 50, 50)
+                else
+                    line.Color = Color3.fromRGB(50, 255, 50)
+                end
+            else
+                line.Visible = false
+            end
+        else
+            line.Visible = false
+        end
+    end
+end
 
 -- ================== RENDER STEP ==================
 RunService.RenderStepped:Connect(function()
     -- ESP Box
     for player, esp in pairs(ESPTable) do
-        local boxLines, name, dist, line, healthBg, healthFg = unpack(esp)
+        local box, name, dist, line, healthBg, healthFg = unpack(esp)
 
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
@@ -204,98 +193,58 @@ RunService.RenderStepped:Connect(function()
 
                 local height = math.abs(top.Y - bottom.Y)
                 local width = height / 2
-                
-                local leftX = pos.X - width/2
-                local rightX = pos.X + width/2
-                local topY = top.Y
-                local bottomY = bottom.Y
 
                 if espEnabled then
-                    -- Update 4 line untuk box
-                    if #boxLines >= 4 then
-                        boxLines[1].From = Vector2.new(leftX, topY)
-                        boxLines[1].To = Vector2.new(rightX, topY)
-                        boxLines[1].Visible = true
-                        boxLines[1].Color = lineColor
-                        
-                        boxLines[2].From = Vector2.new(rightX, topY)
-                        boxLines[2].To = Vector2.new(rightX, bottomY)
-                        boxLines[2].Visible = true
-                        boxLines[2].Color = lineColor
-                        
-                        boxLines[3].From = Vector2.new(rightX, bottomY)
-                        boxLines[3].To = Vector2.new(leftX, bottomY)
-                        boxLines[3].Visible = true
-                        boxLines[3].Color = lineColor
-                        
-                        boxLines[4].From = Vector2.new(leftX, bottomY)
-                        boxLines[4].To = Vector2.new(leftX, topY)
-                        boxLines[4].Visible = true
-                        boxLines[4].Color = lineColor
-                    end
+                    box.Size = Vector2.new(width, height)
+                    box.Position = Vector2.new(pos.X - width/2, top.Y)
+                    box.Visible = true
 
-                    -- NAMA
-                    name.Position = Vector2.new(pos.X, topY - 20)
+                    name.Position = Vector2.new(pos.X, top.Y - 16)
                     name.Text = player.Name
                     name.Visible = true
 
-                    -- JARAK
                     local myChar = LocalPlayer.Character
                     if myChar and myChar:FindFirstChild("HumanoidRootPart") then
                         local distance = (myChar.HumanoidRootPart.Position - hrp.Position).Magnitude
                         dist.Text = math.floor(distance).."m"
-                        dist.Position = Vector2.new(pos.X, bottomY + 5)
+                        dist.Position = Vector2.new(pos.X, bottom.Y + 2)
                         dist.Visible = true
                     end
-
-                    -- LINE dari KARAKTER ke TARGET (seperti screenshot)
-                    if lineEnabled then
-                        local myChar = LocalPlayer.Character
-                        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                            local myPos = Camera:WorldToViewportPoint(myChar.HumanoidRootPart.Position)
-                            line.From = Vector2.new(myPos.X, myPos.Y)  -- Dari karakter kita
-                            line.To = Vector2.new(pos.X, pos.Y)       -- Ke target
-                            line.Visible = true
-                            line.Color = lineColor
-                        end
-                    else
-                        line.Visible = false
-                    end
-
-                    -- HEALTH BAR
-                    if healthEnabled and humanoid then
-                        local healthPercent = humanoid.Health / humanoid.MaxHealth
-                        local barWidth = width * 0.8
-                        local barHeight = 4
-                        local barX = pos.X - barWidth/2
-                        local barY = topY - 25
-
-                        healthBg.Size = Vector2.new(barWidth, barHeight)
-                        healthBg.Position = Vector2.new(barX, barY)
-                        healthBg.Visible = true
-
-                        healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
-                        healthFg.Position = Vector2.new(barX, barY)
-                        healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                        healthFg.Visible = true
-                    else
-                        healthBg.Visible = false
-                        healthFg.Visible = false
-                    end
                 else
-                    for i = 1, #boxLines do
-                        boxLines[i].Visible = false
-                    end
+                    box.Visible = false
                     name.Visible = false
                     dist.Visible = false
-                    line.Visible = false
+                end
+
+                if healthEnabled and humanoid then
+                    local healthPercent = humanoid.Health / humanoid.MaxHealth
+                    local barWidth = width * 0.8
+                    local barHeight = 4
+                    local barX = pos.X - barWidth/2
+                    local barY = top.Y - 20
+
+                    healthBg.Size = Vector2.new(barWidth, barHeight)
+                    healthBg.Position = Vector2.new(barX, barY)
+                    healthBg.Visible = true
+
+                    healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
+                    healthFg.Position = Vector2.new(barX, barY)
+                    healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                    healthFg.Visible = true
+                else
                     healthBg.Visible = false
                     healthFg.Visible = false
                 end
-            else
-                for i = 1, #boxLines do
-                    boxLines[i].Visible = false
+
+                if lineEnabled then
+                    line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
+                    line.To = Vector2.new(pos.X, pos.Y)
+                    line.Visible = true
+                else
+                    line.Visible = false
                 end
+            else
+                box.Visible = false
                 name.Visible = false
                 dist.Visible = false
                 line.Visible = false
@@ -330,16 +279,7 @@ Players.PlayerAdded:Connect(function(p)
     createSkeleton(p)
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    if ESPTable[p] then
-        ESPTable[p] = nil
-    end
-    if SkeletonESP[p] then
-        SkeletonESP[p] = nil
-    end
-end)
-
--- ================== FUNGSI FLY (YANG ANDA MINTA) ==================
+-- ================== FUNGSI FLY ==================
 local function startFly()
     local char = LocalPlayer.Character
     if not char then return end
@@ -354,10 +294,8 @@ local function startFly()
     bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
     bg.Parent = hrp
 
-    -- Loop untuk fly
-    spawn(function()
-        while flyEnabled and bv and bg do
-            task.wait()
+    RunService.RenderStepped:Connect(function()
+        if flyEnabled and bv and bg then
             bg.CFrame = Camera.CFrame
             bv.Velocity = Camera.CFrame.LookVector * flySpeed
         end
@@ -380,39 +318,6 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- ================== FUNGSI SPEED ==================
-local function setSpeed(state)
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = state and fastSpeed or normalSpeed
-    end
-end
-
--- ================== FUNGSI TELEPORT ==================
-local function teleportToPlayer(targetName)
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():find(targetName:lower()) or (player.DisplayName and player.DisplayName:lower():find(targetName:lower())) then
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local myChar = LocalPlayer.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
-
--- ================== CHARACTER ADDED HANDLER ==================
-game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
-    wait(0.7)
-    pcall(function()
-        game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
-        game.Players.LocalPlayer.Character.Animate.Disabled = false
-    end)
-end)
-
 -- ================== GUI KEREN ==================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
@@ -424,8 +329,8 @@ ScreenGui.DisplayOrder = 100
 -- Main frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 350, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 350, 0, 550)  -- Tinggi ditambah untuk 6 warna
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -484,7 +389,7 @@ local function createTab(name, icon, idx)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -110)
+    content.Size = UDim2.new(1, -10, 1, -180)  -- Kurangi tinggi untuk 6 warna
     content.Position = UDim2.new(0, 5, 0, 105)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -513,100 +418,123 @@ local function createTab(name, icon, idx)
 end
 
 -- Buat tabs
-local tabMain = createTab("MAIN", "⚡", 1)
+local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("MOVE", "🎮", 3)
+local tabMove = createTab("MOVE", "🏃", 3)
 local tabMisc = createTab("MISC", "⚙️", 4)
 
--- ===== FUNGSI BUTTON =====
-local function createModernButton(parent, text, icon, callback)
+-- ===== 6 TOMBOL WARNA =====
+local colorFrame = Instance.new("Frame")
+colorFrame.Parent = mainFrame
+colorFrame.Size = UDim2.new(0.9, 0, 0, 40)
+colorFrame.Position = UDim2.new(0.05, 0, 0, 500)  -- Posisi di bawah konten
+colorFrame.BackgroundTransparency = 1
+
+local colors = {
+    {Color3.fromRGB(255, 0, 0), "Merah"},
+    {Color3.fromRGB(0, 255, 0), "Hijau"},
+    {Color3.fromRGB(0, 0, 255), "Biru"},
+    {Color3.fromRGB(255, 255, 0), "Kuning"},
+    {Color3.fromRGB(255, 165, 0), "Orange"},
+    {Color3.fromRGB(128, 0, 128), "Ungu"}
+}
+
+local function changeThemeColor(color)
+    mainFrame.BackgroundColor3 = color
+    title.TextColor3 = color
+    -- Update gradient
+    local grad = mainFrame:FindFirstChildOfClass("UIGradient")
+    if grad then
+        grad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, color),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+        })
+    end
+end
+
+for i, colorData in ipairs(colors) do
+    local btn = Instance.new("TextButton")
+    btn.Parent = colorFrame
+    btn.Size = UDim2.new(0.15, 0, 0.8, 0)
+    btn.Position = UDim2.new((i-1)*0.16, 0, 0.1, 0)
+    btn.BackgroundColor3 = colorData[1]
+    btn.Text = ""
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.Parent = btn
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        changeThemeColor(colorData[1])
+    end)
+end
+
+-- Fungsi buat button
+local function createButton(parent, text, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 45)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    frame.BackgroundTransparency = 0.3
+    frame.Size = UDim2.new(0.9, 0, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 10)
-
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 35, 1, 0)
-    iconLabel.Position = UDim2.new(0, 8, 0, 0)
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Text = icon
-    iconLabel.TextColor3 = themeColor
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 20
+    corner.CornerRadius = UDim.new(0, 8)
 
     local btn = Instance.new("TextButton")
     btn.Parent = frame
-    btn.Size = UDim2.new(1, -45, 1, 0)
-    btn.Position = UDim2.new(0, 43, 0, 0)
+    btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    btn.Font = Enum.Font.Gotham
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
     btn.TextSize = 16
-    btn.TextXAlignment = Enum.TextXAlignment.Left
 
     btn.MouseButton1Click:Connect(callback)
     return frame
 end
 
--- ===== FUNGSI TOGGLE =====
-local function createModernToggle(parent, text, icon, default, callback)
+-- Fungsi buat toggle
+local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.95, 0, 0, 45)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    frame.BackgroundTransparency = 0.3
+    frame.Size = UDim2.new(0.9, 0, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
     corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, 10)
-
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Parent = frame
-    iconLabel.Size = UDim2.new(0, 35, 1, 0)
-    iconLabel.Position = UDim2.new(0, 8, 0, 0)
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Text = icon
-    iconLabel.TextColor3 = themeColor
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 20
+    corner.CornerRadius = UDim.new(0, 8)
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
-    label.Size = UDim2.new(0.5, -45, 1, 0)
-    label.Position = UDim2.new(0, 43, 0, 0)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextColor3 = Color3.new(1, 1, 1)
     label.Font = Enum.Font.Gotham
     label.TextSize = 16
     label.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Toggle switch
     local switch = Instance.new("Frame")
     switch.Parent = frame
-    switch.Size = UDim2.new(0, 50, 0, 26)
-    switch.Position = UDim2.new(1, -60, 0.5, -13)
-    switch.BackgroundColor3 = default and themeColor or Color3.fromRGB(80, 80, 90)
+    switch.Size = UDim2.new(0, 46, 0, 24)
+    switch.Position = UDim2.new(0.8, 0, 0.5, -12)
+    switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
     switch.BorderSizePixel = 0
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.Parent = switch
-    switchCorner.CornerRadius = UDim.new(0, 13)
+    switchCorner.CornerRadius = UDim.new(0, 12)
 
     local circle = Instance.new("Frame")
     circle.Parent = switch
-    circle.Size = UDim2.new(0, 22, 0, 22)
-    circle.Position = default and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)
-    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.Size = UDim2.new(0, 20, 0, 20)
+    circle.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)
+    circle.BackgroundColor3 = Color3.new(1, 1, 1)
     circle.BorderSizePixel = 0
 
     local circleCorner = Instance.new("UICorner")
@@ -622,144 +550,60 @@ local function createModernToggle(parent, text, icon, default, callback)
 
     click.MouseButton1Click:Connect(function()
         state = not state
-        TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -24, 0.5, -11) or UDim2.new(0.05, 0, 0.5, -11)}):Play()
+        TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)}):Play()
         callback(state)
     end)
     
     return frame
 end
 
--- ===== ISI TAB MAIN =====
-createModernToggle(tabMain, "Fly Mode", "🦅", false, function(s)
+-- ===== TAB MAIN =====
+createToggle(tabMain, "Fly", false, function(s)
     flyEnabled = s
-    if s then
-        startFly()
-    else
-        stopFly()
+    if s then startFly() else stopFly() end
+end)
+
+createToggle(tabMain, "Speed", false, function(s)
+    speedEnabled = s
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = s and fastSpeed or normalSpeed
     end
 end)
 
-createModernToggle(tabMain, "Speed Boost", "⚡", false, function(s)
-    speedEnabled = s
-    setSpeed(s)
-end)
-
-createModernToggle(tabMain, "NoClip", "🔄", false, function(s)
+createToggle(tabMain, "NoClip", false, function(s)
     noclipEnabled = s
 end)
 
-createModernToggle(tabMain, "Invisible", "👻", false, function(s)
+createToggle(tabMain, "Invisible", false, function(s)
     invisibleEnabled = s
     setInvisible(s)
 end)
 
--- ===== ISI TAB ESP =====
-createModernToggle(tabESP, "ESP Box", "📦", false, function(s)
-    espEnabled = s
-end)
+-- ===== TAB ESP =====
+createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
+createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
+createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
-createModernToggle(tabESP, "ESP Line", "📏", false, function(s)
-    lineEnabled = s
-end)
-
-createModernToggle(tabESP, "Health Bar", "❤️", false, function(s)
-    healthEnabled = s
-end)
-
-createModernToggle(tabESP, "ESP Skeleton", "🦴", false, function(s)
-    skeletonEnabled = s
-end)
-
--- ===== ISI TAB MOVE =====
--- Info kontrol
-local infoFrame = Instance.new("Frame")
-infoFrame.Parent = tabMove
-infoFrame.Size = UDim2.new(0.95, 0, 0, 80)
-infoFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-infoFrame.BackgroundTransparency = 0.3
-infoFrame.BorderSizePixel = 0
-
-local infoCorner = Instance.new("UICorner")
-infoCorner.Parent = infoFrame
-infoCorner.CornerRadius = UDim.new(0, 10)
-
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Parent = infoFrame
-infoLabel.Size = UDim2.new(1, -20, 1, -10)
-infoLabel.Position = UDim2.new(0, 10, 0, 5)
-infoLabel.BackgroundTransparency = 1
-infoLabel.Text = "⌨️ FLY CONTROL:\nWASD = Gerak | Otomatis maju sesuai arah kamera"
-infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-infoLabel.Font = Enum.Font.Gotham
-infoLabel.TextSize = 14
-infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Teleport
-local tpFrame = Instance.new("Frame")
-tpFrame.Parent = tabMove
-tpFrame.Size = UDim2.new(0.95, 0, 0, 100)
-tpFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-tpFrame.BackgroundTransparency = 0.3
-tpFrame.BorderSizePixel = 0
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.Parent = tpFrame
-tpCorner.CornerRadius = UDim.new(0, 10)
-
-local tpTitle = Instance.new("TextLabel")
-tpTitle.Parent = tpFrame
-tpTitle.Size = UDim2.new(1, -20, 0, 30)
-tpTitle.Position = UDim2.new(0, 10, 0, 5)
-tpTitle.BackgroundTransparency = 1
-tpTitle.Text = "📞 Teleport"
-tpTitle.TextColor3 = themeColor
-tpTitle.Font = Enum.Font.GothamBold
-tpTitle.TextSize = 16
-tpTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local tpInput = Instance.new("TextBox")
-tpInput.Parent = tpFrame
-tpInput.Size = UDim2.new(0.65, -10, 0, 40)
-tpInput.Position = UDim2.new(0, 10, 0, 40)
-tpInput.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-tpInput.PlaceholderText = "Nama player..."
-tpInput.Text = ""
-tpInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpInput.Font = Enum.Font.Gotham
-tpInput.TextSize = 14
-
-local tpInputCorner = Instance.new("UICorner")
-tpInputCorner.Parent = tpInput
-tpInputCorner.CornerRadius = UDim.new(0, 6)
-
-local tpBtn = Instance.new("TextButton")
-tpBtn.Parent = tpFrame
-tpBtn.Size = UDim2.new(0.3, -5, 0, 40)
-tpBtn.Position = UDim2.new(0.7, 0, 0, 40)
-tpBtn.BackgroundColor3 = themeColor
-tpBtn.BackgroundTransparency = 0.2
-tpBtn.Text = "GO"
-tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 18
-
-local tpBtnCorner = Instance.new("UICorner")
-tpBtnCorner.Parent = tpBtn
-tpBtnCorner.CornerRadius = UDim.new(0, 6)
-
-tpBtn.MouseButton1Click:Connect(function()
-    teleportToPlayer(tpInput.Text)
-end)
-
-tpInput.FocusLost:Connect(function(enter)
-    if enter then
-        teleportToPlayer(tpInput.Text)
+-- ===== TAB MOVE =====
+createButton(tabMove, "⬆ Naik (Fly)", function()
+    if flyEnabled then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Velocity = hrp.Velocity + Vector3.new(0, 50, 0) end
     end
 end)
 
--- ===== ISI TAB MISC =====
-createModernButton(tabMisc, "Refresh ESP", "🔄", function()
+createButton(tabMove, "⬇ Turun (Fly)", function()
+    if flyEnabled then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Velocity = hrp.Velocity - Vector3.new(0, 50, 0) end
+    end
+end)
+
+-- ===== TAB MISC =====
+createButton(tabMisc, "🔄 Refresh ESP", function()
     for p, _ in pairs(ESPTable) do ESPTable[p] = nil end
     for p, _ in pairs(SkeletonESP) do SkeletonESP[p] = nil end
     for _, p in pairs(Players:GetPlayers()) do
@@ -768,39 +612,11 @@ createModernButton(tabMisc, "Refresh ESP", "🔄", function()
     end
 end)
 
-createModernButton(tabMisc, "Copy TIKTOK", "📋", function()
+createButton(tabMisc, "📋 Copy TIKTOK", function()
     if setclipboard then
         setclipboard("putzz_mvpp")
     end
 end)
-
-createModernButton(tabMisc, "Toggle Rainbow", "🌈", function()
-    isRainbow = not isRainbow
-end)
-
-createModernButton(tabMisc, "Destroy GUI", "🗑️", function()
-    ScreenGui:Destroy()
-end)
-
--- Credit
-local credit = Instance.new("TextLabel")
-credit.Parent = mainFrame
-credit.Size = UDim2.new(1, 0, 0, 25)
-credit.Position = UDim2.new(0, 0, 1, -25)
-credit.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-credit.BackgroundTransparency = 0.3
-credit.Text = "developer by putzz 🔥 | line dari karakter"
-credit.TextColor3 = Color3.fromRGB(150, 150, 150)
-credit.Font = Enum.Font.Gotham
-credit.TextSize = 12
-
-local creditCorner = Instance.new("UICorner")
-creditCorner.Parent = credit
-creditCorner.CornerRadius = UDim.new(0, 16)
-
--- Aktifkan tab pertama
-tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
-contents[1].Visible = true
 
 -- Set canvas size
 local function updateCanvas()
@@ -811,23 +627,56 @@ local function updateCanvas()
                 height = height + child.Size.Y.Offset + 8
             end
         end
-        content.CanvasSize = UDim2.new(0, 0, 0, height + 10)
+        content.CanvasSize = UDim2.new(0, 0, 0, height)
     end
 end
 
 wait(0.1)
 updateCanvas()
 
+-- Aktifkan tab pertama
+tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
+contents[1].Visible = true
+
+-- Notifikasi
+local notifyFrame = Instance.new("Frame")
+notifyFrame.Parent = ScreenGui
+notifyFrame.Size = UDim2.new(0, 250, 0, 40)
+notifyFrame.Position = UDim2.new(0.5, -125, 0.9, 0)
+notifyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+notifyFrame.BackgroundTransparency = 0.1
+notifyFrame.BorderSizePixel = 0
+
+local notifyCorner = Instance.new("UICorner")
+notifyCorner.Parent = notifyFrame
+notifyCorner.CornerRadius = UDim.new(0, 8)
+
+local notifyText = Instance.new("TextLabel")
+notifyText.Parent = notifyFrame
+notifyText.Size = UDim2.new(1, 0, 1, 0)
+notifyText.BackgroundTransparency = 1
+notifyText.Text = "developer by Putzz XD"
+notifyText.TextColor3 = Color3.new(1, 1, 1)
+notifyText.Font = Enum.Font.Gotham
+notifyText.TextSize = 16
+
+TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -125, 0.8, 0)}):Play()
+wait(2)
+TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -125, 0.9, 0)}):Play()
+wait(0.3)
+notifyFrame:Destroy()
+
 -- ================= OPEN / CLOSE BUTTON =================
+
 local openBtn = Instance.new("TextButton")
 openBtn.Parent = ScreenGui
-openBtn.Size = UDim2.new(0, 50, 0, 50)
-openBtn.Position = UDim2.new(0, 15, 0.5, -25)
-openBtn.BackgroundColor3 = themeColor
+openBtn.Size = UDim2.new(0,55,0,55)
+openBtn.Position = UDim2.new(0,20,0.5,-27)
+openBtn.BackgroundColor3 = Color3.fromRGB(0,200,255)
 openBtn.Text = "P"
 openBtn.TextColor3 = Color3.new(1,1,1)
 openBtn.Font = Enum.Font.GothamBlack
-openBtn.TextSize = 24
+openBtn.TextSize = 22
 openBtn.AutoButtonColor = true
 openBtn.ZIndex = 10
 
@@ -848,66 +697,18 @@ openBtn.MouseButton1Click:Connect(function()
 
 	if menuOpen then
 		mainFrame.Visible = true
-		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
-			Position = UDim2.new(0.5,-175,0.5,-240)
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
+			Position = UDim2.new(0.5,-175,0.5,-275)
 		}):Play()
 	else
-		TweenService:Create(mainFrame,TweenInfo.new(0.3),{
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
 			Position = UDim2.new(0.5,-175,1,0)
 		}):Play()
 
-		task.wait(0.3)
+		task.wait(0.25)
 		mainFrame.Visible = false
 	end
+
 end)
 
--- Animasi hover
-openBtn.MouseEnter:Connect(function()
-    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 55, 0, 55)}):Play()
-end)
-
-openBtn.MouseLeave:Connect(function()
-    TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 50, 0, 50)}):Play()
-end)
-
--- Notifikasi
-local notif = Instance.new("Frame")
-notif.Parent = ScreenGui
-notif.Size = UDim2.new(0, 320, 0, 70)
-notif.Position = UDim2.new(0.5, -160, 0, -80)
-notif.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-notif.BackgroundTransparency = 0.1
-notif.BorderSizePixel = 0
-notif.ClipsDescendants = true
-
-local notifCorner = Instance.new("UICorner")
-notifCorner.Parent = notif
-notifCorner.CornerRadius = UDim.new(0, 12)
-
-local notifText = Instance.new("TextLabel")
-notifText.Parent = notif
-notifText.Size = UDim2.new(1, 0, 0.6, 0)
-notifText.Position = UDim2.new(0, 0, 0, 5)
-notifText.BackgroundTransparency = 1
-notifText.Text = "✨ PUTZZDEV ✨"
-notifText.TextColor3 = themeColor
-notifText.Font = Enum.Font.GothamBlack
-notifText.TextSize = 22
-
-local notifSub = Instance.new("TextLabel")
-notifSub.Parent = notif
-notifSub.Size = UDim2.new(1, 0, 0.3, 0)
-notifSub.Position = UDim2.new(0, 0, 0, 40)
-notifSub.BackgroundTransparency = 1
-notifSub.Text = "Line dari karakter + Fly Simple"
-notifSub.TextColor3 = lineColor
-notifSub.Font = Enum.Font.Gotham
-notifSub.TextSize = 14
-
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -160, 0, 15)}):Play()
-wait(2)
-TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -160, 0, -80)}):Play()
-wait(0.5)
-notif:Destroy()
-
-print("✅ PutzzDev Loaded! - Line dari karakter + Fly Simple | Tekan 'P'")
+print("Putzzdev-HUB + 6 Color")
