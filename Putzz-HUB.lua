@@ -525,6 +525,35 @@ local function changeThemeColor(color)
     end
 end
 
+-- ================== FUNGSI GANTI WARNA RANDOM ==================
+local colorToggleState = false
+local colorList = {
+    Color3.fromRGB(255, 0, 0),    -- Merah
+    Color3.fromRGB(0, 255, 0),    -- Hijau
+    Color3.fromRGB(0, 0, 255),    -- Biru
+    Color3.fromRGB(255, 255, 0),  -- Kuning
+    Color3.fromRGB(255, 165, 0),  -- Orange
+    Color3.fromRGB(255, 192, 203), -- Pink
+    Color3.fromRGB(128, 0, 128),  -- Ungu
+    Color3.fromRGB(0, 255, 255),  -- Cyan
+    Color3.fromRGB(255, 255, 255) -- Putih
+}
+
+local function changeRandomColor()
+    local randomColor = colorList[math.random(1, #colorList)]
+    mainFrame.BackgroundColor3 = randomColor
+    title.TextColor3 = randomColor
+    
+    -- Update gradient
+    local grad = mainFrame:FindFirstChildOfClass("UIGradient")
+    if grad then
+        grad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, randomColor),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+        })
+    end
+end
+
 -- ===== TAB MAIN =====
 createToggle(tabMain, "Fly", false, function(s)
     flyEnabled = s
