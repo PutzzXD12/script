@@ -1,5 +1,5 @@
---// PUTZZDEV-HUB FINAL (ALL FEATURES + INVISIBLE + COLOR DI MOVE)
--- Ukuran: Sedang (350x450), semua fitur siap pakai
+--// PUTZZDEV-HUB FINAL (ALL FEATURES + 8 WARNA MANUAL DI MOVE)
+-- Ukuran: Sedang (350x480), semua fitur siap pakai
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -510,30 +510,16 @@ local function createToggle(parent, text, default, callback)
     return frame
 end
 
--- ================== FUNGSI GANTI WARNA RANDOM ==================
-local colorToggleState = false
-local colorList = {
-    Color3.fromRGB(255, 0, 0),    -- Merah
-    Color3.fromRGB(0, 255, 0),    -- Hijau
-    Color3.fromRGB(0, 0, 255),    -- Biru
-    Color3.fromRGB(255, 255, 0),  -- Kuning
-    Color3.fromRGB(255, 165, 0),  -- Orange
-    Color3.fromRGB(255, 192, 203), -- Pink
-    Color3.fromRGB(128, 0, 128),  -- Ungu
-    Color3.fromRGB(0, 255, 255),  -- Cyan
-    Color3.fromRGB(255, 255, 255) -- Putih
-}
-
-local function changeRandomColor()
-    local randomColor = colorList[math.random(1, #colorList)]
-    mainFrame.BackgroundColor3 = randomColor
-    title.TextColor3 = randomColor
+-- ================== FUNGSI GANTI WARNA MANUAL ==================
+local function changeThemeColor(color)
+    mainFrame.BackgroundColor3 = color
+    title.TextColor3 = color
     
     -- Update gradient
     local grad = mainFrame:FindFirstChildOfClass("UIGradient")
     if grad then
         grad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, randomColor),
+            ColorSequenceKeypoint.new(0, color),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
         })
     end
@@ -569,47 +555,46 @@ createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
 -- ===== TAB MOVE =====
-createButton(tabMove, "⬆ Naik (Fly)", function()
-    if flyEnabled then
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.Velocity = hrp.Velocity + Vector3.new(0, 50, 0) end
-    end
+-- 8 TOMBOL WARNA MANUAL (NAIK/TURUN FLY DIHAPUS)
+
+-- Warna 1: Merah
+createButton(tabMove, "🔴 Merah", function()
+    changeThemeColor(Color3.fromRGB(255, 0, 0))
 end)
 
-createButton(tabMove, "⬇ Turun (Fly)", function()
-    if flyEnabled then
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.Velocity = hrp.Velocity - Vector3.new(0, 50, 0) end
-    end
+-- Warna 2: Hijau
+createButton(tabMove, "🟢 Hijau", function()
+    changeThemeColor(Color3.fromRGB(0, 255, 0))
 end)
 
--- FITUR WARNA DI DALEM TAB MOVE (TOGGLE)
-createToggle(tabMove, "🎨 Ganti Warna Random", false, function(s)
-    colorToggleState = s
-    if s then
-        -- Langsung ganti warna saat toggle ON
-        changeRandomColor()
-    else
-        -- Kembalikan ke warna default
-        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        title.TextColor3 = Color3.fromRGB(0, 200, 255)
-        local grad = mainFrame:FindFirstChildOfClass("UIGradient")
-        if grad then
-            grad.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-            })
-        end
-    end
+-- Warna 3: Biru
+createButton(tabMove, "🔵 Biru", function()
+    changeThemeColor(Color3.fromRGB(0, 0, 255))
 end)
 
--- Loop untuk ganti warna terus menerus jika toggle ON
-task.spawn(function()
-    while task.wait(0.5) do
-        if colorToggleState then
-            changeRandomColor()
-        end
-    end
+-- Warna 4: Kuning
+createButton(tabMove, "🟡 Kuning", function()
+    changeThemeColor(Color3.fromRGB(255, 255, 0))
+end)
+
+-- Warna 5: Orange
+createButton(tabMove, "🟠 Orange", function()
+    changeThemeColor(Color3.fromRGB(255, 165, 0))
+end)
+
+-- Warna 6: Ungu
+createButton(tabMove, "🟣 Ungu", function()
+    changeThemeColor(Color3.fromRGB(128, 0, 128))
+end)
+
+-- Warna 7: Pink
+createButton(tabMove, "💗 Pink", function()
+    changeThemeColor(Color3.fromRGB(255, 192, 203))
+end)
+
+-- Warna 8: Cyan
+createButton(tabMove, "🔷 Cyan", function()
+    changeThemeColor(Color3.fromRGB(0, 255, 255))
 end)
 
 -- ===== TAB MISC =====
@@ -721,4 +706,4 @@ openBtn.MouseButton1Click:Connect(function()
 
 end)
 
-print("Putzzdev-HUB + Color di MOVE")
+print("Putzz developer")
