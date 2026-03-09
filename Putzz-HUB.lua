@@ -1,5 +1,5 @@
---// PUTZZDEV-HUB FINAL (ALL FEATURES + AIMBOT DI MAIN)
--- Ukuran: Sedang (350x480), semua fitur siap pakai
+--// PUTZZDEV-HUB FINAL (INFINITY JUMP + ESP LINE WARNA-WARNI)
+-- Ukuran: Sedang (350x550), semua fitur siap pakai
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -38,9 +38,42 @@ local originalTransparency = {}
 -- AIMBOT
 local aimbotEnabled = false
 local aimbotTarget = nil
-local aimbotFOV = 200
+local aimbotFOV = 150
 local aimbotSmoothness = 5
-local aimbotPart = "Head" -- Target bagian tubuh (Head, HumanoidRootPart, dll)
+local aimbotPart = "Head"
+
+-- INFINITY JUMP
+local infinityJumpEnabled = false
+local jumpCount = 0
+
+-- ================== FUNGSI INFINITY JUMP ==================
+local function onJumpRequest()
+    if infinityJumpEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end
+end
+
+UserInputService.JumpRequest:Connect(onJumpRequest)
+
+-- Reset jump count saat menyentuh tanah
+local function onTouchGround()
+    jumpCount = 0
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid")
+    humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            onTouchGround()
+        end
+    end)
+end)
 
 -- ================== FUNGSI INVISIBLE ==================
 local function setInvisible(state)
@@ -48,7 +81,6 @@ local function setInvisible(state)
     if not char then return end
     
     if state then
-        -- Simpan transparency asli dan set jadi 0.9 (hampir transparan)
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
                 originalTransparency[part] = part.Transparency
@@ -61,7 +93,6 @@ local function setInvisible(state)
             humanoid.Transparency = 0.9
         end
     else
-        -- Kembalikan transparency asli
         for part, trans in pairs(originalTransparency) do
             if part and part.Parent then
                 part.Transparency = trans
@@ -96,8 +127,8 @@ local function createESP(player)
     dist.Visible = false
 
     local line = Drawing.new("Line")
-    line.Thickness = 1
-    line.Color = Color3.fromRGB(255,255,255)
+    line.Thickness = 2
+    line.Color = Color3.fromRGB(255, 0, 0) -- Warna default, nanti di-update
     line.Visible = false
 
     local healthBg = Drawing.new("Square")
@@ -209,25 +240,14 @@ local function getClosestEnemy()
     return closest
 end
 
--- Render stepped untuk aimbot
+-- Rainbow color untuk ESP Line
+local hue = 0
 RunService.RenderStepped:Connect(function()
-    if aimbotEnabled then
-        local target = getClosestEnemy()
-        if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
-            local targetPart = target.Character[aimbotPart]
-            local targetPos = targetPart.Position
-            
-            -- Silent Aim (mengubah arah kamera tanpa menggerakkan mouse)
-            local cameraPos = Camera.CFrame.Position
-            local lookAt = CFrame.lookAt(cameraPos, targetPos)
-            Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / aimbotSmoothness, Enum.EasingStyle.Sine)
-        end
-    end
-end)
-
--- ================== RENDER STEP ESP ==================
-RunService.RenderStepped:Connect(function()
-    -- ESP Box
+    -- Update rainbow color untuk ESP Line
+    hue = (hue + 0.01) % 1
+    local rainbowColor = Color3.fromHSV(hue, 1, 1)
+    
+    -- ESP Box dan lainnya
     for player, esp in pairs(ESPTable) do
         local box, name, dist, line, healthBg, healthFg = unpack(esp)
 
@@ -292,6 +312,7 @@ RunService.RenderStepped:Connect(function()
                     line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
                     line.To = Vector2.new(pos.X, pos.Y)
                     line.Visible = true
+                    line.Color = rainbowColor -- WARNA-WARNI
                 else
                     line.Visible = false
                 end
@@ -316,6 +337,19 @@ RunService.RenderStepped:Connect(function()
             for _, lineData in pairs(lines) do
                 lineData[1].Visible = false
             end
+        end
+    end
+    
+    -- Aimbot
+    if aimbotEnabled then
+        local target = getClosestEnemy()
+        if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
+            local targetPart = target.Character[aimbotPart]
+            local targetPos = targetPart.Position
+            
+            local cameraPos = Camera.CFrame.Position
+            local lookAt = CFrame.lookAt(cameraPos, targetPos)
+            Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / aimbotSmoothness, Enum.EasingStyle.Sine)
         end
     end
 end)
@@ -381,8 +415,8 @@ ScreenGui.DisplayOrder = 100
 -- Main frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 350, 0, 520) -- Tinggi ditambah untuk aimbot
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -260)
+mainFrame.Size = UDim2.new(0, 350, 0, 550)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -441,7 +475,7 @@ local function createTab(name, icon, idx)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -150) -- Kurangi tinggi untuk aimbot
+    content.Size = UDim2.new(1, -10, 1, -180)
     content.Position = UDim2.new(0, 5, 0, 105)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -472,7 +506,7 @@ end
 -- Buat tabs
 local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("COLOR", "✅", 3)
+local tabMove = createTab("MOVE", "🏃", 3)
 local tabMisc = createTab("MISC", "⚙️", 4)
 
 -- Fungsi buat button
@@ -642,7 +676,6 @@ local function changeThemeColor(color)
     mainFrame.BackgroundColor3 = color
     title.TextColor3 = color
     
-    -- Update gradient
     local grad = mainFrame:FindFirstChildOfClass("UIGradient")
     if grad then
         grad.Color = ColorSequence.new({
@@ -675,12 +708,15 @@ createToggle(tabMain, "Invisible", false, function(s)
     setInvisible(s)
 end)
 
--- ===== AIMBOT FEATURES (DI MAIN) =====
+createToggle(tabMain, "Infinity Jump", false, function(s)
+    infinityJumpEnabled = s
+end)
+
 createToggle(tabMain, "Aimbot (Silent Aim)", false, function(s)
     aimbotEnabled = s
 end)
 
-createSlider(tabMain, "Aimbot FOV", 50, 500, 200, function(s)
+createSlider(tabMain, "Aimbot FOV", 50, 500, 150, function(s)
     aimbotFOV = s
 end)
 
@@ -690,7 +726,7 @@ end)
 
 -- ===== TAB ESP =====
 createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+createToggle(tabESP, "ESP Line (Warna-Warni)", false, function(s) lineEnabled = s end)
 createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
@@ -764,7 +800,7 @@ updateCanvas()
 tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
 contents[1].Visible = true
 
--- Notifikasi (TIDAK DIUBAH)
+-- Notifikasi
 local notifyFrame = Instance.new("Frame")
 notifyFrame.Parent = ScreenGui
 notifyFrame.Size = UDim2.new(0, 250, 0, 40)
@@ -793,7 +829,6 @@ wait(0.3)
 notifyFrame:Destroy()
 
 -- ================= OPEN / CLOSE BUTTON =================
-
 local openBtn = Instance.new("TextButton")
 openBtn.Parent = ScreenGui
 openBtn.Size = UDim2.new(0,55,0,55)
@@ -824,7 +859,7 @@ openBtn.MouseButton1Click:Connect(function()
 	if menuOpen then
 		mainFrame.Visible = true
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
-			Position = UDim2.new(0.5,-175,0.5,-260)
+			Position = UDim2.new(0.5,-175,0.5,-275)
 		}):Play()
 	else
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
