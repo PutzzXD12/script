@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB FINAL (ALL FEATURES + 8 WARNA MANUAL DI MOVE)
+--// PUTZZDEV-HUB FINAL (ALL FEATURES + AIMBOT DI MAIN)
 -- Ukuran: Sedang (350x480), semua fitur siap pakai
 
 local Players = game:GetService("Players")
@@ -34,6 +34,13 @@ local noclipEnabled = false
 -- INVISIBLE (Transparan)
 local invisibleEnabled = false
 local originalTransparency = {}
+
+-- AIMBOT
+local aimbotEnabled = false
+local aimbotTarget = nil
+local aimbotFOV = 200
+local aimbotSmoothness = 5
+local aimbotPart = "Head" -- Target bagian tubuh (Head, HumanoidRootPart, dll)
 
 -- ================== FUNGSI INVISIBLE ==================
 local function setInvisible(state)
@@ -173,7 +180,52 @@ local function updateSkeleton(player, lines)
     end
 end
 
--- ================== RENDER STEP ==================
+-- ================== FUNGSI AIMBOT ==================
+local function getClosestEnemy()
+    local closest = nil
+    local shortestDistance = aimbotFOV
+    local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(aimbotPart) then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local part = player.Character[aimbotPart]
+                local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                
+                if onScreen then
+                    local screenPos = Vector2.new(pos.X, pos.Y)
+                    local distance = (mousePos - screenPos).Magnitude
+                    
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closest = player
+                    end
+                end
+            end
+        end
+    end
+    
+    return closest
+end
+
+-- Render stepped untuk aimbot
+RunService.RenderStepped:Connect(function()
+    if aimbotEnabled then
+        local target = getClosestEnemy()
+        if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
+            local targetPart = target.Character[aimbotPart]
+            local targetPos = targetPart.Position
+            
+            -- Silent Aim (mengubah arah kamera tanpa menggerakkan mouse)
+            local cameraPos = Camera.CFrame.Position
+            local lookAt = CFrame.lookAt(cameraPos, targetPos)
+            Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / aimbotSmoothness, Enum.EasingStyle.Sine)
+        end
+    end
+end)
+
+-- ================== RENDER STEP ESP ==================
 RunService.RenderStepped:Connect(function()
     -- ESP Box
     for player, esp in pairs(ESPTable) do
@@ -329,8 +381,8 @@ ScreenGui.DisplayOrder = 100
 -- Main frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 350, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 350, 0, 520) -- Tinggi ditambah untuk aimbot
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -260)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -389,7 +441,7 @@ local function createTab(name, icon, idx)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -110)
+    content.Size = UDim2.new(1, -10, 1, -150) -- Kurangi tinggi untuk aimbot
     content.Position = UDim2.new(0, 5, 0, 105)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -420,7 +472,7 @@ end
 -- Buat tabs
 local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("MOVE", "🏃", 3)
+local tabMove = createTab("COLOR", "✅", 3)
 local tabMisc = createTab("MISC", "⚙️", 4)
 
 -- Fungsi buat button
@@ -510,6 +562,81 @@ local function createToggle(parent, text, default, callback)
     return frame
 end
 
+-- Fungsi buat slider
+local function createSlider(parent, text, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Parent = parent
+    frame.Size = UDim2.new(0.9, 0, 0, 55)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    frame.BorderSizePixel = 0
+
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 8)
+
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.Size = UDim2.new(1, 0, 0.4, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. default
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Parent = frame
+    sliderBg.Size = UDim2.new(0.9, 0, 0.3, 0)
+    sliderBg.Position = UDim2.new(0.05, 0, 0.5, 0)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+    sliderBg.BorderSizePixel = 0
+
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.Parent = sliderBg
+    sliderCorner.CornerRadius = UDim.new(0, 4)
+
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Parent = sliderBg
+    sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    sliderFill.BorderSizePixel = 0
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.Parent = sliderFill
+    fillCorner.CornerRadius = UDim.new(0, 4)
+
+    local value = default
+    local dragging = false
+
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    sliderBg.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local absPos = sliderBg.AbsolutePosition
+            local absSize = sliderBg.AbsoluteSize
+            local relativeX = math.clamp((mousePos.X - absPos.X) / absSize.X, 0, 1)
+            sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+            value = math.floor(min + (max - min) * relativeX)
+            label.Text = text .. ": " .. value
+            callback(value)
+        end
+    end)
+
+    return frame
+end
+
 -- ================== FUNGSI GANTI WARNA MANUAL ==================
 local function changeThemeColor(color)
     mainFrame.BackgroundColor3 = color
@@ -520,35 +647,6 @@ local function changeThemeColor(color)
     if grad then
         grad.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, color),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-        })
-    end
-end
-
--- ================== FUNGSI GANTI WARNA RANDOM ==================
-local colorToggleState = false
-local colorList = {
-    Color3.fromRGB(255, 0, 0),    -- Merah
-    Color3.fromRGB(0, 255, 0),    -- Hijau
-    Color3.fromRGB(0, 0, 255),    -- Biru
-    Color3.fromRGB(255, 255, 0),  -- Kuning
-    Color3.fromRGB(255, 165, 0),  -- Orange
-    Color3.fromRGB(255, 192, 203), -- Pink
-    Color3.fromRGB(128, 0, 128),  -- Ungu
-    Color3.fromRGB(0, 255, 255),  -- Cyan
-    Color3.fromRGB(255, 255, 255) -- Putih
-}
-
-local function changeRandomColor()
-    local randomColor = colorList[math.random(1, #colorList)]
-    mainFrame.BackgroundColor3 = randomColor
-    title.TextColor3 = randomColor
-    
-    -- Update gradient
-    local grad = mainFrame:FindFirstChildOfClass("UIGradient")
-    if grad then
-        grad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, randomColor),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
         })
     end
@@ -577,6 +675,19 @@ createToggle(tabMain, "Invisible", false, function(s)
     setInvisible(s)
 end)
 
+-- ===== AIMBOT FEATURES (DI MAIN) =====
+createToggle(tabMain, "Aimbot (Silent Aim)", false, function(s)
+    aimbotEnabled = s
+end)
+
+createSlider(tabMain, "Aimbot FOV", 50, 500, 200, function(s)
+    aimbotFOV = s
+end)
+
+createSlider(tabMain, "Aimbot Smoothness", 1, 20, 5, function(s)
+    aimbotSmoothness = s
+end)
+
 -- ===== TAB ESP =====
 createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
 createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
@@ -584,44 +695,35 @@ createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
 -- ===== TAB MOVE =====
--- 8 TOMBOL WARNA MANUAL (NAIK/TURUN FLY DIHAPUS)
-
--- Warna 1: Merah
+-- 8 TOMBOL WARNA MANUAL
 createButton(tabMove, "🔴 Merah", function()
     changeThemeColor(Color3.fromRGB(255, 0, 0))
 end)
 
--- Warna 2: Hijau
 createButton(tabMove, "🟢 Hijau", function()
     changeThemeColor(Color3.fromRGB(0, 255, 0))
 end)
 
--- Warna 3: Biru
 createButton(tabMove, "🔵 Biru", function()
     changeThemeColor(Color3.fromRGB(0, 0, 255))
 end)
 
--- Warna 4: Kuning
 createButton(tabMove, "🟡 Kuning", function()
     changeThemeColor(Color3.fromRGB(255, 255, 0))
 end)
 
--- Warna 5: Orange
 createButton(tabMove, "🟠 Orange", function()
     changeThemeColor(Color3.fromRGB(255, 165, 0))
 end)
 
--- Warna 6: Ungu
 createButton(tabMove, "🟣 Ungu", function()
     changeThemeColor(Color3.fromRGB(128, 0, 128))
 end)
 
--- Warna 7: Pink
 createButton(tabMove, "💗 Pink", function()
     changeThemeColor(Color3.fromRGB(255, 192, 203))
 end)
 
--- Warna 8: Cyan
 createButton(tabMove, "🔷 Cyan", function()
     changeThemeColor(Color3.fromRGB(0, 255, 255))
 end)
@@ -662,7 +764,7 @@ updateCanvas()
 tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
 contents[1].Visible = true
 
--- Notifikasi
+-- Notifikasi (TIDAK DIUBAH)
 local notifyFrame = Instance.new("Frame")
 notifyFrame.Parent = ScreenGui
 notifyFrame.Size = UDim2.new(0, 250, 0, 40)
@@ -722,7 +824,7 @@ openBtn.MouseButton1Click:Connect(function()
 	if menuOpen then
 		mainFrame.Visible = true
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
-			Position = UDim2.new(0.5,-175,0.5,-240)
+			Position = UDim2.new(0.5,-175,0.5,-260)
 		}):Play()
 	else
 		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
@@ -735,4 +837,4 @@ openBtn.MouseButton1Click:Connect(function()
 
 end)
 
-print("Putzz developer")
+print("developer by Putzz XD")
