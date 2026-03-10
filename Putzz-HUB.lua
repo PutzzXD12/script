@@ -990,5 +990,4 @@ openBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-print("Putzzdev-HUB Final - Nama GUI KELIATAN FULL (Lebar 380)")
 print("developer by Putzz XD")
