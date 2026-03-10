@@ -860,7 +860,7 @@ infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
                  "📌 Version: 3.0\n" ..
-                 "script versi: FINAL EDITION\n\n" ..
+                 "script type: VIP\n\n" ..
                  "✨ Fitur:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip, Invisible\n" ..
