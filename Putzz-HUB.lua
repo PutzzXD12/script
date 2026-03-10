@@ -1,6 +1,5 @@
---// PUTZZDEV-HUB VERSI FINAL (TINGGI LEBIH PENDEK)
--- Ukuran: 300x470 (lebih pendek, judul keliatan semua)
--- Tombol P bisa digeser, semua fitur tetap sama
+--// PUTZZDEV-HUB VERSI FINAL (LEBAR 380 - NAMA GUI KELIATAN FULL)
+-- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -466,11 +465,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 100
 
--- ========== MAIN FRAME UKURAN LEBIH PENDEK (300x470) ==========
+-- ========== MAIN FRAME (LEBAR 380 - NAMA GUI KELIATAN FULL) ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 300, 0, 470)  -- Tinggi 470 (lebih pendek)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -235)
+mainFrame.Size = UDim2.new(0, 380, 0, 430)  -- Lebar 380 biar nama keliatan
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -215)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -490,21 +489,23 @@ gradient.Color = ColorSequence.new({
 })
 gradient.Rotation = 45
 
--- Header (tinggi 45, judul keliatan semua)
+-- Header (tinggi 45)
 local header = Instance.new("Frame")
 header.Parent = mainFrame
 header.Size = UDim2.new(1, 0, 0, 45)
 header.BackgroundTransparency = 1
 
+-- NAMA GUI BESAR BIAR KELIATAN
 local title = Instance.new("TextLabel")
 title.Parent = header
 title.Size = UDim2.new(1, 0, 1, 0)
 title.BackgroundTransparency = 1
-title.Text = "Putzzdev-HUB"
+title.Text = "Putzzdev-HUB"  -- NAMA GUI
 title.TextColor3 = Color3.fromRGB(0, 200, 255)
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 24  -- Ukuran cukup
+title.TextSize = 30  -- FONT GEDE BIAR KELIATAN BANGET
 title.TextStrokeTransparency = 0.5
+title.TextXAlignment = Enum.TextXAlignment.Center  -- Biar di tengah
 
 -- Tab bar
 local tabBar = Instance.new("Frame")
@@ -525,11 +526,11 @@ local function createTab(name, icon, idx)
     btn.Text = icon.." "..name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
+    btn.TextSize = 14
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -135)  -- Lebih pendek dari sebelumnya
+    content.Size = UDim2.new(1, -10, 1, -115)
     content.Position = UDim2.new(0, 5, 0, 90)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -567,7 +568,7 @@ local tabAbout = createTab("ABOUT", "📋", 4)
 local function createButton(parent, text, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 38)  -- Tinggi 38
+    frame.Size = UDim2.new(0.9, 0, 0, 38)
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -592,7 +593,7 @@ end
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 38)  -- Tinggi 38
+    frame.Size = UDim2.new(0.9, 0, 0, 38)
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -602,7 +603,7 @@ local function createToggle(parent, text, default, callback)
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
-    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Size = UDim2.new(0.7, 0, 1, 0)
     label.Position = UDim2.new(0.05, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
@@ -614,7 +615,7 @@ local function createToggle(parent, text, default, callback)
     local switch = Instance.new("Frame")
     switch.Parent = frame
     switch.Size = UDim2.new(0, 44, 0, 22)
-    switch.Position = UDim2.new(0.8, 0, 0.5, -11)
+    switch.Position = UDim2.new(0.85, 0, 0.5, -11)
     switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
     switch.BorderSizePixel = 0
 
@@ -654,7 +655,7 @@ end
 local function createSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 48)  -- Tinggi 48
+    frame.Size = UDim2.new(0.9, 0, 0, 48)
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -859,12 +860,12 @@ infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
                  "📌 Version: 3.0\n" ..
-                 "script versi: FINAL\n\n" ..
+                 "script versi: FINAL EDITION\n\n" ..
                  "✨ Fitur:\n" ..
-                 "• ESP Box, Line, Health, Skeleton\n" ..
+                 "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip, Invisible\n" ..
                  "• Aimbot + Infinity Jump\n" ..
-                 "• sekian dan terimakasih\n\n" ..
+                 "• 8 Warna Tema Manual\n\n" ..
                  "📞 Kontak: 088976255131"
 infoText.TextColor3 = Color3.new(1, 1, 1)
 infoText.Font = Enum.Font.Gotham
@@ -958,7 +959,7 @@ openBtn.TextSize = 20
 openBtn.AutoButtonColor = true
 openBtn.ZIndex = 10
 openBtn.Active = true
-openBtn.Draggable = true  -- BISA DIGESER!
+openBtn.Draggable = true
 
 local corner = Instance.new("UICorner")
 corner.Parent = openBtn
@@ -973,21 +974,21 @@ stroke.Thickness = 1.5
 local menuOpen = true
 
 openBtn.MouseButton1Click:Connect(function()
-	menuOpen = not menuOpen
+    menuOpen = not menuOpen
 
-	if menuOpen then
-		mainFrame.Visible = true
-		TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-			Position = UDim2.new(0.5, -150, 0.5, -235)
-		}):Play()
-	else
-		TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-			Position = UDim2.new(0.5, -150, 1, 0)
-		}):Play()
-		task.wait(0.25)
-		mainFrame.Visible = false
-	end
+    if menuOpen then
+        mainFrame.Visible = true
+        TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+            Position = UDim2.new(0.5, -190, 0.5, -215)
+        }):Play()
+    else
+        TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+            Position = UDim2.new(0.5, -190, 1, 0)
+        }):Play()
+        task.wait(0.25)
+        mainFrame.Visible = false
+    end
 end)
 
-print("Putzzdev-HUB Versi Final (Tinggi 470, Judul Keliatan)")
+print("Putzzdev-HUB Final - Nama GUI KELIATAN FULL (Lebar 380)")
 print("developer by Putzz XD")
