@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB FINAL (ALL FEATURES + FIX ESP BUG)
+--// PUTZZDEV-HUB FINAL (FIX ESP BUG + TAB ABOUT)
 -- Ukuran: Sedang (350x550), semua fitur siap pakai
 
 local Players = game:GetService("Players")
@@ -370,9 +370,11 @@ Players.PlayerRemoving:Connect(function(player)
     -- Hapus dari ESP Table
     if ESPTable[player] then
         for _, drawing in pairs(ESPTable[player]) do
-            if drawing and drawing.Remove then
-                drawing:Remove()
-            end
+            pcall(function()
+                if drawing and drawing.Remove then
+                    drawing:Remove()
+                end
+            end)
         end
         ESPTable[player] = nil
     end
@@ -380,11 +382,42 @@ Players.PlayerRemoving:Connect(function(player)
     -- Hapus dari Skeleton ESP
     if SkeletonESP[player] then
         for _, lineData in pairs(SkeletonESP[player]) do
-            if lineData[1] and lineData[1].Remove then
-                lineData[1]:Remove()
-            end
+            pcall(function()
+                if lineData[1] and lineData[1].Remove then
+                    lineData[1]:Remove()
+                end
+            end)
         end
         SkeletonESP[player] = nil
+    end
+end)
+
+-- Tambahan proteksi: Bersihkan Drawing yang orphaned setiap beberapa saat
+task.spawn(function()
+    while task.wait(30) do
+        pcall(function()
+            for player, drawings in pairs(ESPTable) do
+                if not player or not player.Parent then
+                    for _, drawing in pairs(drawings) do
+                        if drawing and drawing.Remove then
+                            drawing:Remove()
+                        end
+                    end
+                    ESPTable[player] = nil
+                end
+            end
+            
+            for player, lines in pairs(SkeletonESP) do
+                if not player or not player.Parent then
+                    for _, lineData in pairs(lines) do
+                        if lineData[1] and lineData[1].Remove then
+                            lineData[1]:Remove()
+                        end
+                    end
+                    SkeletonESP[player] = nil
+                end
+            end
+        end)
     end
 end)
 
@@ -529,8 +562,8 @@ end
 -- Buat tabs
 local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("COLORS", "🏃", 3)
-local tabMisc = createTab("MISC", "⚙️", 4)
+local tabMove = createTab("MOVE", "🏃", 3)
+local tabAbout = createTab("ABOUT", "📋", 4) -- Ganti MISC jadi ABOUT
 
 -- Fungsi buat button
 local function createButton(parent, text, callback)
@@ -749,7 +782,7 @@ end)
 
 -- ===== TAB ESP =====
 createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+createToggle(tabESP, "ESP Line (Warna-Warni)", false, function(s) lineEnabled = s end)
 createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
@@ -787,23 +820,95 @@ createButton(tabMove, "🔷 Cyan", function()
     changeThemeColor(Color3.fromRGB(0, 255, 255))
 end)
 
--- ===== TAB MISC =====
-createButton(tabMisc, "Putzz developer", function()
-    for p, _ in pairs(ESPTable) do ESPTable[p] = nil end
-    for p, _ in pairs(SkeletonESP) do SkeletonESP[p] = nil end
-    for _, p in pairs(Players:GetPlayers()) do
-        createESP(p)
-        createSkeleton(p)
-    end
-end)
+-- ===== TAB ABOUT (GANTI MISC) =====
+-- Frame untuk info
+local aboutFrame = Instance.new("Frame")
+aboutFrame.Parent = tabAbout
+aboutFrame.Size = UDim2.new(0.9, 0, 0, 200)
+aboutFrame.Position = UDim2.new(0.05, 0, 0, 10)
+aboutFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+aboutFrame.BackgroundTransparency = 0.3
+aboutFrame.BorderSizePixel = 0
 
-createButton(tabMisc, "📋 Copy TIKTOK", function()
+local aboutCorner = Instance.new("UICorner")
+aboutCorner.Parent = aboutFrame
+aboutCorner.CornerRadius = UDim.new(0, 10)
+
+-- Logo/Title
+local aboutTitle = Instance.new("TextLabel")
+aboutTitle.Parent = aboutFrame
+aboutTitle.Size = UDim2.new(1, 0, 0, 40)
+aboutTitle.Position = UDim2.new(0, 0, 0, 0)
+aboutTitle.BackgroundTransparency = 1
+aboutTitle.Text = "PUTZZ DEVELOPER"
+aboutTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
+aboutTitle.Font = Enum.Font.GothamBlack
+aboutTitle.TextSize = 20
+
+-- Garis pemisah
+local line = Instance.new("Frame")
+line.Parent = aboutFrame
+line.Size = UDim2.new(0.8, 0, 0, 2)
+line.Position = UDim2.new(0.1, 0, 0, 45)
+line.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+line.BorderSizePixel = 0
+
+local lineCorner = Instance.new("UICorner")
+lineCorner.Parent = line
+lineCorner.CornerRadius = UDim.new(0, 2)
+
+-- Info text
+local infoText = Instance.new("TextLabel")
+infoText.Parent = aboutFrame
+infoText.Size = UDim2.new(0.9, 0, 0, 120)
+infoText.Position = UDim2.new(0.05, 0, 0, 55)
+infoText.BackgroundTransparency = 1
+infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
+                 "👤 Developer: Putzz XD\n" ..
+                 "📌 Version: 3.0\n" ..
+                 "script ini free dari Putzz\n\n" ..
+                 "✨ Fitur Unggulan:\n" ..
+                 "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
+                 "• Fly, Speed, NoClip, Invisible\n" ..
+                 "• Aimbot + Infinity Jump\n" ..
+                 "• sekian dan terimakasih\n\n" ..
+                 "📞 Kontak: 088976255131"
+infoText.TextColor3 = Color3.new(1, 1, 1)
+infoText.Font = Enum.Font.Gotham
+infoText.TextSize = 14
+infoText.TextWrapped = true
+infoText.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Tombol copy
+createButton(tabAbout, "📋 Copy TIKTOK", function()
     if setclipboard then
         setclipboard("putzz_mvpp")
+        -- Notifikasi sederhana
+        local notif = Instance.new("TextLabel")
+        notif.Parent = ScreenGui
+        notif.Size = UDim2.new(0, 200, 0, 30)
+        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        notif.BackgroundTransparency = 0.2
+        notif.Text = "✅ TIKTOK copied!"
+        notif.TextColor3 = Color3.new(1,1,1)
+        notif.Font = Enum.Font.GothamBold
+        notif.TextSize = 14
+        notif.BorderSizePixel = 0
+        
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notif
+        notifCorner.CornerRadius = UDim.new(0, 8)
+        
+        task.wait(2)
+        notif:Destroy()
     end
 end)
 
--- Set canvas size
+-- Atur canvas size
+tabAbout.CanvasSize = UDim2.new(0, 0, 0, 350)
+
+-- Set canvas size untuk tab lain
 local function updateCanvas()
     for _, content in pairs(contents) do
         local height = 0
