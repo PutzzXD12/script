@@ -1,5 +1,6 @@
---// PUTZZDEV-HUB FINAL (FIX ESP BUG + TAB ABOUT)
--- Ukuran: Sedang (350x550), semua fitur siap pakai
+--// PUTZZDEV-HUB VERSI SEDENG (300x500) + TOMBOL "P" BISA DIGESER
+-- Ukuran: 300x500 (lebih kecil dari sebelumnya)
+-- Semua fitur tetap sama
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -367,7 +368,6 @@ end)
 
 -- ========== FIX ESP BUG: HAPUS SAAT PLAYER KELUAR ==========
 Players.PlayerRemoving:Connect(function(player)
-    -- Hapus dari ESP Table
     if ESPTable[player] then
         for _, drawing in pairs(ESPTable[player]) do
             pcall(function()
@@ -379,7 +379,6 @@ Players.PlayerRemoving:Connect(function(player)
         ESPTable[player] = nil
     end
     
-    -- Hapus dari Skeleton ESP
     if SkeletonESP[player] then
         for _, lineData in pairs(SkeletonESP[player]) do
             pcall(function()
@@ -392,7 +391,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Tambahan proteksi: Bersihkan Drawing yang orphaned setiap beberapa saat
 task.spawn(function()
     while task.wait(30) do
         pcall(function()
@@ -468,11 +466,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 100
 
--- Main frame
+-- ========== MAIN FRAME UKURAN SEDENG (300x500) ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 350, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 300, 0, 500)  -- Lebih kecil dari sebelumnya
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -492,27 +490,27 @@ gradient.Color = ColorSequence.new({
 })
 gradient.Rotation = 45
 
--- Header
+-- Header (tetap proporsional)
 local header = Instance.new("Frame")
 header.Parent = mainFrame
-header.Size = UDim2.new(1, 0, 0, 55)
+header.Size = UDim2.new(1, 0, 0, 45)  -- Header lebih kecil
 header.BackgroundTransparency = 1
 
 local title = Instance.new("TextLabel")
 title.Parent = header
 title.Size = UDim2.new(1, 0, 1, 0)
 title.BackgroundTransparency = 1
-title.Text = "PUTZZDEV-HUB"
+title.Text = "Putzzdev-HUB"
 title.TextColor3 = Color3.fromRGB(0, 200, 255)
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 28
+title.TextSize = 24  -- Ukuran font disesuaikan
 title.TextStrokeTransparency = 0.5
 
 -- Tab bar
 local tabBar = Instance.new("Frame")
 tabBar.Parent = mainFrame
-tabBar.Size = UDim2.new(1, 0, 0, 45)
-tabBar.Position = UDim2.new(0, 0, 0, 55)
+tabBar.Size = UDim2.new(1, 0, 0, 40)
+tabBar.Position = UDim2.new(0, 0, 0, 45)
 tabBar.BackgroundTransparency = 1
 
 local tabs = {}
@@ -527,12 +525,12 @@ local function createTab(name, icon, idx)
     btn.Text = icon.." "..name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 15
+    btn.TextSize = 13  -- Font tab lebih kecil
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -180)
-    content.Position = UDim2.new(0, 5, 0, 105)
+    content.Size = UDim2.new(1, -10, 1, -165)
+    content.Position = UDim2.new(0, 5, 0, 90)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
     content.ScrollBarThickness = 5
@@ -541,7 +539,7 @@ local function createTab(name, icon, idx)
 
     local layout = Instance.new("UIListLayout")
     layout.Parent = content
-    layout.Padding = UDim.new(0, 8)
+    layout.Padding = UDim.new(0, 6)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
     table.insert(tabs, btn)
@@ -562,14 +560,14 @@ end
 -- Buat tabs
 local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("MOVE", "🏃", 3)
-local tabAbout = createTab("ABOUT", "📋", 4) -- Ganti MISC jadi ABOUT
+local tabColor = createTab("COLOR", "🎨", 3)
+local tabAbout = createTab("ABOUT", "📋", 4)
 
--- Fungsi buat button
+-- Fungsi buat button (ukuran disesuaikan)
 local function createButton(parent, text, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 45)
+    frame.Size = UDim2.new(0.9, 0, 0, 40)  -- Tinggi button 40
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -584,17 +582,17 @@ local function createButton(parent, text, callback)
     btn.Text = text
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
+    btn.TextSize = 15  -- Font button lebih kecil
 
     btn.MouseButton1Click:Connect(callback)
     return frame
 end
 
--- Fungsi buat toggle
+-- Fungsi buat toggle (ukuran disesuaikan)
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 45)
+    frame.Size = UDim2.new(0.9, 0, 0, 40)
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -610,24 +608,24 @@ local function createToggle(parent, text, default, callback)
     label.Text = text
     label.TextColor3 = Color3.new(1, 1, 1)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 16
+    label.TextSize = 15
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local switch = Instance.new("Frame")
     switch.Parent = frame
-    switch.Size = UDim2.new(0, 46, 0, 24)
-    switch.Position = UDim2.new(0.8, 0, 0.5, -12)
+    switch.Size = UDim2.new(0, 44, 0, 22)  -- Switch lebih kecil
+    switch.Position = UDim2.new(0.8, 0, 0.5, -11)
     switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
     switch.BorderSizePixel = 0
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.Parent = switch
-    switchCorner.CornerRadius = UDim.new(0, 12)
+    switchCorner.CornerRadius = UDim.new(0, 11)
 
     local circle = Instance.new("Frame")
     circle.Parent = switch
-    circle.Size = UDim2.new(0, 20, 0, 20)
-    circle.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)
+    circle.Size = UDim2.new(0, 18, 0, 18)  -- Circle lebih kecil
+    circle.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)
     circle.BackgroundColor3 = Color3.new(1, 1, 1)
     circle.BorderSizePixel = 0
 
@@ -645,18 +643,18 @@ local function createToggle(parent, text, default, callback)
     click.MouseButton1Click:Connect(function()
         state = not state
         TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)}):Play()
         callback(state)
     end)
     
     return frame
 end
 
--- Fungsi buat slider
+-- Fungsi buat slider (ukuran disesuaikan)
 local function createSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.Size = UDim2.new(0.9, 0, 0, 55)
+    frame.Size = UDim2.new(0.9, 0, 0, 50)
     frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     frame.BorderSizePixel = 0
 
@@ -672,7 +670,7 @@ local function createSlider(parent, text, min, max, default, callback)
     label.Text = text .. ": " .. default
     label.TextColor3 = Color3.new(1, 1, 1)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 14
+    label.TextSize = 13
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local sliderBg = Instance.new("Frame")
@@ -727,7 +725,7 @@ local function createSlider(parent, text, min, max, default, callback)
     return frame
 end
 
--- ================== FUNGSI GANTI WARNA MANUAL ==================
+-- ================== FUNGSI GANTI WARNA ==================
 local function changeThemeColor(color)
     mainFrame.BackgroundColor3 = color
     title.TextColor3 = color
@@ -768,7 +766,7 @@ createToggle(tabMain, "Infinity Jump", false, function(s)
     infinityJumpEnabled = s
 end)
 
-createToggle(tabMain, "Aimbot (Silent Aim)", false, function(s)
+createToggle(tabMain, "Aimbot", false, function(s)
     aimbotEnabled = s
 end)
 
@@ -776,52 +774,50 @@ createSlider(tabMain, "Aimbot FOV", 50, 500, 150, function(s)
     aimbotFOV = s
 end)
 
-createSlider(tabMain, "Aimbot Smoothness", 1, 20, 5, function(s)
+createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
     aimbotSmoothness = s
 end)
 
 -- ===== TAB ESP =====
 createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-createToggle(tabESP, "ESP Line (Warna-Warni)", false, function(s) lineEnabled = s end)
+createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
 createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
--- ===== TAB MOVE =====
--- 8 TOMBOL WARNA MANUAL
-createButton(tabMove, "🔴 Merah", function()
+-- ===== TAB COLOR =====
+createButton(tabColor, "🔴 Merah", function()
     changeThemeColor(Color3.fromRGB(255, 0, 0))
 end)
 
-createButton(tabMove, "🟢 Hijau", function()
+createButton(tabColor, "🟢 Hijau", function()
     changeThemeColor(Color3.fromRGB(0, 255, 0))
 end)
 
-createButton(tabMove, "🔵 Biru", function()
+createButton(tabColor, "🔵 Biru", function()
     changeThemeColor(Color3.fromRGB(0, 0, 255))
 end)
 
-createButton(tabMove, "🟡 Kuning", function()
+createButton(tabColor, "🟡 Kuning", function()
     changeThemeColor(Color3.fromRGB(255, 255, 0))
 end)
 
-createButton(tabMove, "🟠 Orange", function()
+createButton(tabColor, "🟠 Orange", function()
     changeThemeColor(Color3.fromRGB(255, 165, 0))
 end)
 
-createButton(tabMove, "🟣 Ungu", function()
+createButton(tabColor, "🟣 Ungu", function()
     changeThemeColor(Color3.fromRGB(128, 0, 128))
 end)
 
-createButton(tabMove, "💗 Pink", function()
+createButton(tabColor, "💗 Pink", function()
     changeThemeColor(Color3.fromRGB(255, 192, 203))
 end)
 
-createButton(tabMove, "🔷 Cyan", function()
+createButton(tabColor, "🔷 Cyan", function()
     changeThemeColor(Color3.fromRGB(0, 255, 255))
 end)
 
--- ===== TAB ABOUT (GANTI MISC) =====
--- Frame untuk info
+-- ===== TAB ABOUT =====
 local aboutFrame = Instance.new("Frame")
 aboutFrame.Parent = tabAbout
 aboutFrame.Size = UDim2.new(0.9, 0, 0, 200)
@@ -834,7 +830,6 @@ local aboutCorner = Instance.new("UICorner")
 aboutCorner.Parent = aboutFrame
 aboutCorner.CornerRadius = UDim.new(0, 10)
 
--- Logo/Title
 local aboutTitle = Instance.new("TextLabel")
 aboutTitle.Parent = aboutFrame
 aboutTitle.Size = UDim2.new(1, 0, 0, 40)
@@ -843,9 +838,8 @@ aboutTitle.BackgroundTransparency = 1
 aboutTitle.Text = "PUTZZ DEVELOPER"
 aboutTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
 aboutTitle.Font = Enum.Font.GothamBlack
-aboutTitle.TextSize = 20
+aboutTitle.TextSize = 18
 
--- Garis pemisah
 local line = Instance.new("Frame")
 line.Parent = aboutFrame
 line.Size = UDim2.new(0.8, 0, 0, 2)
@@ -857,7 +851,6 @@ local lineCorner = Instance.new("UICorner")
 lineCorner.Parent = line
 lineCorner.CornerRadius = UDim.new(0, 2)
 
--- Info text
 local infoText = Instance.new("TextLabel")
 infoText.Parent = aboutFrame
 infoText.Size = UDim2.new(0.9, 0, 0, 120)
@@ -866,34 +859,32 @@ infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
                  "📌 Version: 3.0\n" ..
-                 "script ini free dari Putzz\n\n" ..
-                 "✨ Fitur Unggulan:\n" ..
-                 "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
+                 "TYPE script: VIP\n\n" ..
+                 "✨ Fitur:\n" ..
+                 "• ESP Box, Line, Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip, Invisible\n" ..
                  "• Aimbot + Infinity Jump\n" ..
                  "• sekian dan terimakasih\n\n" ..
                  "📞 Kontak: 088976255131"
 infoText.TextColor3 = Color3.new(1, 1, 1)
 infoText.Font = Enum.Font.Gotham
-infoText.TextSize = 14
+infoText.TextSize = 13
 infoText.TextWrapped = true
 infoText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Tombol copy
 createButton(tabAbout, "📋 Copy TIKTOK", function()
     if setclipboard then
         setclipboard("putzz_mvpp")
-        -- Notifikasi sederhana
         local notif = Instance.new("TextLabel")
         notif.Parent = ScreenGui
-        notif.Size = UDim2.new(0, 200, 0, 30)
-        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notif.Size = UDim2.new(0, 180, 0, 30)
+        notif.Position = UDim2.new(0.5, -90, 0.8, 0)
         notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         notif.BackgroundTransparency = 0.2
         notif.Text = "✅ TIKTOK copied!"
         notif.TextColor3 = Color3.new(1,1,1)
         notif.Font = Enum.Font.GothamBold
-        notif.TextSize = 14
+        notif.TextSize = 13
         notif.BorderSizePixel = 0
         
         local notifCorner = Instance.new("UICorner")
@@ -905,16 +896,15 @@ createButton(tabAbout, "📋 Copy TIKTOK", function()
     end
 end)
 
--- Atur canvas size
-tabAbout.CanvasSize = UDim2.new(0, 0, 0, 350)
+tabAbout.CanvasSize = UDim2.new(0, 0, 0, 320)
 
--- Set canvas size untuk tab lain
+-- Update canvas size
 local function updateCanvas()
     for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
             if child:IsA("Frame") then
-                height = height + child.Size.Y.Offset + 8
+                height = height + child.Size.Y.Offset + 6
             end
         end
         content.CanvasSize = UDim2.new(0, 0, 0, height)
@@ -924,15 +914,14 @@ end
 wait(0.1)
 updateCanvas()
 
--- Aktifkan tab pertama
 tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
 contents[1].Visible = true
 
 -- Notifikasi
 local notifyFrame = Instance.new("Frame")
 notifyFrame.Parent = ScreenGui
-notifyFrame.Size = UDim2.new(0, 250, 0, 40)
-notifyFrame.Position = UDim2.new(0.5, -125, 0.9, 0)
+notifyFrame.Size = UDim2.new(0, 220, 0, 35)
+notifyFrame.Position = UDim2.new(0.5, -110, 0.9, 0)
 notifyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 notifyFrame.BackgroundTransparency = 0.1
 notifyFrame.BorderSizePixel = 0
@@ -948,34 +937,36 @@ notifyText.BackgroundTransparency = 1
 notifyText.Text = "developer by Putzz XD"
 notifyText.TextColor3 = Color3.new(1, 1, 1)
 notifyText.Font = Enum.Font.Gotham
-notifyText.TextSize = 16
+notifyText.TextSize = 14
 
-TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -125, 0.8, 0)}):Play()
+TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.8, 0)}):Play()
 wait(2)
-TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -125, 0.9, 0)}):Play()
+TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.9, 0)}):Play()
 wait(0.3)
 notifyFrame:Destroy()
 
--- ================= OPEN / CLOSE BUTTON =================
+-- ================= TOMBOL "P" BISA DIGESER (DRAGGABLE) =================
 local openBtn = Instance.new("TextButton")
 openBtn.Parent = ScreenGui
-openBtn.Size = UDim2.new(0,55,0,55)
-openBtn.Position = UDim2.new(0,20,0.5,-27)
-openBtn.BackgroundColor3 = Color3.fromRGB(0,200,255)
+openBtn.Size = UDim2.new(0, 45, 0, 45)  -- Lebih kecil
+openBtn.Position = UDim2.new(0, 20, 0.5, -22.5)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 openBtn.Text = "P"
-openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.TextColor3 = Color3.new(1, 1, 1)
 openBtn.Font = Enum.Font.GothamBlack
-openBtn.TextSize = 22
+openBtn.TextSize = 20
 openBtn.AutoButtonColor = true
 openBtn.ZIndex = 10
+openBtn.Active = true  -- Biar bisa di-drag
+openBtn.Draggable = true  -- INI YANG MEMBUAT BISA DIGESER!
 
 local corner = Instance.new("UICorner")
 corner.Parent = openBtn
-corner.CornerRadius = UDim.new(1,0)
+corner.CornerRadius = UDim.new(1, 0)
 
 local stroke = Instance.new("UIStroke")
 stroke.Parent = openBtn
-stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Color = Color3.fromRGB(255, 255, 255)
 stroke.Thickness = 1.5
 
 -- toggle
@@ -986,18 +977,16 @@ openBtn.MouseButton1Click:Connect(function()
 
 	if menuOpen then
 		mainFrame.Visible = true
-		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
-			Position = UDim2.new(0.5,-175,0.5,-275)
+		TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+			Position = UDim2.new(0.5, -150, 0.5, -250)
 		}):Play()
 	else
-		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
-			Position = UDim2.new(0.5,-175,1,0)
+		TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+			Position = UDim2.new(0.5, -150, 1, 0)
 		}):Play()
-
 		task.wait(0.25)
 		mainFrame.Visible = false
 	end
-
 end)
 
 print("developer by Putzz XD")
