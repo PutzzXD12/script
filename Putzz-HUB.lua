@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB FINAL (INFINITY JUMP + ESP LINE WARNA-WARNI)
+--// PUTZZDEV-HUB FINAL (ALL FEATURES + FIX ESP BUG)
 -- Ukuran: Sedang (350x550), semua fitur siap pakai
 
 local Players = game:GetService("Players")
@@ -128,7 +128,7 @@ local function createESP(player)
 
     local line = Drawing.new("Line")
     line.Thickness = 2
-    line.Color = Color3.fromRGB(255, 0, 0) -- Warna default, nanti di-update
+    line.Color = Color3.fromRGB(255, 0, 0)
     line.Visible = false
 
     local healthBg = Drawing.new("Square")
@@ -365,6 +365,29 @@ Players.PlayerAdded:Connect(function(p)
     createSkeleton(p)
 end)
 
+-- ========== FIX ESP BUG: HAPUS SAAT PLAYER KELUAR ==========
+Players.PlayerRemoving:Connect(function(player)
+    -- Hapus dari ESP Table
+    if ESPTable[player] then
+        for _, drawing in pairs(ESPTable[player]) do
+            if drawing and drawing.Remove then
+                drawing:Remove()
+            end
+        end
+        ESPTable[player] = nil
+    end
+    
+    -- Hapus dari Skeleton ESP
+    if SkeletonESP[player] then
+        for _, lineData in pairs(SkeletonESP[player]) do
+            if lineData[1] and lineData[1].Remove then
+                lineData[1]:Remove()
+            end
+        end
+        SkeletonESP[player] = nil
+    end
+end)
+
 -- ================== FUNGSI FLY ==================
 local function startFly()
     local char = LocalPlayer.Character
@@ -506,7 +529,7 @@ end
 -- Buat tabs
 local tabMain = createTab("MAIN", "🏠", 1)
 local tabESP = createTab("ESP", "👁️", 2)
-local tabMove = createTab("MOVE", "🏃", 3)
+local tabMove = createTab("COLORS", "🏃", 3)
 local tabMisc = createTab("MISC", "⚙️", 4)
 
 -- Fungsi buat button
@@ -726,7 +749,7 @@ end)
 
 -- ===== TAB ESP =====
 createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-createToggle(tabESP, "ESP Line (Warna-Warni)", false, function(s) lineEnabled = s end)
+createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
 createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
 createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
@@ -765,7 +788,7 @@ createButton(tabMove, "🔷 Cyan", function()
 end)
 
 -- ===== TAB MISC =====
-createButton(tabMisc, "🔄 Refresh ESP", function()
+createButton(tabMisc, "Putzz developer", function()
     for p, _ in pairs(ESPTable) do ESPTable[p] = nil end
     for p, _ in pairs(SkeletonESP) do SkeletonESP[p] = nil end
     for _, p in pairs(Players:GetPlayers()) do
