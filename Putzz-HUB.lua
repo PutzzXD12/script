@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB - INVISIBLE FIX (TELEPORT JAUH + CAMERA OFFSET)
+--// PUTZZDEV-HUB VERSI FINAL (TELEPORT KE PLAYER - SEARCH USERNAME)
 -- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
@@ -31,69 +31,7 @@ local fastSpeed = 60
 -- NoClip
 local noclipEnabled = false
 
--- ================== INVISIBLE (TELEPORT JAUH + CAMERA OFFSET) ==================
-local isEnabled = false
-local character, humanoid, rootPart
-local invisibleConnections = {}
-
--- Update data karakter
-local function updateCharacterData()
-    character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
-end
-
--- Fungsi toggle invisible (hanya dari menu)
-local function toggleInvisible(state)
-    isEnabled = state
-    
-    if isEnabled then
-        -- Aktif, tidak perlu action khusus di sini, heartbeat yang handle
-    else
-        -- Nonaktif, pastikan posisi normal
-        if rootPart and humanoid then
-            humanoid.CameraOffset = Vector3.new(0, 0, 0)
-        end
-    end
-end
-
--- Inisialisasi data karakter
-updateCharacterData()
-
--- Heartbeat connection untuk efek invisible (teleport + camera offset)
-local heartbeatConnection = RunService.Heartbeat:Connect(function()
-    if isEnabled and rootPart and humanoid then
-        local oldCF = rootPart.CFrame
-        local oldOffset = humanoid.CameraOffset
-        local hideCF = oldCF * CFrame.new(0, -200000, 0)
-        
-        -- Pindahkan karakter ke koordinat sangat jauh
-        rootPart.CFrame = hideCF
-        
-        -- Atur CameraOffset agar kita tetap melihat posisi normal
-        humanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
-        
-        -- Tunggu render step sebentar
-        RunService.RenderStepped:Wait()
-        
-        -- Kembalikan ke posisi semula
-        rootPart.CFrame = oldCF
-        humanoid.CameraOffset = oldOffset
-    end
-end)
-table.insert(invisibleConnections, heartbeatConnection)
-
--- Update data karakter saat respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    isEnabled = false
-    task.wait(1)
-    updateCharacterData()
-end)
-
--- Simpan connections ke _G
-_G.a = invisibleConnections
-
--- ================== FUNGSI AIMBOT ==================
+-- AIMBOT
 local aimbotEnabled = false
 local aimbotTarget = nil
 local aimbotFOV = 150
@@ -132,6 +70,93 @@ LocalPlayer.CharacterAdded:Connect(function(char)
         end
     end)
 end)
+
+-- ================== FUNGSI TELEPORT KE PLAYER ==================
+local function teleportToPlayer(username)
+    -- Cari player berdasarkan username (case insensitive)
+    local targetPlayer = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name:lower() == username:lower() or (player.DisplayName and player.DisplayName:lower() == username:lower()) then
+            targetPlayer = player
+            break
+        end
+    end
+    
+    if not targetPlayer then
+        -- Notifikasi player tidak ditemukan
+        local notif = Instance.new("TextLabel")
+        notif.Parent = ScreenGui
+        notif.Size = UDim2.new(0, 200, 0, 30)
+        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notif.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        notif.BackgroundTransparency = 0.2
+        notif.Text = "❌ Player tidak ditemukan!"
+        notif.TextColor3 = Color3.new(1,1,1)
+        notif.Font = Enum.Font.GothamBold
+        notif.TextSize = 13
+        notif.BorderSizePixel = 0
+        
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notif
+        notifCorner.CornerRadius = UDim.new(0, 8)
+        
+        task.wait(2)
+        notif:Destroy()
+        return
+    end
+    
+    -- Cek apakah target punya karakter
+    if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local notif = Instance.new("TextLabel")
+        notif.Parent = ScreenGui
+        notif.Size = UDim2.new(0, 200, 0, 30)
+        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notif.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        notif.BackgroundTransparency = 0.2
+        notif.Text = "❌ Player tidak memiliki karakter!"
+        notif.TextColor3 = Color3.new(1,1,1)
+        notif.Font = Enum.Font.GothamBold
+        notif.TextSize = 13
+        notif.BorderSizePixel = 0
+        
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notif
+        notifCorner.CornerRadius = UDim.new(0, 8)
+        
+        task.wait(2)
+        notif:Destroy()
+        return
+    end
+    
+    -- Teleport karakter kita ke target
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local targetRoot = targetPlayer.Character.HumanoidRootPart
+    myChar.HumanoidRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+    
+    -- Notifikasi sukses
+    local notif = Instance.new("TextLabel")
+    notif.Parent = ScreenGui
+    notif.Size = UDim2.new(0, 200, 0, 30)
+    notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+    notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    notif.BackgroundTransparency = 0.2
+    notif.Text = "✅ Teleport ke " .. targetPlayer.Name
+    notif.TextColor3 = Color3.new(1,1,1)
+    notif.Font = Enum.Font.GothamBold
+    notif.TextSize = 13
+    notif.BorderSizePixel = 0
+    
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.Parent = notif
+    notifCorner.CornerRadius = UDim.new(0, 8)
+    
+    task.wait(2)
+    notif:Destroy()
+end
 
 -- ================== FUNGSI ESP BOX ==================
 local function createESP(player)
@@ -682,6 +707,44 @@ local function createToggle(parent, text, default, callback)
     return frame
 end
 
+-- Fungsi buat textbox (untuk teleport)
+local function createTextBox(parent, placeholder, callback)
+    local frame = Instance.new("Frame")
+    frame.Parent = parent
+    frame.Size = UDim2.new(0.9, 0, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    frame.BorderSizePixel = 0
+
+    local corner = Instance.new("UICorner")
+    corner.Parent = frame
+    corner.CornerRadius = UDim.new(0, 8)
+
+    local textBox = Instance.new("TextBox")
+    textBox.Parent = frame
+    textBox.Size = UDim2.new(1, -10, 1, -10)
+    textBox.Position = UDim2.new(0, 5, 0, 5)
+    textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    textBox.TextColor3 = Color3.new(1, 1, 1)
+    textBox.PlaceholderText = placeholder
+    textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextSize = 15
+    textBox.ClearTextOnFocus = false
+
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.Parent = textBox
+    boxCorner.CornerRadius = UDim.new(0, 6)
+
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed and textBox.Text ~= "" then
+            callback(textBox.Text)
+            textBox.Text = ""
+        end
+    end)
+
+    return frame
+end
+
 -- Fungsi buat slider
 local function createSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
@@ -789,9 +852,9 @@ createToggle(tabMain, "NoClip", false, function(s)
     noclipEnabled = s
 end)
 
--- Toggle Invisible (VIA MENU SAJA)
-createToggle(tabMain, "Invisible", false, function(s)
-    toggleInvisible(s)
+-- TELEPORT FEATURE (MENGGANTIKAN INVISIBLE)
+createTextBox(tabMain, "Masukkan username player...", function(username)
+    teleportToPlayer(username)
 end)
 
 createToggle(tabMain, "Infinity Jump", false, function(s)
@@ -890,11 +953,12 @@ infoText.Position = UDim2.new(0.05, 0, 0, 55)
 infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
-                 "📌 Version: 3.0\n" ..
-                 "script versi: FINAL EDITION\n\n" ..
+                 "📌 Version: 4.0\n" ..
+                 "script type: VIP\n\n" ..
                  "✨ Fitur:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
-                 "• Fly, Speed, NoClip, Invisible (Menu)\n" ..
+                 "• Fly, Speed, NoClip\n" ..
+                 "• Teleport ke Player (ketik username)\n" ..
                  "• Aimbot + Infinity Jump\n" ..
                  "• 8 Warna Tema Manual\n\n" ..
                  "📞 Kontak: 088976255131"
@@ -1021,5 +1085,4 @@ openBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-print("Putzzdev-HUB Final - Invisible Teleport Method")
 print("developer by Putzz XD")
