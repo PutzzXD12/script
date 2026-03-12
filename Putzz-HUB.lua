@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB VERSI FINAL (INVISIBLE ANTI-CRASH)
+--// PUTZZDEV-HUB VERSI FINAL (INVISIBLE VIA MENU SAJA)
 -- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
@@ -31,11 +31,65 @@ local fastSpeed = 60
 -- NoClip
 local noclipEnabled = false
 
--- INVISIBLE (VERSI BARU - ANTI-CRASH)
-local invisibleEnabled = false
-local invisibleConnection = nil
+-- ================== INVISIBLE (VIA MENU SAJA, TANPA TOMBOL G) ==================
+local isEnabled = false
+local parts = {}
+local character, humanoid, rootPart
+local invisibleConnections = {}
 
--- AIMBOT
+-- Update data karakter
+local function updateCharacterData()
+    character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    parts = {}
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") and v.Transparency == 0 then
+            table.insert(parts, v)
+        end
+    end
+end
+
+-- Fungsi toggle invisible (hanya dari menu)
+local function toggleInvisible(state)
+    isEnabled = state
+    
+    -- Set transparency bagian tubuh
+    for _, v in pairs(parts) do
+        v.Transparency = isEnabled and 0.5 or 0
+    end
+end
+
+-- Inisialisasi data karakter
+updateCharacterData()
+
+-- Heartbeat connection untuk efek invisible (teleport)
+local heartbeatConnection = RunService.Heartbeat:Connect(function()
+    if isEnabled and rootPart and humanoid then
+        local oldCF = rootPart.CFrame
+        local oldOffset = humanoid.CameraOffset
+        local hideCF = oldCF * CFrame.new(0, -200000, 0)
+        
+        rootPart.CFrame = hideCF
+        humanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
+        RunService.RenderStepped:Wait()
+        rootPart.CFrame = oldCF
+        humanoid.CameraOffset = oldOffset
+    end
+end)
+table.insert(invisibleConnections, heartbeatConnection)
+
+-- Update data karakter saat respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    isEnabled = false
+    task.wait(1)
+    updateCharacterData()
+end)
+
+-- Simpan connections ke _G
+_G.a = invisibleConnections
+
+-- ================== FUNGSI AIMBOT ==================
 local aimbotEnabled = false
 local aimbotTarget = nil
 local aimbotFOV = 150
@@ -74,54 +128,6 @@ LocalPlayer.CharacterAdded:Connect(function(char)
         end
     end)
 end)
-
--- ================== FUNGSI INVISIBLE BARU ==================
-local function setInvisible(state)
-    invisibleEnabled = state
-    
-    if state then
-        if invisibleConnection then
-            invisibleConnection:Disconnect()
-        end
-        
-        invisibleConnection = RunService.Heartbeat:Connect(function()
-            local char = LocalPlayer.Character
-            if not char then return end
-            
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            
-            if humanoid and rootPart then
-                local oldCF = rootPart.CFrame
-                local oldOffset = humanoid.CameraOffset
-                local hideCF = oldCF * CFrame.new(0, -200000, 0)  -- Kirim karakter jauh ke bawah
-
-                rootPart.CFrame = hideCF
-                humanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
-
-                RunService.RenderStepped:Wait()
-
-                rootPart.CFrame = oldCF
-                humanoid.CameraOffset = oldOffset
-            end
-        end)
-    else
-        if invisibleConnection then
-            invisibleConnection:Disconnect()
-            invisibleConnection = nil
-        end
-        
-        -- Kembalikan posisi normal
-        local char = LocalPlayer.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if humanoid and rootPart then
-                humanoid.CameraOffset = Vector3.new(0, 0, 0)
-            end
-        end
-    end
-end
 
 -- ================== FUNGSI ESP BOX ==================
 local function createESP(player)
@@ -779,8 +785,9 @@ createToggle(tabMain, "NoClip", false, function(s)
     noclipEnabled = s
 end)
 
+-- Toggle Invisible (VIA MENU SAJA, TANPA TOMBOL G)
 createToggle(tabMain, "Invisible", false, function(s)
-    setInvisible(s)
+    toggleInvisible(s)
 end)
 
 createToggle(tabMain, "Infinity Jump", false, function(s)
@@ -880,12 +887,12 @@ infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
                  "📌 Version: 4.0\n" ..
-                 "script type: VIP\n\n" ..
-                 "✨ Fitur² VIP:\n" ..
+                 "type script: VIP\n\n" ..
+                 "✨ Fitur:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
-                 "• Fly, Speed, NoClip, Invisible\n" ..
+                 "• Fly, Speed, NoClip, Invisible (Menu)\n" ..
                  "• Aimbot + Infinity Jump\n" ..
-                 "• 8 Warna Tema Manual\n\n" ..
+                 "• script VIP\n\n" ..
                  "📞 Kontak: 088976255131"
 infoText.TextColor3 = Color3.new(1, 1, 1)
 infoText.Font = Enum.Font.Gotham
