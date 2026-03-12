@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB VERSI FINAL (INVISIBLE VIA MENU SAJA)
+--// PUTZZDEV-HUB - INVISIBLE FIX (TELEPORT JAUH + CAMERA OFFSET)
 -- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
@@ -31,9 +31,8 @@ local fastSpeed = 60
 -- NoClip
 local noclipEnabled = false
 
--- ================== INVISIBLE (VIA MENU SAJA, TANPA TOMBOL G) ==================
+-- ================== INVISIBLE (TELEPORT JAUH + CAMERA OFFSET) ==================
 local isEnabled = false
-local parts = {}
 local character, humanoid, rootPart
 local invisibleConnections = {}
 
@@ -42,37 +41,42 @@ local function updateCharacterData()
     character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
-    parts = {}
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("BasePart") and v.Transparency == 0 then
-            table.insert(parts, v)
-        end
-    end
 end
 
 -- Fungsi toggle invisible (hanya dari menu)
 local function toggleInvisible(state)
     isEnabled = state
     
-    -- Set transparency bagian tubuh
-    for _, v in pairs(parts) do
-        v.Transparency = isEnabled and 0.5 or 0
+    if isEnabled then
+        -- Aktif, tidak perlu action khusus di sini, heartbeat yang handle
+    else
+        -- Nonaktif, pastikan posisi normal
+        if rootPart and humanoid then
+            humanoid.CameraOffset = Vector3.new(0, 0, 0)
+        end
     end
 end
 
 -- Inisialisasi data karakter
 updateCharacterData()
 
--- Heartbeat connection untuk efek invisible (teleport)
+-- Heartbeat connection untuk efek invisible (teleport + camera offset)
 local heartbeatConnection = RunService.Heartbeat:Connect(function()
     if isEnabled and rootPart and humanoid then
         local oldCF = rootPart.CFrame
         local oldOffset = humanoid.CameraOffset
         local hideCF = oldCF * CFrame.new(0, -200000, 0)
         
+        -- Pindahkan karakter ke koordinat sangat jauh
         rootPart.CFrame = hideCF
+        
+        -- Atur CameraOffset agar kita tetap melihat posisi normal
         humanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
+        
+        -- Tunggu render step sebentar
         RunService.RenderStepped:Wait()
+        
+        -- Kembalikan ke posisi semula
         rootPart.CFrame = oldCF
         humanoid.CameraOffset = oldOffset
     end
@@ -785,7 +789,7 @@ createToggle(tabMain, "NoClip", false, function(s)
     noclipEnabled = s
 end)
 
--- Toggle Invisible (VIA MENU SAJA, TANPA TOMBOL G)
+-- Toggle Invisible (VIA MENU SAJA)
 createToggle(tabMain, "Invisible", false, function(s)
     toggleInvisible(s)
 end)
@@ -886,13 +890,13 @@ infoText.Position = UDim2.new(0.05, 0, 0, 55)
 infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
-                 "📌 Version: 4.0\n" ..
-                 "type script: VIP\n\n" ..
+                 "📌 Version: 3.0\n" ..
+                 "script versi: FINAL EDITION\n\n" ..
                  "✨ Fitur:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip, Invisible (Menu)\n" ..
                  "• Aimbot + Infinity Jump\n" ..
-                 "• script VIP\n\n" ..
+                 "• 8 Warna Tema Manual\n\n" ..
                  "📞 Kontak: 088976255131"
 infoText.TextColor3 = Color3.new(1, 1, 1)
 infoText.Font = Enum.Font.Gotham
@@ -1017,4 +1021,5 @@ openBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+print("Putzzdev-HUB Final - Invisible Teleport Method")
 print("developer by Putzz XD")
