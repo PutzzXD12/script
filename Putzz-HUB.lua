@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB VERSI FINAL (TELEPORT KE PLAYER - SEARCH USERNAME)
+--// PUTZZDEV-HUB VERSI FINAL (TELEPORT DENGAN TOMBOL + NAMA TERSIMPAN)
 -- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
@@ -41,6 +41,9 @@ local aimbotPart = "Head"
 -- INFINITY JUMP
 local infinityJumpEnabled = false
 local jumpCount = 0
+
+-- TELEPORT
+local targetUsername = ""  -- Menyimpan username target
 
 -- ================== FUNGSI INFINITY JUMP ==================
 local function onJumpRequest()
@@ -524,8 +527,8 @@ ScreenGui.DisplayOrder = 100
 -- ========== MAIN FRAME (LEBAR 380 - NAMA GUI KELIATAN FULL) ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 380, 0, 430)
-mainFrame.Position = UDim2.new(0.5, -190, 0.5, -215)
+mainFrame.Size = UDim2.new(0, 380, 0, 470)  -- Tinggi ditambah untuk tombol teleport
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -235)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -586,7 +589,7 @@ local function createTab(name, icon, idx)
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1, -10, 1, -115)
+    content.Size = UDim2.new(1, -10, 1, -155)  -- Adjusted untuk tombol teleport
     content.Position = UDim2.new(0, 5, 0, 90)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
@@ -707,7 +710,7 @@ local function createToggle(parent, text, default, callback)
     return frame
 end
 
--- Fungsi buat textbox (untuk teleport)
+-- Fungsi buat textbox (untuk teleport) - NAMANYA TIDAK ILANG
 local function createTextBox(parent, placeholder, callback)
     local frame = Instance.new("Frame")
     frame.Parent = parent
@@ -730,19 +733,22 @@ local function createTextBox(parent, placeholder, callback)
     textBox.Font = Enum.Font.Gotham
     textBox.TextSize = 15
     textBox.ClearTextOnFocus = false
+    textBox.Text = targetUsername  -- Set text dari variabel target
 
     local boxCorner = Instance.new("UICorner")
     boxCorner.Parent = textBox
     boxCorner.CornerRadius = UDim.new(0, 6)
 
     textBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed and textBox.Text ~= "" then
-            callback(textBox.Text)
-            textBox.Text = ""
+        if textBox.Text ~= "" then
+            targetUsername = textBox.Text  -- Simpan ke variabel global
+            if enterPressed then
+                callback(targetUsername)  -- Langsung teleport jika enter
+            end
         end
     end)
 
-    return frame
+    return frame, textBox
 end
 
 -- Fungsi buat slider
@@ -835,6 +841,8 @@ local function changeThemeColor(color)
 end
 
 -- ===== TAB MAIN =====
+local yPos = 10
+
 createToggle(tabMain, "Fly", false, function(s)
     flyEnabled = s
     if s then startFly() else stopFly() end
@@ -852,11 +860,100 @@ createToggle(tabMain, "NoClip", false, function(s)
     noclipEnabled = s
 end)
 
--- TELEPORT FEATURE (MENGGANTIKAN INVISIBLE)
-createTextBox(tabMain, "Masukkan username player...", function(username)
-    teleportToPlayer(username)
+-- TELEPORT FEATURE - TextBox + Tombol
+local teleportFrame = Instance.new("Frame")
+teleportFrame.Parent = tabMain
+teleportFrame.Size = UDim2.new(0.9, 0, 0, 90)  -- Frame untuk menampung textbox + tombol
+teleportFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+teleportFrame.BackgroundTransparency = 0.3
+teleportFrame.BorderSizePixel = 0
+
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.Parent = teleportFrame
+teleportCorner.CornerRadius = UDim.new(0, 10)
+
+-- Label "Teleport ke Player"
+local teleportLabel = Instance.new("TextLabel")
+teleportLabel.Parent = teleportFrame
+teleportLabel.Size = UDim2.new(1, 0, 0, 20)
+teleportLabel.Position = UDim2.new(0, 0, 0, 0)
+teleportLabel.BackgroundTransparency = 1
+teleportLabel.Text = "📍 Teleport ke Player"
+teleportLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+teleportLabel.Font = Enum.Font.GothamBold
+teleportLabel.TextSize = 14
+
+-- TextBox untuk username (Nama TERSIMPAN)
+local textBox = Instance.new("TextBox")
+textBox.Parent = teleportFrame
+textBox.Size = UDim2.new(0.9, 0, 0, 35)
+textBox.Position = UDim2.new(0.05, 0, 0, 25)
+textBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+textBox.TextColor3 = Color3.new(1, 1, 1)
+textBox.PlaceholderText = "Masukkan username..."
+textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+textBox.Font = Enum.Font.Gotham
+textBox.TextSize = 14
+textBox.ClearTextOnFocus = false
+textBox.Text = targetUsername  -- Set dari variabel global
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.Parent = textBox
+boxCorner.CornerRadius = UDim.new(0, 8)
+
+-- Tombol Teleport
+local teleportBtn = Instance.new("TextButton")
+teleportBtn.Parent = teleportFrame
+teleportBtn.Size = UDim2.new(0.9, 0, 0, 30)
+teleportBtn.Position = UDim2.new(0.05, 0, 0, 65)
+teleportBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+teleportBtn.Text = "🚀 Teleport"
+teleportBtn.TextColor3 = Color3.new(1, 1, 1)
+teleportBtn.Font = Enum.Font.GothamBold
+teleportBtn.TextSize = 14
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.Parent = teleportBtn
+btnCorner.CornerRadius = UDim.new(0, 8)
+
+-- Event untuk menyimpan text saat berubah
+textBox.FocusLost:Connect(function(enterPressed)
+    if textBox.Text ~= "" then
+        targetUsername = textBox.Text  -- Simpan ke variabel global
+        if enterPressed then
+            teleportToPlayer(targetUsername)  -- Teleport jika enter
+        end
+    end
 end)
 
+-- Event tombol teleport
+teleportBtn.MouseButton1Click:Connect(function()
+    if targetUsername ~= "" then
+        teleportToPlayer(targetUsername)
+    else
+        -- Notifikasi jika belum ada target
+        local notif = Instance.new("TextLabel")
+        notif.Parent = ScreenGui
+        notif.Size = UDim2.new(0, 200, 0, 30)
+        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notif.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+        notif.BackgroundTransparency = 0.2
+        notif.Text = "⚠️ Masukkan username dulu!"
+        notif.TextColor3 = Color3.new(1,1,1)
+        notif.Font = Enum.Font.GothamBold
+        notif.TextSize = 13
+        notif.BorderSizePixel = 0
+        
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notif
+        notifCorner.CornerRadius = UDim.new(0, 8)
+        
+        task.wait(2)
+        notif:Destroy()
+    end
+end)
+
+-- Toggle dan slider di bawah teleport frame
 createToggle(tabMain, "Infinity Jump", false, function(s)
     infinityJumpEnabled = s
 end)
@@ -953,12 +1050,12 @@ infoText.Position = UDim2.new(0.05, 0, 0, 55)
 infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
-                 "📌 Version: 4.0\n" ..
+                 "📌 Version: 4.1\n" ..
                  "script type: VIP\n\n" ..
                  "✨ Fitur:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip\n" ..
-                 "• Teleport ke Player (ketik username)\n" ..
+                 "• Teleport ke Player (ketik + tombol)\n" ..
                  "• Aimbot + Infinity Jump\n" ..
                  "• 8 Warna Tema Manual\n\n" ..
                  "📞 Kontak: 088976255131"
@@ -1074,7 +1171,7 @@ openBtn.MouseButton1Click:Connect(function()
     if menuOpen then
         mainFrame.Visible = true
         TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-            Position = UDim2.new(0.5, -190, 0.5, -215)
+            Position = UDim2.new(0.5, -190, 0.5, -235)
         }):Play()
     else
         TweenService:Create(mainFrame, TweenInfo.new(0.25), {
