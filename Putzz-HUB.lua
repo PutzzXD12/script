@@ -1,4 +1,4 @@
---// PUTZZDEV-HUB VERSI FINAL (LEBAR 380 - NAMA GUI KELIATAN FULL)
+--// PUTZZDEV-HUB VERSI FINAL (INVISIBLE ANTI-CRASH)
 -- Lebar 380 x Tinggi 430, nama Putzzdev-HUB keliatan semua
 
 local Players = game:GetService("Players")
@@ -31,9 +31,9 @@ local fastSpeed = 60
 -- NoClip
 local noclipEnabled = false
 
--- INVISIBLE (Transparan)
+-- INVISIBLE (VERSI BARU - ANTI-CRASH)
 local invisibleEnabled = false
-local originalTransparency = {}
+local invisibleConnection = nil
 
 -- AIMBOT
 local aimbotEnabled = false
@@ -75,30 +75,51 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end)
 end)
 
--- ================== FUNGSI INVISIBLE ==================
+-- ================== FUNGSI INVISIBLE BARU ==================
 local function setInvisible(state)
-    local char = LocalPlayer.Character
-    if not char then return end
+    invisibleEnabled = state
     
     if state then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                originalTransparency[part] = part.Transparency
-                part.Transparency = 0.9
+        if invisibleConnection then
+            invisibleConnection:Disconnect()
+        end
+        
+        invisibleConnection = RunService.Heartbeat:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local rootPart = char:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and rootPart then
+                local oldCF = rootPart.CFrame
+                local oldOffset = humanoid.CameraOffset
+                local hideCF = oldCF * CFrame.new(0, -200000, 0)  -- Kirim karakter jauh ke bawah
+
+                rootPart.CFrame = hideCF
+                humanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
+
+                RunService.RenderStepped:Wait()
+
+                rootPart.CFrame = oldCF
+                humanoid.CameraOffset = oldOffset
             end
-        end
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            originalTransparency[humanoid] = humanoid.Transparency
-            humanoid.Transparency = 0.9
-        end
+        end)
     else
-        for part, trans in pairs(originalTransparency) do
-            if part and part.Parent then
-                part.Transparency = trans
+        if invisibleConnection then
+            invisibleConnection:Disconnect()
+            invisibleConnection = nil
+        end
+        
+        -- Kembalikan posisi normal
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local rootPart = char:FindFirstChild("HumanoidRootPart")
+            if humanoid and rootPart then
+                humanoid.CameraOffset = Vector3.new(0, 0, 0)
             end
         end
-        table.clear(originalTransparency)
     end
 end
 
@@ -468,7 +489,7 @@ ScreenGui.DisplayOrder = 100
 -- ========== MAIN FRAME (LEBAR 380 - NAMA GUI KELIATAN FULL) ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = ScreenGui
-mainFrame.Size = UDim2.new(0, 380, 0, 430)  -- Lebar 380 biar nama keliatan
+mainFrame.Size = UDim2.new(0, 380, 0, 430)
 mainFrame.Position = UDim2.new(0.5, -190, 0.5, -215)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 mainFrame.BackgroundTransparency = 0.1
@@ -489,23 +510,23 @@ gradient.Color = ColorSequence.new({
 })
 gradient.Rotation = 45
 
--- Header (tinggi 45)
+-- Header
 local header = Instance.new("Frame")
 header.Parent = mainFrame
 header.Size = UDim2.new(1, 0, 0, 45)
 header.BackgroundTransparency = 1
 
--- NAMA GUI BESAR BIAR KELIATAN
+-- NAMA GUI BESAR
 local title = Instance.new("TextLabel")
 title.Parent = header
 title.Size = UDim2.new(1, 0, 1, 0)
 title.BackgroundTransparency = 1
-title.Text = "Putzzdev-HUB"  -- NAMA GUI
+title.Text = "Putzzdev-HUB"
 title.TextColor3 = Color3.fromRGB(0, 200, 255)
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 30  -- FONT GEDE BIAR KELIATAN BANGET
+title.TextSize = 30
 title.TextStrokeTransparency = 0.5
-title.TextXAlignment = Enum.TextXAlignment.Center  -- Biar di tengah
+title.TextXAlignment = Enum.TextXAlignment.Center
 
 -- Tab bar
 local tabBar = Instance.new("Frame")
@@ -759,7 +780,6 @@ createToggle(tabMain, "NoClip", false, function(s)
 end)
 
 createToggle(tabMain, "Invisible", false, function(s)
-    invisibleEnabled = s
     setInvisible(s)
 end)
 
@@ -859,9 +879,9 @@ infoText.Position = UDim2.new(0.05, 0, 0, 55)
 infoText.BackgroundTransparency = 1
 infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                  "👤 Developer: Putzz XD\n" ..
-                 "📌 Version: 3.0\n" ..
+                 "📌 Version: 4.0\n" ..
                  "script type: VIP\n\n" ..
-                 "✨ Fitur:\n" ..
+                 "✨ Fitur² VIP:\n" ..
                  "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
                  "• Fly, Speed, NoClip, Invisible\n" ..
                  "• Aimbot + Infinity Jump\n" ..
