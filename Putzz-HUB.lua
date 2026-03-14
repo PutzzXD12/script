@@ -1,11 +1,30 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 4.0 (Key System Integrated)
+-- Version: 4.0 (Expiry Format 1d/2d/3d + Timer Display)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
-local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin key kamu
-local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Ganti dengan GitHub Pages kamu nanti
+local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin berisi 3 key
+local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Website untuk ambil key
 local SCRIPT_NAME = "Putzzdev-HUB"
+
+-- ATUR EXPIRY DI SINI (pakai format: "1d", "2d", "3d", "7d", "30d")
+local KEY_EXPIRY = {
+    ["Putzzdev-KEYpertama"] = "3d",  -- 3 hari
+    ["Putzzdev-KEYkedua"]   = "2d",  -- 2 hari
+    ["PUTZZDEV-HUB-X7K9-L2Q8"]  = "1d",  -- 1 hari
+    ["Putzzdev-VIP"]        = "7d",  -- 7 hari
+    ["Putzzdev-ADMIN"]      = "30d"  -- 30 hari
+}
+
+-- File untuk menyimpan data key (otomatis)
+local SAVE_FILE = "putzz_key_data.txt"
+
+-- Database key yang sudah aktif
+local activeKeys = {}
+
+-- Variabel untuk menyimpan key yang sedang digunakan
+local currentUserKey = nil
+local keyExpiryTime = 0
 
 -- ================== LOAD SERVICES ==================
 local Players = game:GetService("Players")
@@ -51,12 +70,138 @@ local jumpCount = 0
 
 -- ================== FUNGSI KEY SYSTEM ==================
 
--- Fungsi mengambil key dari Pastebin
-local function getKeyFromPastebin()
-    local success, key = pcall(function()
+-- Konversi format expiry (contoh: "3d" -> 3 hari)
+local function parseExpiry(expiryStr)
+    local num = expiryStr:match("(%d+)")
+    return tonumber(num) or 0
+end
+
+-- Load data key dari file
+local function loadKeyData()
+    if isfile and isfile(SAVE_FILE) then
+        local success, content = pcall(function()
+            return readfile(SAVE_FILE)
+        end)
+        if success and content and content ~= "" then
+            local success2, data = pcall(function()
+                return game:GetService("HttpService"):JSONDecode(content)
+            end)
+            if success2 then
+                activeKeys = data
+            end
+        end
+    end
+end
+
+-- Save data key ke file
+local function saveKeyData()
+    if writefile then
+        local success, json = pcall(function()
+            return game:GetService("HttpService"):JSONEncode(activeKeys)
+        end)
+        if success then
+            writefile(SAVE_FILE, json)
+        end
+    end
+end
+
+-- Fungsi ambil key dari Pastebin
+local function getKeysFromPastebin()
+    local success, data = pcall(function()
         return game:HttpGet(KEY_URL)
     end)
-    return success and key:gsub("%s+", "") or nil
+    
+    if success and data then
+        local keys = {}
+        for key in data:gmatch("[^\r\n]+") do
+            table.insert(keys, key:gsub("%s+", ""))
+        end
+        return keys
+    end
+    return nil
+end
+
+-- Fungsi dapatkan sisa waktu dalam format hari dan jam
+local function getTimeRemaining(expiryTimestamp)
+    local currentTime = os.time()
+    local remaining = expiryTimestamp - currentTime
+    
+    if remaining <= 0 then
+        return 0, 0, "Expired"
+    end
+    
+    local days = math.floor(remaining / 86400)
+    local hours = math.floor((remaining % 86400) / 3600)
+    
+    if days > 0 then
+        return days, hours, days .. " hari " .. hours .. " jam"
+    else
+        return 0, hours, hours .. " jam"
+    end
+end
+
+-- Fungsi cek expiry key
+local function checkKeyExpiry(inputKey)
+    loadKeyData()
+    
+    -- Cek apakah key terdaftar di Pastebin
+    local validKeys = getKeysFromPastebin()
+    if not validKeys then
+        return false, "Gagal mengambil key dari server"
+    end
+    
+    -- Validasi key
+    local keyFound = false
+    for _, key in ipairs(validKeys) do
+        if key == inputKey then
+            keyFound = true
+            break
+        end
+    end
+    
+    if not keyFound then
+        return false, "Key tidak terdaftar!"
+    end
+    
+    -- Cek apakah key punya expiry setting
+    if not KEY_EXPIRY[inputKey] then
+        return false, "Key tidak memiliki setting expiry!"
+    end
+    
+    local expiryDays = parseExpiry(KEY_EXPIRY[inputKey])
+    
+    -- Cek apakah key sudah pernah dipakai
+    if activeKeys[inputKey] then
+        -- Key sudah dipakai, cek expiry
+        local firstUsed = activeKeys[inputKey].firstUsed
+        local currentTime = os.time()
+        local expiryTime = firstUsed + (expiryDays * 86400)
+        
+        if currentTime > expiryTime then
+            return false, "Key sudah expired! (" .. expiryDays .. " hari)"
+        else
+            local days, hours, timeStr = getTimeRemaining(expiryTime)
+            -- Simpan expiry time untuk ditampilkan di menu
+            keyExpiryTime = expiryTime
+            currentUserKey = inputKey
+            return true, "Key valid! Sisa " .. timeStr
+        end
+    else
+        -- Key baru pertama kali dipakai
+        local currentTime = os.time()
+        activeKeys[inputKey] = {
+            firstUsed = currentTime,
+            key = inputKey,
+            expiryDays = expiryDays
+        }
+        saveKeyData()
+        
+        local expiryTime = currentTime + (expiryDays * 86400)
+        keyExpiryTime = expiryTime
+        currentUserKey = inputKey
+        
+        return true, "Key valid! Berlaku " .. expiryDays .. " hari"
+    end
 end
 
 -- Fungsi notifikasi
@@ -111,8 +256,8 @@ KeyGui.DisplayOrder = 999
 -- Frame utama key system
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 380)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
+KeyFrame.Size = UDim2.new(0, 400, 0, 420)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
@@ -177,7 +322,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🌐 BUKA WEBSITE'\n2. Copy key dari website\n3. Masukkan key di sini\n4. Klik VERIFY\n\n⏰ Key berlaku 1 hari"
+InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY' di bawah\n2. Website akan terbuka\n3. Copy key dari website\npilih yang1d\njika ingin lebih buy\nkarna ini script VIP"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -201,26 +346,11 @@ local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
 KeyBoxCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Website
-local WebsiteBtn = Instance.new("TextButton")
-WebsiteBtn.Parent = KeyFrame
-WebsiteBtn.Size = UDim2.new(0.8, 0, 0, 45)
-WebsiteBtn.Position = UDim2.new(0.1, 0, 0.62, 0)
-WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-WebsiteBtn.Text = "🌐 BUKA WEBSITE AMBIL KEY"
-WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
-WebsiteBtn.Font = Enum.Font.GothamBold
-WebsiteBtn.TextSize = 16
-
-local WebsiteCorner = Instance.new("UICorner")
-WebsiteCorner.Parent = WebsiteBtn
-WebsiteCorner.CornerRadius = UDim.new(0, 8)
-
 -- Tombol Verify
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
-VerifyBtn.Size = UDim2.new(0.38, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.1, 0, 0.78, 0)
+VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
+VerifyBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 VerifyBtn.Text = "✅ VERIFY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -231,38 +361,38 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Close (awalnya hidden)
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = KeyFrame
-CloseBtn.Size = UDim2.new(0.38, 0, 0, 45)
-CloseBtn.Position = UDim2.new(0.52, 0, 0.78, 0)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-CloseBtn.Text = "❌ CLOSE"
-CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 16
-CloseBtn.Visible = false
+-- Tombol Website (kecil)
+local WebsiteBtn = Instance.new("TextButton")
+WebsiteBtn.Parent = KeyFrame
+WebsiteBtn.Size = UDim2.new(0, 120, 0, 30)
+WebsiteBtn.Position = UDim2.new(0.5, -60, 0.74, 0)
+WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+WebsiteBtn.Text = "🔑 GET KEY"
+WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
+WebsiteBtn.Font = Enum.Font.GothamBold
+WebsiteBtn.TextSize = 14
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.Parent = CloseBtn
-CloseCorner.CornerRadius = UDim.new(0, 8)
+local WebsiteCorner = Instance.new("UICorner")
+WebsiteCorner.Parent = WebsiteBtn
+WebsiteCorner.CornerRadius = UDim.new(0, 6)
 
 -- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Parent = KeyFrame
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.9, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 40)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.82, 0)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Menunggu key..."
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 13
+StatusLabel.TextWrapped = true
 
 -- Loading Circle
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.96, -15)
+LoadingCircle.Position = UDim2.new(0.5, -15, 0.92, -15)
 LoadingCircle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 LoadingCircle.BackgroundTransparency = 1
 LoadingCircle.Visible = false
@@ -286,23 +416,14 @@ local function showLoading(show)
     end
 end
 
--- Fungsi verifikasi key
-local function verifyKey(inputKey)
-    local correctKey = getKeyFromPastebin()
-    if not correctKey then
-        return false, "Gagal mengambil key dari server"
-    end
-    return inputKey == correctKey, correctKey
-end
-
 -- Event tombol website
 WebsiteBtn.MouseButton1Click:Connect(function()
     local success = pcall(function()
         if setclipboard then
             setclipboard(WEBSITE_URL)
-            StatusLabel.Text = "✅ URL website sudah di copy! Buka browser dan paste"
+            StatusLabel.Text = "✅ Link website sudah di copy! Buka browser"
             StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            showNotification("✅ URL DISALIN!", 3, Color3.fromRGB(0, 150, 0))
+            showNotification("✅ LINK DISALIN!", "Buka browser dan paste linknya", 2, Color3.fromRGB(0, 150, 0))
         else
             StatusLabel.Text = "🌐 Website: " .. WEBSITE_URL
             StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
@@ -325,20 +446,19 @@ VerifyBtn.MouseButton1Click:Connect(function()
     
     task.wait(0.5)
     
-    local isValid, key = verifyKey(inputKey)
+    local isValid, message = checkKeyExpiry(inputKey)
     showLoading(false)
     
     if isValid then
-        StatusLabel.Text = "✅ Key valid! Loading script..."
+        StatusLabel.Text = "✅ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        showNotification("✅ BERHASIL", "Key valid! Script akan dimuat...", 2, Color3.fromRGB(0, 150, 0))
+        showNotification("✅ BERHASIL", message, 2, Color3.fromRGB(0, 150, 0))
         
-        CloseBtn.Visible = true
         task.wait(1)
         KeyGui:Destroy()
         
         -- ================== MULAI SCRIPT UTAMA PUTZZDEV-HUB ==================
-        print("✅ " .. SCRIPT_NAME .. " berhasil dimuat dengan key valid!")
+        print("✅ " .. SCRIPT_NAME .. " key berhasil")
         
         -- ================== FUNGSI INFINITY JUMP ==================
         local function onJumpRequest()
@@ -809,8 +929,8 @@ VerifyBtn.MouseButton1Click:Connect(function()
 
         local mainFrame = Instance.new("Frame")
         mainFrame.Parent = ScreenGui
-        mainFrame.Size = UDim2.new(0, 380, 0, 430)
-        mainFrame.Position = UDim2.new(0.5, -190, 0.5, -215)
+        mainFrame.Size = UDim2.new(0, 380, 0, 460)  -- Lebih tinggi untuk timer
+        mainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
         mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
         mainFrame.BackgroundTransparency = 0.1
         mainFrame.BorderSizePixel = 0
@@ -829,9 +949,64 @@ VerifyBtn.MouseButton1Click:Connect(function()
         })
         gradient.Rotation = 45
 
+        -- Timer Display (di bagian atas)
+        local timerFrame = Instance.new("Frame")
+        timerFrame.Parent = mainFrame
+        timerFrame.Size = UDim2.new(0.9, 0, 0, 40)
+        timerFrame.Position = UDim2.new(0.05, 0, 0.02, 0)
+        timerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        timerFrame.BackgroundTransparency = 0.3
+        timerFrame.BorderSizePixel = 0
+
+        local timerCorner = Instance.new("UICorner")
+        timerCorner.Parent = timerFrame
+        timerCorner.CornerRadius = UDim.new(0, 8)
+
+        local timerIcon = Instance.new("TextLabel")
+        timerIcon.Parent = timerFrame
+        timerIcon.Size = UDim2.new(0, 30, 1, 0)
+        timerIcon.Position = UDim2.new(0, 5, 0, 0)
+        timerIcon.BackgroundTransparency = 1
+        timerIcon.Text = "⏳"
+        timerIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
+        timerIcon.Font = Enum.Font.GothamBold
+        timerIcon.TextSize = 20
+
+        local timerLabel = Instance.new("TextLabel")
+        timerLabel.Parent = timerFrame
+        timerLabel.Size = UDim2.new(1, -40, 1, 0)
+        timerLabel.Position = UDim2.new(0, 35, 0, 0)
+        timerLabel.BackgroundTransparency = 1
+        timerLabel.Text = "Memuat informasi key..."
+        timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        timerLabel.Font = Enum.Font.GothamBold
+        timerLabel.TextSize = 14
+        timerLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+        -- Update timer setiap detik
+        spawn(function()
+            while task.wait(1) do
+                if currentUserKey and keyExpiryTime > 0 then
+                    local days, hours, timeStr = getTimeRemaining(keyExpiryTime)
+                    if days == 0 and hours == 0 then
+                        timerLabel.Text = "⚠️ KEY SUDAH EXPIRED! ⚠️"
+                        timerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    else
+                        timerLabel.Text = "Sisa waktu key: " .. timeStr
+                        timerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    end
+                else
+                    timerLabel.Text = "Key: " .. (currentUserKey or "Tidak ada")
+                    timerLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+                end
+            end
+        end)
+
+        -- Header (judul digeser ke bawah)
         local header = Instance.new("Frame")
         header.Parent = mainFrame
         header.Size = UDim2.new(1, 0, 0, 45)
+        header.Position = UDim2.new(0, 0, 0, 45)
         header.BackgroundTransparency = 1
 
         local title = Instance.new("TextLabel")
@@ -845,10 +1020,11 @@ VerifyBtn.MouseButton1Click:Connect(function()
         title.TextStrokeTransparency = 0.5
         title.TextXAlignment = Enum.TextXAlignment.Center
 
+        -- Tab bar (disesuaikan posisinya)
         local tabBar = Instance.new("Frame")
         tabBar.Parent = mainFrame
         tabBar.Size = UDim2.new(1, 0, 0, 40)
-        tabBar.Position = UDim2.new(0, 0, 0, 45)
+        tabBar.Position = UDim2.new(0, 0, 0, 90)
         tabBar.BackgroundTransparency = 1
 
         local tabs = {}
@@ -867,8 +1043,8 @@ VerifyBtn.MouseButton1Click:Connect(function()
 
             local content = Instance.new("ScrollingFrame")
             content.Parent = mainFrame
-            content.Size = UDim2.new(1, -10, 1, -115)
-            content.Position = UDim2.new(0, 5, 0, 90)
+            content.Size = UDim2.new(1, -10, 1, -180)
+            content.Position = UDim2.new(0, 5, 0, 135)
             content.BackgroundTransparency = 1
             content.BorderSizePixel = 0
             content.ScrollBarThickness = 5
@@ -1227,7 +1403,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         infoText.BackgroundTransparency = 1
         infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                          "👤 Developer: Putzz XD\n" ..
-                         "📌 Version: 4.0 (Key System)\n" ..
+                         "📌 Version: 4.0 (Timer Display)\n" ..
                          "script type: VIP\n\n" ..
                          "✨ Fitur:\n" ..
                          "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
@@ -1235,7 +1411,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
                          "• Teleport ke Player (ketik username)\n" ..
                          "• Aimbot + Infinity Jump\n" ..
                          "• 8 Warna Tema Manual\n" ..
-                         "• Key System Security\n\n" ..
+                         "• Timer Sisa Key di Menu\n\n" ..
                          "📞 Kontak: 088976255131"
         infoText.TextColor3 = Color3.new(1, 1, 1)
         infoText.Font = Enum.Font.Gotham
@@ -1346,7 +1522,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
             if menuOpen then
                 mainFrame.Visible = true
                 TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                    Position = UDim2.new(0.5, -190, 0.5, -215)
+                    Position = UDim2.new(0.5, -190, 0.5, -230)
                 }):Play()
             else
                 TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1357,18 +1533,13 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        print("✅ Putzzdev-HUB")
+        print("✅ Putzzdev-HUB - Timer Display Active")
         
     else
-        StatusLabel.Text = "❌ Key salah! Coba lagi."
+        StatusLabel.Text = "❌ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        showNotification("❌ GAGAL", "Key yang dimasukkan salah!", 2, Color3.fromRGB(150, 0, 0))
+        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
-end)
-
--- Tombol close
-CloseBtn.MouseButton1Click:Connect(function()
-    KeyGui:Destroy()
 end)
 
 -- Enter key juga bisa verify
