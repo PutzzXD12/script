@@ -1,26 +1,107 @@
--- ================== KEY SYSTEM ==================
--- Konfigurasi Key
-local KEY_URL = "https://pastebin.com/raw/Y53fTNgy" -- GANTI DENGAN RAW URL KEY KAMU
-local SCRIPT_URL = "https://raw.githubusercontent.com/putzz/script/main/Putzz-HUB.lua" -- URL script utama (optional)
+-- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
+-- Version: 4.0 (Key System Integrated)
+-- Developer: Putzz XD
 
--- Fungsi mengambil key dari website
-local function getKeyFromWebsite()
+-- ================== KEY SYSTEM CONFIG ==================
+local KEY_URL = "https://pastebin.com/raw/Y53fTNgy"  -- URL RAW Pastebin key kamu
+local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Ganti dengan GitHub Pages kamu nanti
+local SCRIPT_NAME = "Putzzdev-HUB"
+
+-- ================== LOAD SERVICES ==================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- ================== VARIABEL FITUR ==================
+-- ESP
+local espEnabled = false
+local lineEnabled = false
+local healthEnabled = false
+local skeletonEnabled = false
+local ESPTable = {}
+local SkeletonESP = {}
+
+-- Fly
+local flyEnabled = false
+local flySpeed = 60
+local bv = nil
+local bg = nil
+
+-- Speed
+local speedEnabled = false
+local normalSpeed = 16
+local fastSpeed = 60
+
+-- NoClip
+local noclipEnabled = false
+
+-- AIMBOT
+local aimbotEnabled = false
+local aimbotTarget = nil
+local aimbotFOV = 150
+local aimbotSmoothness = 5
+local aimbotPart = "Head"
+
+-- INFINITY JUMP
+local infinityJumpEnabled = false
+local jumpCount = 0
+
+-- ================== FUNGSI KEY SYSTEM ==================
+
+-- Fungsi mengambil key dari Pastebin
+local function getKeyFromPastebin()
     local success, key = pcall(function()
         return game:HttpGet(KEY_URL)
     end)
     return success and key:gsub("%s+", "") or nil
 end
 
--- Fungsi verifikasi key
-local function verifyKey(inputKey)
-    local correctKey = getKeyFromWebsite()
-    if not correctKey then
-        return false, "Gagal mengambil key dari server"
-    end
-    return inputKey == correctKey, correctKey
+-- Fungsi notifikasi
+local function showNotification(title, text, duration, color)
+    local notif = Instance.new("Frame")
+    notif.Parent = KeyGui
+    notif.Size = UDim2.new(0, 300, 0, 70)
+    notif.Position = UDim2.new(0.5, -150, 0, -80)
+    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
+    notif.BackgroundTransparency = 0.1
+    notif.BorderSizePixel = 0
+    notif.ZIndex = 999
+
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.Parent = notif
+    notifCorner.CornerRadius = UDim.new(0, 12)
+
+    local notifTitle = Instance.new("TextLabel")
+    notifTitle.Parent = notif
+    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
+    notifTitle.Position = UDim2.new(0, 0, 0, 5)
+    notifTitle.BackgroundTransparency = 1
+    notifTitle.Text = title
+    notifTitle.TextColor3 = Color3.new(1, 1, 1)
+    notifTitle.Font = Enum.Font.GothamBold
+    notifTitle.TextSize = 18
+
+    local notifText = Instance.new("TextLabel")
+    notifText.Parent = notif
+    notifText.Size = UDim2.new(1, 0, 0.5, 0)
+    notifText.Position = UDim2.new(0, 0, 0, 35)
+    notifText.BackgroundTransparency = 1
+    notifText.Text = text
+    notifText.TextColor3 = Color3.new(1, 1, 1)
+    notifText.Font = Enum.Font.Gotham
+    notifText.TextSize = 14
+
+    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+    task.wait(duration or 3)
+    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
+    task.wait(0.5)
+    notif:Destroy()
 end
 
--- Buat GUI Key System
+-- ================== BUAT GUI KEY SYSTEM ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -30,8 +111,8 @@ KeyGui.DisplayOrder = 999
 -- Frame utama key system
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 350, 0, 250)
-KeyFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
+KeyFrame.Size = UDim2.new(0, 400, 0, 380)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
@@ -54,38 +135,63 @@ KeyGradient.Rotation = 45
 -- Header
 local KeyHeader = Instance.new("Frame")
 KeyHeader.Parent = KeyFrame
-KeyHeader.Size = UDim2.new(1, 0, 0, 60)
+KeyHeader.Size = UDim2.new(1, 0, 0, 80)
 KeyHeader.BackgroundTransparency = 1
+
+local KeyIcon = Instance.new("TextLabel")
+KeyIcon.Parent = KeyHeader
+KeyIcon.Size = UDim2.new(1, 0, 0.5, 0)
+KeyIcon.Position = UDim2.new(0, 0, 0, 5)
+KeyIcon.BackgroundTransparency = 1
+KeyIcon.Text = "🔐"
+KeyIcon.TextColor3 = Color3.fromRGB(0, 200, 255)
+KeyIcon.Font = Enum.Font.GothamBlack
+KeyIcon.TextSize = 40
 
 local KeyTitle = Instance.new("TextLabel")
 KeyTitle.Parent = KeyHeader
-KeyTitle.Size = UDim2.new(1, 0, 1, 0)
+KeyTitle.Size = UDim2.new(1, 0, 0.5, 0)
+KeyTitle.Position = UDim2.new(0, 0, 0, 45)
 KeyTitle.BackgroundTransparency = 1
-KeyTitle.Text = "🔐 PUTZZ KEY SYSTEM"
+KeyTitle.Text = SCRIPT_NAME .. " KEY SYSTEM"
 KeyTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
 KeyTitle.Font = Enum.Font.GothamBlack
-KeyTitle.TextSize = 22
+KeyTitle.TextSize = 18
 KeyTitle.TextStrokeTransparency = 0.5
 
--- Subtitle
-local KeySubtitle = Instance.new("TextLabel")
-KeySubtitle.Parent = KeyFrame
-KeySubtitle.Size = UDim2.new(0.9, 0, 0, 40)
-KeySubtitle.Position = UDim2.new(0.05, 0, 0.25, 0)
-KeySubtitle.BackgroundTransparency = 1
-KeySubtitle.Text = "Masukkan key untuk mengakses script"
-KeySubtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
-KeySubtitle.Font = Enum.Font.Gotham
-KeySubtitle.TextSize = 14
+-- Info Box
+local InfoFrame = Instance.new("Frame")
+InfoFrame.Parent = KeyFrame
+InfoFrame.Size = UDim2.new(0.9, 0, 0, 90)
+InfoFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
+InfoFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+InfoFrame.BackgroundTransparency = 0.3
+InfoFrame.BorderSizePixel = 0
+
+local InfoCorner = Instance.new("UICorner")
+InfoCorner.Parent = InfoFrame
+InfoCorner.CornerRadius = UDim.new(0, 10)
+
+local InfoText = Instance.new("TextLabel")
+InfoText.Parent = InfoFrame
+InfoText.Size = UDim2.new(1, -20, 1, -10)
+InfoText.Position = UDim2.new(0, 10, 0, 5)
+InfoText.BackgroundTransparency = 1
+InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🌐 BUKA WEBSITE'\n2. Copy key dari website\n3. Masukkan key di sini\n4. Klik VERIFY\n\n⏰ Key berlaku 1 hari"
+InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
+InfoText.Font = Enum.Font.Gotham
+InfoText.TextSize = 13
+InfoText.TextWrapped = true
+InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
 -- TextBox untuk key
 local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
-KeyTextBox.Position = UDim2.new(0.1, 0, 0.4, 0)
+KeyTextBox.Position = UDim2.new(0.1, 0, 0.48, 0)
 KeyTextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
-KeyTextBox.PlaceholderText = "Masukkan key..."
+KeyTextBox.PlaceholderText = "Masukkan key disini..."
 KeyTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 KeyTextBox.Font = Enum.Font.Gotham
 KeyTextBox.TextSize = 16
@@ -95,53 +201,68 @@ local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
 KeyBoxCorner.CornerRadius = UDim.new(0, 8)
 
+-- Tombol Website
+local WebsiteBtn = Instance.new("TextButton")
+WebsiteBtn.Parent = KeyFrame
+WebsiteBtn.Size = UDim2.new(0.8, 0, 0, 45)
+WebsiteBtn.Position = UDim2.new(0.1, 0, 0.62, 0)
+WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+WebsiteBtn.Text = "🌐 BUKA WEBSITE AMBIL KEY"
+WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
+WebsiteBtn.Font = Enum.Font.GothamBold
+WebsiteBtn.TextSize = 16
+
+local WebsiteCorner = Instance.new("UICorner")
+WebsiteCorner.Parent = WebsiteBtn
+WebsiteCorner.CornerRadius = UDim.new(0, 8)
+
 -- Tombol Verify
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
-VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.25, 0, 0.6, 0)
+VerifyBtn.Size = UDim2.new(0.38, 0, 0, 45)
+VerifyBtn.Position = UDim2.new(0.1, 0, 0.78, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-VerifyBtn.Text = "VERIFY"
+VerifyBtn.Text = "✅ VERIFY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 18
+VerifyBtn.TextSize = 16
 
 local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 
--- Status Label
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Parent = KeyFrame
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.75, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = ""
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 13
-
--- Tombol Close
+-- Tombol Close (awalnya hidden)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = KeyFrame
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.Size = UDim2.new(0.38, 0, 0, 45)
+CloseBtn.Position = UDim2.new(0.52, 0, 0.78, 0)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-CloseBtn.Text = "X"
+CloseBtn.Text = "❌ CLOSE"
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 18
-CloseBtn.Visible = false -- Awalnya hidden, muncul kalau key benar
+CloseBtn.TextSize = 16
+CloseBtn.Visible = false
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.Parent = CloseBtn
 CloseCorner.CornerRadius = UDim.new(0, 8)
 
--- Animasi loading
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Parent = KeyFrame
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.9, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Menunggu key..."
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 13
+
+-- Loading Circle
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.85, -15)
+LoadingCircle.Position = UDim2.new(0.5, -15, 0.96, -15)
 LoadingCircle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 LoadingCircle.BackgroundTransparency = 1
 LoadingCircle.Visible = false
@@ -165,46 +286,29 @@ local function showLoading(show)
     end
 end
 
--- Fungsi notifikasi
-local function showNotification(title, text, color)
-    local notif = Instance.new("Frame")
-    notif.Parent = KeyGui
-    notif.Size = UDim2.new(0, 250, 0, 60)
-    notif.Position = UDim2.new(0.5, -125, 0, -70)
-    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-    notif.BackgroundTransparency = 0.1
-    notif.BorderSizePixel = 0
-
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.Parent = notif
-    notifCorner.CornerRadius = UDim.new(0, 8)
-
-    local notifTitle = Instance.new("TextLabel")
-    notifTitle.Parent = notif
-    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
-    notifTitle.Position = UDim2.new(0, 0, 0, 5)
-    notifTitle.BackgroundTransparency = 1
-    notifTitle.Text = title
-    notifTitle.TextColor3 = Color3.new(1, 1, 1)
-    notifTitle.Font = Enum.Font.GothamBold
-    notifTitle.TextSize = 16
-
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notif
-    notifText.Size = UDim2.new(1, 0, 0.5, 0)
-    notifText.Position = UDim2.new(0, 0, 0, 30)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = text
-    notifText.TextColor3 = Color3.new(1, 1, 1)
-    notifText.Font = Enum.Font.Gotham
-    notifText.TextSize = 13
-
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -125, 0, 20)}):Play()
-    task.wait(2)
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -125, 0, -70)}):Play()
-    task.wait(0.5)
-    notif:Destroy()
+-- Fungsi verifikasi key
+local function verifyKey(inputKey)
+    local correctKey = getKeyFromPastebin()
+    if not correctKey then
+        return false, "Gagal mengambil key dari server"
+    end
+    return inputKey == correctKey, correctKey
 end
+
+-- Event tombol website
+WebsiteBtn.MouseButton1Click:Connect(function()
+    local success = pcall(function()
+        if setclipboard then
+            setclipboard(WEBSITE_URL)
+            StatusLabel.Text = "✅ URL website sudah di copy! Buka browser dan paste"
+            StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            showNotification("✅ URL DISALIN!", "Buka Chrome/HP dan paste linknya", 3, Color3.fromRGB(0, 150, 0))
+        else
+            StatusLabel.Text = "🌐 Website: " .. WEBSITE_URL
+            StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        end
+    end)
+end)
 
 -- Event verify button
 VerifyBtn.MouseButton1Click:Connect(function()
@@ -215,83 +319,27 @@ VerifyBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    -- Show loading
     showLoading(true)
     StatusLabel.Text = "⏳ Memverifikasi key..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    -- Simulasi sedikit delay untuk loading
     task.wait(0.5)
     
-    -- Verifikasi key
     local isValid, key = verifyKey(inputKey)
     showLoading(false)
     
     if isValid then
         StatusLabel.Text = "✅ Key valid! Loading script..."
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        showNotification("✅ BERHASIL", "Key valid! Script akan dimuat...", Color3.fromRGB(0, 150, 0))
+        showNotification("✅ BERHASIL", "Key valid! Script akan dimuat...", 2, Color3.fromRGB(0, 150, 0))
         
-        -- Tampilkan tombol close
         CloseBtn.Visible = true
-        
-        -- Tunggu sebentar lalu jalankan script utama
         task.wait(1)
-        
-        -- Hapus key system GUI
         KeyGui:Destroy()
         
-        -- Di sini script utama kamu akan dijalankan
-        -- Jika script utama ada di file yang sama, langsung panggil
-        -- Jika script utama di URL, bisa loadstring
+        -- ================== MULAI SCRIPT UTAMA PUTZZDEV-HUB ==================
+        print("✅ " .. SCRIPT_NAME .. " berhasil dimuat dengan key valid!")
         
-        -- ================== SCRIPT UTAMA MULAI DI SINI ==================
-        -- Copy paste semua script utama kamu di bawah ini
-        -- ATAU kalau mau load dari URL:
-        -- loadstring(game:HttpGet("URL_SCRIPT_UTAMA_KAMU"))()
-        
-        -- ===== MULAI SCRIPT UTAMA =====
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TweenService = game:GetService("TweenService")
-        local UserInputService = game:GetService("UserInputService")
-        local Camera = workspace.CurrentCamera
-        local LocalPlayer = Players.LocalPlayer
-
-        -- ================== VARIABEL FITUR ==================
-        -- ESP
-        local espEnabled = false
-        local lineEnabled = false
-        local healthEnabled = false
-        local skeletonEnabled = false
-        local ESPTable = {}
-        local SkeletonESP = {}
-
-        -- Fly
-        local flyEnabled = false
-        local flySpeed = 60
-        local bv = nil
-        local bg = nil
-
-        -- Speed
-        local speedEnabled = false
-        local normalSpeed = 16
-        local fastSpeed = 60
-
-        -- NoClip
-        local noclipEnabled = false
-
-        -- AIMBOT
-        local aimbotEnabled = false
-        local aimbotTarget = nil
-        local aimbotFOV = 150
-        local aimbotSmoothness = 5
-        local aimbotPart = "Head"
-
-        -- INFINITY JUMP
-        local infinityJumpEnabled = false
-        local jumpCount = 0
-
         -- ================== FUNGSI INFINITY JUMP ==================
         local function onJumpRequest()
             if infinityJumpEnabled then
@@ -307,7 +355,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
 
         UserInputService.JumpRequest:Connect(onJumpRequest)
 
-        -- Reset jump count saat menyentuh tanah
         local function onTouchGround()
             jumpCount = 0
         end
@@ -323,7 +370,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
 
         -- ================== FUNGSI TELEPORT KE PLAYER ==================
         local function teleportToPlayer(username)
-            -- Cari player berdasarkan username (case insensitive)
             local targetPlayer = nil
             for _, player in pairs(Players:GetPlayers()) do
                 if player.Name:lower() == username:lower() or (player.DisplayName and player.DisplayName:lower() == username:lower()) then
@@ -333,7 +379,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
             
             if not targetPlayer then
-                -- Notifikasi player tidak ditemukan
                 local notif = Instance.new("TextLabel")
                 notif.Parent = ScreenGui
                 notif.Size = UDim2.new(0, 200, 0, 30)
@@ -355,7 +400,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
                 return
             end
             
-            -- Cek apakah target punya karakter
             if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local notif = Instance.new("TextLabel")
                 notif.Parent = ScreenGui
@@ -378,7 +422,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
                 return
             end
             
-            -- Teleport karakter kita ke target
             local myChar = LocalPlayer.Character
             if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
                 return
@@ -387,7 +430,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             local targetRoot = targetPlayer.Character.HumanoidRootPart
             myChar.HumanoidRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
             
-            -- Notifikasi sukses
             local notif = Instance.new("TextLabel")
             notif.Parent = ScreenGui
             notif.Size = UDim2.new(0, 200, 0, 30)
@@ -408,7 +450,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
             notif:Destroy()
         end
 
-        -- ================== FUNGSI ESP BOX ==================
+        -- ================== FUNGSI ESP ==================
         local function createESP(player)
             if player == LocalPlayer then return end
 
@@ -479,7 +521,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             SkeletonESP[player] = lines
         end
 
-        -- Update skeleton
         local function updateSkeleton(player, lines)
             local char = player.Character
             if not char then
@@ -549,11 +590,9 @@ VerifyBtn.MouseButton1Click:Connect(function()
         -- Rainbow color untuk ESP Line
         local hue = 0
         RunService.RenderStepped:Connect(function()
-            -- Update rainbow color untuk ESP Line
             hue = (hue + 0.01) % 1
             local rainbowColor = Color3.fromHSV(hue, 1, 1)
             
-            -- ESP Box dan lainnya
             for player, esp in pairs(ESPTable) do
                 local box, name, dist, line, healthBg, healthFg = unpack(esp)
 
@@ -633,7 +672,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
                 end
             end
             
-            -- ESP Skeleton
             if skeletonEnabled then
                 for player, lines in pairs(SkeletonESP) do
                     updateSkeleton(player, lines)
@@ -646,7 +684,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
                 end
             end
             
-            -- Aimbot
             if aimbotEnabled then
                 local target = getClosestEnemy()
                 if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
@@ -671,7 +708,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             createSkeleton(p)
         end)
 
-        -- ========== FIX ESP BUG ==========
         Players.PlayerRemoving:Connect(function(player)
             if ESPTable[player] then
                 for _, drawing in pairs(ESPTable[player]) do
@@ -763,7 +799,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        -- ================== GUI KEREN ==================
+        -- ================== GUI UTAMA ==================
         local ScreenGui = Instance.new("ScreenGui")
         ScreenGui.Parent = game.CoreGui
         ScreenGui.Name = "PutzzdevHub"
@@ -771,7 +807,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         ScreenGui.DisplayOrder = 100
 
-        -- ========== MAIN FRAME (LEBAR 380 - NAMA GUI KELIATAN FULL) ==========
         local mainFrame = Instance.new("Frame")
         mainFrame.Parent = ScreenGui
         mainFrame.Size = UDim2.new(0, 380, 0, 430)
@@ -786,7 +821,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         corner.Parent = mainFrame
         corner.CornerRadius = UDim.new(0, 16)
 
-        -- Gradient
         local gradient = Instance.new("UIGradient")
         gradient.Parent = mainFrame
         gradient.Color = ColorSequence.new({
@@ -795,13 +829,11 @@ VerifyBtn.MouseButton1Click:Connect(function()
         })
         gradient.Rotation = 45
 
-        -- Header
         local header = Instance.new("Frame")
         header.Parent = mainFrame
         header.Size = UDim2.new(1, 0, 0, 45)
         header.BackgroundTransparency = 1
 
-        -- NAMA GUI BESAR
         local title = Instance.new("TextLabel")
         title.Parent = header
         title.Size = UDim2.new(1, 0, 1, 0)
@@ -813,7 +845,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         title.TextStrokeTransparency = 0.5
         title.TextXAlignment = Enum.TextXAlignment.Center
 
-        -- Tab bar
         local tabBar = Instance.new("Frame")
         tabBar.Parent = mainFrame
         tabBar.Size = UDim2.new(1, 0, 0, 40)
@@ -864,13 +895,11 @@ VerifyBtn.MouseButton1Click:Connect(function()
             return content
         end
 
-        -- Buat tabs
         local tabMain = createTab("MAIN", "🏠", 1)
         local tabESP = createTab("ESP", "👁️", 2)
         local tabColor = createTab("COLOR", "🎨", 3)
         local tabAbout = createTab("ABOUT", "📋", 4)
 
-        -- Fungsi buat button
         local function createButton(parent, text, callback)
             local frame = Instance.new("Frame")
             frame.Parent = parent
@@ -895,7 +924,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             return frame
         end
 
-        -- Fungsi buat toggle
         local function createToggle(parent, text, default, callback)
             local frame = Instance.new("Frame")
             frame.Parent = parent
@@ -957,7 +985,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             return frame
         end
 
-        -- Fungsi buat textbox (untuk teleport)
         local function createTextBox(parent, placeholder, callback)
             local frame = Instance.new("Frame")
             frame.Parent = parent
@@ -995,7 +1022,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             return frame
         end
 
-        -- Fungsi buat slider
         local function createSlider(parent, text, min, max, default, callback)
             local frame = Instance.new("Frame")
             frame.Parent = parent
@@ -1070,7 +1096,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             return frame
         end
 
-        -- ================== FUNGSI GANTI WARNA ==================
         local function changeThemeColor(color)
             mainFrame.BackgroundColor3 = color
             title.TextColor3 = color
@@ -1102,7 +1127,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
             noclipEnabled = s
         end)
 
-        -- TELEPORT FEATURE (MENGGANTIKAN INVISIBLE)
         createTextBox(tabMain, "Masukkan username player...", function(username)
             teleportToPlayer(username)
         end)
@@ -1245,7 +1269,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
 
         tabAbout.CanvasSize = UDim2.new(0, 0, 0, 300)
 
-        -- Update canvas size
         local function updateCanvas()
             for _, content in pairs(contents) do
                 local height = 0
@@ -1258,13 +1281,12 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        wait(0.1)
+        task.wait(0.1)
         updateCanvas()
 
         tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
         contents[1].Visible = true
 
-        -- Notifikasi
         local notifyFrame = Instance.new("Frame")
         notifyFrame.Parent = ScreenGui
         notifyFrame.Size = UDim2.new(0, 220, 0, 35)
@@ -1287,12 +1309,12 @@ VerifyBtn.MouseButton1Click:Connect(function()
         notifyText.TextSize = 14
 
         TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.8, 0)}):Play()
-        wait(2)
+        task.wait(2)
         TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.9, 0)}):Play()
-        wait(0.3)
+        task.wait(0.3)
         notifyFrame:Destroy()
 
-        -- ================= TOMBOL "P" BISA DIGESER =================
+        -- Tombol P
         local openBtn = Instance.new("TextButton")
         openBtn.Parent = ScreenGui
         openBtn.Size = UDim2.new(0, 45, 0, 45)
@@ -1316,7 +1338,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         stroke.Color = Color3.fromRGB(255, 255, 255)
         stroke.Thickness = 1.5
 
-        -- toggle
         local menuOpen = true
 
         openBtn.MouseButton1Click:Connect(function()
@@ -1336,18 +1357,16 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        print("✅ Putzzdev-HUB Loaded! (Key Valid)")
-
-        -- ===== AKHIR SCRIPT UTAMA =====
+        print("✅ Putzzdev-HUB Loaded! (Key Valid) - Tekan P untuk buka/tutup")
         
     else
         StatusLabel.Text = "❌ Key salah! Coba lagi."
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        showNotification("❌ GAGAL", "Key yang dimasukkan salah!", Color3.fromRGB(150, 0, 0))
+        showNotification("❌ GAGAL", "Key yang dimasukkan salah!", 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
--- Tombol close hanya muncul kalau key benar
+-- Tombol close
 CloseBtn.MouseButton1Click:Connect(function()
     KeyGui:Destroy()
 end)
@@ -1359,4 +1378,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔐 Putzz Key System Loaded - Masukkan key untuk mengakses script")
+print("🔐 Putzzdev-HUB Key System Loaded - Masukkan key untuk mengakses script")
