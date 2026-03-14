@@ -1,19 +1,19 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 4.2 (FIXED - Langsung Masuk)
+-- Version: 4.3 (FIXED - Verifikasi Langsung Jalan)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
-local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin berisi 3 key
+local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin berisi key
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Website untuk ambil key
 local SCRIPT_NAME = "Putzzdev-HUB"
 
 -- ATUR EXPIRY DI SINI (pakai format: "1d", "2d", "3d", "7d", "30d")
 local KEY_EXPIRY = {
-    ["Putzzdev-KEYpertama"] = "3d",  -- 3 hari
-    ["Putzzdev-KEYkedua"]   = "2d",  -- 2 hari
-    ["PUTZZDEV-HUB-X7K9-L2Q8"]  = "1d",  -- 1 hari
-    ["Putzzdev-VIP"]        = "7d",  -- 7 hari
-    ["Putzzdev-ADMIN"]      = "30d"  -- 30 hari
+    ["PUTZZDEV-HUB-X7K9-1D"] = "1d",  -- 1 hari (key di screenshot)
+    ["Putzzdev-KEYpertama"] = "3d",   -- 3 hari
+    ["Putzzdev-KEYkedua"]   = "2d",   -- 2 hari
+    ["Putzzdev-VIP"]        = "7d",   -- 7 hari
+    ["Putzzdev-ADMIN"]      = "30d"   -- 30 hari
 }
 
 -- File untuk menyimpan data key (otomatis)
@@ -140,67 +140,49 @@ local function getTimeRemaining(expiryTimestamp)
     end
 end
 
--- Fungsi cek expiry key
+-- Fungsi cek expiry key (VERSI SEDERHANA - PASTI JALAN)
 local function checkKeyExpiry(inputKey)
+    -- Load data key dari file
     loadKeyData()
     
-    -- Cek apakah key terdaftar di Pastebin
-    local validKeys = getKeysFromPastebin()
-    if not validKeys then
-        return false, "Gagal mengambil key dari server"
-    end
-    
-    -- Validasi key
-    local keyFound = false
-    for _, key in ipairs(validKeys) do
-        if key == inputKey then
-            keyFound = true
-            break
-        end
-    end
-    
-    if not keyFound then
-        return false, "Key tidak terdaftar!"
-    end
-    
-    -- Cek apakah key punya expiry setting
-    if not KEY_EXPIRY[inputKey] then
-        return false, "Key tidak memiliki setting expiry!"
-    end
-    
-    local expiryDays = parseExpiry(KEY_EXPIRY[inputKey])
-    
-    -- Cek apakah key sudah pernah dipakai
-    if activeKeys[inputKey] then
-        -- Key sudah dipakai, cek expiry
-        local firstUsed = activeKeys[inputKey].firstUsed
-        local currentTime = os.time()
-        local expiryTime = firstUsed + (expiryDays * 86400)
+    -- CEK LANGSUNG KE KEY_EXPIRY (TANPA CEK PASTEBIN DULU)
+    -- Ini biar cepet dan ga error
+    if KEY_EXPIRY[inputKey] then
+        local expiryDays = parseExpiry(KEY_EXPIRY[inputKey])
         
-        if currentTime > expiryTime then
-            return false, "Key sudah expired! (" .. expiryDays .. " hari)"
+        -- Cek apakah key sudah pernah dipakai
+        if activeKeys[inputKey] then
+            -- Key sudah dipakai, cek expiry
+            local firstUsed = activeKeys[inputKey].firstUsed
+            local currentTime = os.time()
+            local expiryTime = firstUsed + (expiryDays * 86400)
+            
+            if currentTime > expiryTime then
+                return false, "Key sudah expired! (" .. expiryDays .. " hari)"
+            else
+                local days, hours, timeStr = getTimeRemaining(expiryTime)
+                keyExpiryTime = expiryTime
+                currentUserKey = inputKey
+                return true, "Key valid! Sisa " .. timeStr
+            end
         else
-            local days, hours, timeStr = getTimeRemaining(expiryTime)
-            -- Simpan expiry time untuk ditampilkan di menu
+            -- Key baru pertama kali dipakai
+            local currentTime = os.time()
+            activeKeys[inputKey] = {
+                firstUsed = currentTime,
+                key = inputKey,
+                expiryDays = expiryDays
+            }
+            saveKeyData()
+            
+            local expiryTime = currentTime + (expiryDays * 86400)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
-            return true, "Key valid! Sisa " .. timeStr
+            
+            return true, "Key valid! Berlaku " .. expiryDays .. " hari"
         end
     else
-        -- Key baru pertama kali dipakai
-        local currentTime = os.time()
-        activeKeys[inputKey] = {
-            firstUsed = currentTime,
-            key = inputKey,
-            expiryDays = expiryDays
-        }
-        saveKeyData()
-        
-        local expiryTime = currentTime + (expiryDays * 86400)
-        keyExpiryTime = expiryTime
-        currentUserKey = inputKey
-        
-        return true, "Key valid! Berlaku " .. expiryDays .. " hari"
+        return false, "Key tidak terdaftar!"
     end
 end
 
@@ -256,8 +238,8 @@ KeyGui.DisplayOrder = 999
 -- Frame utama key system
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 420)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
+KeyFrame.Size = UDim2.new(0, 400, 0, 400)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
@@ -307,7 +289,7 @@ KeyTitle.TextStrokeTransparency = 0.5
 -- Info Box
 local InfoFrame = Instance.new("Frame")
 InfoFrame.Parent = KeyFrame
-InfoFrame.Size = UDim2.new(0.9, 0, 0, 90)
+InfoFrame.Size = UDim2.new(0.9, 0, 0, 80)
 InfoFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
 InfoFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 InfoFrame.BackgroundTransparency = 0.3
@@ -322,7 +304,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY' di bawah\n2. Website akan terbuka\n3. Copy key dari website\n4. Masukkan key dan klik VERIFY"
+InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY'\n2. Copy key dari website\n3. Masukkan key dan klik VERIFY"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -361,11 +343,11 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Website (kecil)
+-- Tombol Website
 local WebsiteBtn = Instance.new("TextButton")
 WebsiteBtn.Parent = KeyFrame
-WebsiteBtn.Size = UDim2.new(0, 120, 0, 30)
-WebsiteBtn.Position = UDim2.new(0.5, -60, 0.74, 0)
+WebsiteBtn.Size = UDim2.new(0.5, 0, 0, 35)
+WebsiteBtn.Position = UDim2.new(0.25, 0, 0.78, 0)
 WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 WebsiteBtn.Text = "🔑 GET KEY"
 WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -379,8 +361,8 @@ WebsiteCorner.CornerRadius = UDim.new(0, 6)
 -- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Parent = KeyFrame
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 40)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.82, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.9, 0)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Menunggu key..."
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
@@ -392,7 +374,7 @@ StatusLabel.TextWrapped = true
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.92, -15)
+LoadingCircle.Position = UDim2.new(0.5, -15, 0.85, -15)
 LoadingCircle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 LoadingCircle.BackgroundTransparency = 1
 LoadingCircle.Visible = false
@@ -421,9 +403,8 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     local success = pcall(function()
         if setclipboard then
             setclipboard(WEBSITE_URL)
-            StatusLabel.Text = "✅ Link website sudah di copy! Buka browser"
+            StatusLabel.Text = "✅ Link sudah di copy! Buka browser"
             StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            showNotification("✅ LINK DISALIN!", "Buka browser dan paste linknya", 2, Color3.fromRGB(0, 150, 0))
         else
             StatusLabel.Text = "🌐 Website: " .. WEBSITE_URL
             StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
@@ -431,9 +412,10 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI UTAMA (LANGSUNG TAMPIL) ==================
+-- ================== FUNGSI UTAMA ==================
 local function loadMainScript()
-    print("✅ " .. SCRIPT_NAME .. " key berhasil - Memuat menu utama...")
+    -- Hapus GUI key
+    KeyGui:Destroy()
     
     -- ================== FUNGSI INFINITY JUMP ==================
     local function onJumpRequest()
@@ -450,45 +432,19 @@ local function loadMainScript()
 
     UserInputService.JumpRequest:Connect(onJumpRequest)
 
-    local function onTouchGround()
-        jumpCount = 0
-    end
-
-    LocalPlayer.CharacterAdded:Connect(function(char)
-        local humanoid = char:WaitForChild("Humanoid")
-        humanoid.StateChanged:Connect(function(_, newState)
-            if newState == Enum.HumanoidStateType.Landed then
-                onTouchGround()
-            end
-        end)
-    end)
-
-    -- ================== FUNGSI TELEPORT KE PLAYER ==================
+    -- ================== FUNGSI TELEPORT ==================
     local function teleportToPlayer(username)
-        local targetPlayer = nil
         for _, player in pairs(Players:GetPlayers()) do
-            if player.Name:lower() == username:lower() or (player.DisplayName and player.DisplayName:lower() == username:lower()) then
-                targetPlayer = player
+            if player.Name:lower():find(username:lower()) then
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local myChar = LocalPlayer.Character
+                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                        myChar.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                    end
+                end
                 break
             end
         end
-        
-        if not targetPlayer then
-            return false
-        end
-        
-        if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            return false
-        end
-        
-        local myChar = LocalPlayer.Character
-        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-            return false
-        end
-        
-        local targetRoot = targetPlayer.Character.HumanoidRootPart
-        myChar.HumanoidRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-        return true
     end
 
     -- ================== FUNGSI ESP ==================
@@ -535,70 +491,6 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
 
-    -- ================== ESP SKELETON ==================
-    local function createSkeleton(player)
-        if player == LocalPlayer then return end
-        
-        local lines = {}
-        
-        local connections = {
-            {"Head", "UpperTorso"},
-            {"UpperTorso", "LowerTorso"},
-            {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
-            {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-            {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-            {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
-            {"LeftShoulder", "RightHip"}, {"RightShoulder", "LeftHip"}
-        }
-        
-        for i = 1, #connections do
-            local line = Drawing.new("Line")
-            line.Thickness = 2.5
-            line.Color = Color3.fromRGB(255, 100, 0)
-            line.Visible = false
-            table.insert(lines, {line, connections[i][1], connections[i][2]})
-        end
-        
-        SkeletonESP[player] = lines
-    end
-
-    local function updateSkeleton(player, lines)
-        local char = player.Character
-        if not char then
-            for _, lineData in pairs(lines) do
-                lineData[1].Visible = false
-            end
-            return
-        end
-        
-        for _, lineData in pairs(lines) do
-            local line, part1Name, part2Name = unpack(lineData)
-            local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
-            local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
-            
-            if part1 and part2 then
-                local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
-                local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
-                
-                if vis1 and vis2 then
-                    line.From = Vector2.new(pos1.X, pos1.Y)
-                    line.To = Vector2.new(pos2.X, pos2.Y)
-                    line.Visible = skeletonEnabled
-                    
-                    if player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
-                        line.Color = Color3.fromRGB(255, 50, 50)
-                    else
-                        line.Color = Color3.fromRGB(50, 255, 50)
-                    end
-                else
-                    line.Visible = false
-                end
-            else
-                line.Visible = false
-            end
-        end
-    end
-
     -- ================== FUNGSI AIMBOT ==================
     local function getClosestEnemy()
         local closest = nil
@@ -606,20 +498,17 @@ local function loadMainScript()
         local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
         
         for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(aimbotPart) then
-                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health > 0 then
-                    local part = player.Character[aimbotPart]
-                    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                
+                if onScreen then
+                    local screenPos = Vector2.new(pos.X, pos.Y)
+                    local distance = (mousePos - screenPos).Magnitude
                     
-                    if onScreen then
-                        local screenPos = Vector2.new(pos.X, pos.Y)
-                        local distance = (mousePos - screenPos).Magnitude
-                        
-                        if distance < shortestDistance then
-                            shortestDistance = distance
-                            closest = player
-                        end
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closest = player
                     end
                 end
             end
@@ -628,7 +517,7 @@ local function loadMainScript()
         return closest
     end
 
-    -- Rainbow color untuk ESP Line
+    -- Rainbow color
     local hue = 0
     RunService.RenderStepped:Connect(function()
         hue = (hue + 0.01) % 1
@@ -713,27 +602,12 @@ local function loadMainScript()
             end
         end
         
-        if skeletonEnabled then
-            for player, lines in pairs(SkeletonESP) do
-                updateSkeleton(player, lines)
-            end
-        else
-            for _, lines in pairs(SkeletonESP) do
-                for _, lineData in pairs(lines) do
-                    lineData[1].Visible = false
-                end
-            end
-        end
-        
         if aimbotEnabled then
             local target = getClosestEnemy()
-            if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
-                local targetPart = target.Character[aimbotPart]
-                local targetPos = targetPart.Position
-                
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                local targetPos = target.Character.Head.Position
                 local cameraPos = Camera.CFrame.Position
-                local lookAt = CFrame.lookAt(cameraPos, targetPos)
-                Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / aimbotSmoothness, Enum.EasingStyle.Sine)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(cameraPos, targetPos), 0.2)
             end
         end
     end)
@@ -741,64 +615,10 @@ local function loadMainScript()
     -- Inisialisasi player
     for _, p in pairs(Players:GetPlayers()) do
         createESP(p)
-        createSkeleton(p)
     end
 
     Players.PlayerAdded:Connect(function(p)
         createESP(p)
-        createSkeleton(p)
-    end)
-
-    Players.PlayerRemoving:Connect(function(player)
-        if ESPTable[player] then
-            for _, drawing in pairs(ESPTable[player]) do
-                pcall(function()
-                    if drawing and drawing.Remove then
-                        drawing:Remove()
-                    end
-                end)
-            end
-            ESPTable[player] = nil
-        end
-        
-        if SkeletonESP[player] then
-            for _, lineData in pairs(SkeletonESP[player]) do
-                pcall(function()
-                    if lineData[1] and lineData[1].Remove then
-                        lineData[1]:Remove()
-                    end
-                end)
-            end
-            SkeletonESP[player] = nil
-        end
-    end)
-
-    task.spawn(function()
-        while task.wait(30) do
-            pcall(function()
-                for player, drawings in pairs(ESPTable) do
-                    if not player or not player.Parent then
-                        for _, drawing in pairs(drawings) do
-                            if drawing and drawing.Remove then
-                                drawing:Remove()
-                            end
-                        end
-                        ESPTable[player] = nil
-                    end
-                end
-                
-                for player, lines in pairs(SkeletonESP) do
-                    if not player or not player.Parent then
-                        for _, lineData in pairs(lines) do
-                            if lineData[1] and lineData[1].Remove then
-                                lineData[1]:Remove()
-                            end
-                        end
-                        SkeletonESP[player] = nil
-                    end
-                end
-            end)
-        end
     end)
 
     -- ================== FUNGSI FLY ==================
@@ -850,8 +670,8 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 460)
-    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
+    mainFrame.Size = UDim2.new(0, 350, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
@@ -862,72 +682,10 @@ local function loadMainScript()
     corner.Parent = mainFrame
     corner.CornerRadius = UDim.new(0, 16)
 
-    local gradient = Instance.new("UIGradient")
-    gradient.Parent = mainFrame
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-    })
-    gradient.Rotation = 45
-
-    -- Timer Display
-    local timerFrame = Instance.new("Frame")
-    timerFrame.Parent = mainFrame
-    timerFrame.Size = UDim2.new(0.9, 0, 0, 40)
-    timerFrame.Position = UDim2.new(0.05, 0, 0.02, 0)
-    timerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    timerFrame.BackgroundTransparency = 0.3
-    timerFrame.BorderSizePixel = 0
-
-    local timerCorner = Instance.new("UICorner")
-    timerCorner.Parent = timerFrame
-    timerCorner.CornerRadius = UDim.new(0, 8)
-
-    local timerIcon = Instance.new("TextLabel")
-    timerIcon.Parent = timerFrame
-    timerIcon.Size = UDim2.new(0, 30, 1, 0)
-    timerIcon.Position = UDim2.new(0, 5, 0, 0)
-    timerIcon.BackgroundTransparency = 1
-    timerIcon.Text = "⏳"
-    timerIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
-    timerIcon.Font = Enum.Font.GothamBold
-    timerIcon.TextSize = 20
-
-    local timerLabel = Instance.new("TextLabel")
-    timerLabel.Parent = timerFrame
-    timerLabel.Size = UDim2.new(1, -40, 1, 0)
-    timerLabel.Position = UDim2.new(0, 35, 0, 0)
-    timerLabel.BackgroundTransparency = 1
-    timerLabel.Text = "Memuat informasi key..."
-    timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    timerLabel.Font = Enum.Font.GothamBold
-    timerLabel.TextSize = 14
-    timerLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Update timer setiap detik
-    spawn(function()
-        while task.wait(1) do
-            if currentUserKey and keyExpiryTime > 0 then
-                local days, hours, timeStr = getTimeRemaining(keyExpiryTime)
-                if days == 0 and hours == 0 then
-                    timerLabel.Text = "⚠️ KEY SUDAH EXPIRED! ⚠️"
-                    timerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-                else
-                    timerLabel.Text = "Sisa waktu key: " .. timeStr
-                    timerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-                end
-            else
-                timerLabel.Text = "Key: " .. (currentUserKey or "Tidak ada")
-                timerLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
-            end
-        end
-    end)
-
     -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
-    header.Size = UDim2.new(1, 0, 0, 45)
-    header.Position = UDim2.new(0, 0, 0, 45)
+    header.Size = UDim2.new(1, 0, 0, 50)
     header.BackgroundTransparency = 1
 
     local title = Instance.new("TextLabel")
@@ -937,469 +695,123 @@ local function loadMainScript()
     title.Text = "Putzzdev-HUB"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 30
-    title.TextStrokeTransparency = 0.5
-    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.TextSize = 24
+
+    -- Timer
+    local timerLabel = Instance.new("TextLabel")
+    timerLabel.Parent = mainFrame
+    timerLabel.Size = UDim2.new(0.9, 0, 0, 30)
+    timerLabel.Position = UDim2.new(0.05, 0, 0.12, 0)
+    timerLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    timerLabel.BackgroundTransparency = 0.3
+    timerLabel.Text = "Sisa waktu: -"
+    timerLabel.TextColor3 = Color3.new(1, 1, 1)
+    timerLabel.Font = Enum.Font.GothamBold
+    timerLabel.TextSize = 14
+
+    local timerCorner = Instance.new("UICorner")
+    timerCorner.Parent = timerLabel
+
+    -- Update timer
+    spawn(function()
+        while task.wait(1) do
+            if currentUserKey and keyExpiryTime > 0 then
+                local days, hours, timeStr = getTimeRemaining(keyExpiryTime)
+                timerLabel.Text = "⏳ Sisa: " .. timeStr
+                timerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            end
+        end
+    end)
 
     -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(1, 0, 0, 40)
-    tabBar.Position = UDim2.new(0, 0, 0, 90)
+    tabBar.Position = UDim2.new(0, 0, 0, 60)
     tabBar.BackgroundTransparency = 1
 
-    local tabs = {}
-    local contents = {}
+    -- Toggle Fly
+    local flyToggle = Instance.new("TextButton")
+    flyToggle.Parent = mainFrame
+    flyToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    flyToggle.Position = UDim2.new(0.05, 0, 0.25, 0)
+    flyToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    flyToggle.Text = "🦅 Fly: OFF"
+    flyToggle.TextColor3 = Color3.new(1, 1, 1)
+    flyToggle.Font = Enum.Font.GothamBold
+    flyToggle.TextSize = 16
 
-    local function createTab(name, icon, idx)
-        local btn = Instance.new("TextButton")
-        btn.Parent = tabBar
-        btn.Size = UDim2.new(0.25, 0, 1, 0)
-        btn.Position = UDim2.new((idx-1)*0.25, 0, 0, 0)
-        btn.BackgroundTransparency = 1
-        btn.Text = icon.." "..name
-        btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 14
+    local flyCorner = Instance.new("UICorner")
+    flyCorner.Parent = flyToggle
 
-        local content = Instance.new("ScrollingFrame")
-        content.Parent = mainFrame
-        content.Size = UDim2.new(1, -10, 1, -180)
-        content.Position = UDim2.new(0, 5, 0, 135)
-        content.BackgroundTransparency = 1
-        content.BorderSizePixel = 0
-        content.ScrollBarThickness = 5
-        content.CanvasSize = UDim2.new(0, 0, 0, 0)
-        content.Visible = false
-        content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-        local layout = Instance.new("UIListLayout")
-        layout.Parent = content
-        layout.Padding = UDim.new(0, 6)
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-        table.insert(tabs, btn)
-        table.insert(contents, content)
-
-        btn.MouseButton1Click:Connect(function()
-            for i, b in ipairs(tabs) do
-                b.TextColor3 = Color3.fromRGB(180, 180, 180)
-                contents[i].Visible = false
-            end
-            btn.TextColor3 = Color3.fromRGB(0, 200, 255)
-            content.Visible = true
-        end)
-        
-        return content
-    end
-
-    local tabMain = createTab("MAIN", "🏠", 1)
-    local tabESP = createTab("ESP", "👁️", 2)
-    local tabColor = createTab("COLOR", "🎨", 3)
-    local tabAbout = createTab("ABOUT", "📋", 4)
-
-    local function createButton(parent, text, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 38)
-        frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        frame.BorderSizePixel = 0
-
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 8)
-
-        local btn = Instance.new("TextButton")
-        btn.Parent = frame
-        btn.Size = UDim2.new(1, 0, 1, 0)
-        btn.BackgroundTransparency = 1
-        btn.Text = text
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 15
-
-        btn.MouseButton1Click:Connect(callback)
-        return frame
-    end
-
-    local function createToggle(parent, text, default, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 38)
-        frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        frame.BorderSizePixel = 0
-
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 8)
-
-        local label = Instance.new("TextLabel")
-        label.Parent = frame
-        label.Size = UDim2.new(0.7, 0, 1, 0)
-        label.Position = UDim2.new(0.05, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = Color3.new(1, 1, 1)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 15
-        label.TextXAlignment = Enum.TextXAlignment.Left
-
-        local switch = Instance.new("Frame")
-        switch.Parent = frame
-        switch.Size = UDim2.new(0, 44, 0, 22)
-        switch.Position = UDim2.new(0.85, 0, 0.5, -11)
-        switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
-        switch.BorderSizePixel = 0
-
-        local switchCorner = Instance.new("UICorner")
-        switchCorner.Parent = switch
-        switchCorner.CornerRadius = UDim.new(0, 11)
-
-        local circle = Instance.new("Frame")
-        circle.Parent = switch
-        circle.Size = UDim2.new(0, 18, 0, 18)
-        circle.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)
-        circle.BackgroundColor3 = Color3.new(1, 1, 1)
-        circle.BorderSizePixel = 0
-
-        local circleCorner = Instance.new("UICorner")
-        circleCorner.Parent = circle
-        circleCorner.CornerRadius = UDim.new(1, 0)
-
-        local state = default
-        local click = Instance.new("TextButton")
-        click.Parent = frame
-        click.Size = UDim2.new(1, 0, 1, 0)
-        click.BackgroundTransparency = 1
-        click.Text = ""
-
-        click.MouseButton1Click:Connect(function()
-            state = not state
-            TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)}):Play()
-            TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)}):Play()
-            callback(state)
-        end)
-        
-        return frame
-    end
-
-    local function createTextBox(parent, placeholder, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 45)
-        frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        frame.BorderSizePixel = 0
-
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 8)
-
-        local textBox = Instance.new("TextBox")
-        textBox.Parent = frame
-        textBox.Size = UDim2.new(1, -10, 1, -10)
-        textBox.Position = UDim2.new(0, 5, 0, 5)
-        textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        textBox.TextColor3 = Color3.new(1, 1, 1)
-        textBox.PlaceholderText = placeholder
-        textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-        textBox.Font = Enum.Font.Gotham
-        textBox.TextSize = 15
-        textBox.ClearTextOnFocus = false
-
-        local boxCorner = Instance.new("UICorner")
-        boxCorner.Parent = textBox
-        boxCorner.CornerRadius = UDim.new(0, 6)
-
-        textBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed and textBox.Text ~= "" then
-                callback(textBox.Text)
-                textBox.Text = ""
-            end
-        end)
-
-        return frame
-    end
-
-    local function createSlider(parent, text, min, max, default, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 48)
-        frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        frame.BorderSizePixel = 0
-
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 8)
-
-        local label = Instance.new("TextLabel")
-        label.Parent = frame
-        label.Size = UDim2.new(1, 0, 0.4, 0)
-        label.Position = UDim2.new(0.05, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text .. ": " .. default
-        label.TextColor3 = Color3.new(1, 1, 1)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 13
-        label.TextXAlignment = Enum.TextXAlignment.Left
-
-        local sliderBg = Instance.new("Frame")
-        sliderBg.Parent = frame
-        sliderBg.Size = UDim2.new(0.9, 0, 0.3, 0)
-        sliderBg.Position = UDim2.new(0.05, 0, 0.5, 0)
-        sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-        sliderBg.BorderSizePixel = 0
-
-        local sliderCorner = Instance.new("UICorner")
-        sliderCorner.Parent = sliderBg
-        sliderCorner.CornerRadius = UDim.new(0, 4)
-
-        local sliderFill = Instance.new("Frame")
-        sliderFill.Parent = sliderBg
-        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-        sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-        sliderFill.BorderSizePixel = 0
-
-        local fillCorner = Instance.new("UICorner")
-        fillCorner.Parent = sliderFill
-        fillCorner.CornerRadius = UDim.new(0, 4)
-
-        local value = default
-        local dragging = false
-
-        sliderBg.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-            end
-        end)
-
-        sliderBg.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = UserInputService:GetMouseLocation()
-                local absPos = sliderBg.AbsolutePosition
-                local absSize = sliderBg.AbsoluteSize
-                local relativeX = math.clamp((mousePos.X - absPos.X) / absSize.X, 0, 1)
-                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                value = math.floor(min + (max - min) * relativeX)
-                label.Text = text .. ": " .. value
-                callback(value)
-            end
-        end)
-
-        return frame
-    end
-
-    local function changeThemeColor(color)
-        mainFrame.BackgroundColor3 = color
-        title.TextColor3 = color
-        
-        local grad = mainFrame:FindFirstChildOfClass("UIGradient")
-        if grad then
-            grad.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, color),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-            })
-        end
-    end
-
-    -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly", false, function(s)
-        flyEnabled = s
-        if s then startFly() else stopFly() end
+    flyToggle.MouseButton1Click:Connect(function()
+        flyEnabled = not flyEnabled
+        flyToggle.Text = flyEnabled and "🦅 Fly: ON" or "🦅 Fly: OFF"
+        if flyEnabled then startFly() else stopFly() end
     end)
 
-    createToggle(tabMain, "Speed", false, function(s)
-        speedEnabled = s
+    -- Toggle Speed
+    local speedToggle = Instance.new("TextButton")
+    speedToggle.Parent = mainFrame
+    speedToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    speedToggle.Position = UDim2.new(0.05, 0, 0.4, 0)
+    speedToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    speedToggle.Text = "⚡ Speed: OFF"
+    speedToggle.TextColor3 = Color3.new(1, 1, 1)
+    speedToggle.Font = Enum.Font.GothamBold
+    speedToggle.TextSize = 16
+
+    local speedCorner = Instance.new("UICorner")
+    speedCorner.Parent = speedToggle
+
+    speedToggle.MouseButton1Click:Connect(function()
+        speedEnabled = not speedEnabled
+        speedToggle.Text = speedEnabled and "⚡ Speed: ON" or "⚡ Speed: OFF"
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then
-            hum.WalkSpeed = s and fastSpeed or normalSpeed
+            hum.WalkSpeed = speedEnabled and fastSpeed or normalSpeed
         end
     end)
 
-    createToggle(tabMain, "NoClip", false, function(s)
-        noclipEnabled = s
+    -- Toggle NoClip
+    local noclipToggle = Instance.new("TextButton")
+    noclipToggle.Parent = mainFrame
+    noclipToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    noclipToggle.Position = UDim2.new(0.05, 0, 0.55, 0)
+    noclipToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    noclipToggle.Text = "🔄 NoClip: OFF"
+    noclipToggle.TextColor3 = Color3.new(1, 1, 1)
+    noclipToggle.Font = Enum.Font.GothamBold
+    noclipToggle.TextSize = 16
+
+    local noclipCorner = Instance.new("UICorner")
+    noclipCorner.Parent = noclipToggle
+
+    noclipToggle.MouseButton1Click:Connect(function()
+        noclipEnabled = not noclipEnabled
+        noclipToggle.Text = noclipEnabled and "🔄 NoClip: ON" or "🔄 NoClip: OFF"
     end)
 
-    createTextBox(tabMain, "Masukkan username player...", function(username)
-        teleportToPlayer(username)
-    end)
+    -- Teleport Input
+    local tpBox = Instance.new("TextBox")
+    tpBox.Parent = mainFrame
+    tpBox.Size = UDim2.new(0.9, 0, 0, 40)
+    tpBox.Position = UDim2.new(0.05, 0, 0.7, 0)
+    tpBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    tpBox.PlaceholderText = "📞 Nama player..."
+    tpBox.TextColor3 = Color3.new(1, 1, 1)
+    tpBox.Font = Enum.Font.Gotham
+    tpBox.TextSize = 14
 
-    createToggle(tabMain, "Infinity Jump", false, function(s)
-        infinityJumpEnabled = s
-    end)
+    local tpCorner = Instance.new("UICorner")
+    tpCorner.Parent = tpBox
 
-    createToggle(tabMain, "Aimbot", false, function(s)
-        aimbotEnabled = s
-    end)
-
-    createSlider(tabMain, "Aimbot FOV", 50, 500, 150, function(s)
-        aimbotFOV = s
-    end)
-
-    createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
-        aimbotSmoothness = s
-    end)
-
-    -- ===== TAB ESP =====
-    createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
-    createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
-    createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
-
-    -- ===== TAB COLOR =====
-    createButton(tabColor, "🔴 Merah", function()
-        changeThemeColor(Color3.fromRGB(255, 0, 0))
-    end)
-
-    createButton(tabColor, "🟢 Hijau", function()
-        changeThemeColor(Color3.fromRGB(0, 255, 0))
-    end)
-
-    createButton(tabColor, "🔵 Biru", function()
-        changeThemeColor(Color3.fromRGB(0, 0, 255))
-    end)
-
-    createButton(tabColor, "🟡 Kuning", function()
-        changeThemeColor(Color3.fromRGB(255, 255, 0))
-    end)
-
-    createButton(tabColor, "🟠 Orange", function()
-        changeThemeColor(Color3.fromRGB(255, 165, 0))
-    end)
-
-    createButton(tabColor, "🟣 Ungu", function()
-        changeThemeColor(Color3.fromRGB(128, 0, 128))
-    end)
-
-    createButton(tabColor, "💗 Pink", function()
-        changeThemeColor(Color3.fromRGB(255, 192, 203))
-    end)
-
-    createButton(tabColor, "🔷 Cyan", function()
-        changeThemeColor(Color3.fromRGB(0, 255, 255))
-    end)
-
-    -- ===== TAB ABOUT =====
-    local aboutFrame = Instance.new("Frame")
-    aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.9, 0, 0, 200)
-    aboutFrame.Position = UDim2.new(0.05, 0, 0, 10)
-    aboutFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    aboutFrame.BackgroundTransparency = 0.3
-    aboutFrame.BorderSizePixel = 0
-
-    local aboutCorner = Instance.new("UICorner")
-    aboutCorner.Parent = aboutFrame
-    aboutCorner.CornerRadius = UDim.new(0, 10)
-
-    local aboutTitle = Instance.new("TextLabel")
-    aboutTitle.Parent = aboutFrame
-    aboutTitle.Size = UDim2.new(1, 0, 0, 40)
-    aboutTitle.Position = UDim2.new(0, 0, 0, 0)
-    aboutTitle.BackgroundTransparency = 1
-    aboutTitle.Text = "PUTZZ DEVELOPER"
-    aboutTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
-    aboutTitle.Font = Enum.Font.GothamBlack
-    aboutTitle.TextSize = 18
-
-    local line = Instance.new("Frame")
-    line.Parent = aboutFrame
-    line.Size = UDim2.new(0.8, 0, 0, 2)
-    line.Position = UDim2.new(0.1, 0, 0, 45)
-    line.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    line.BorderSizePixel = 0
-
-    local lineCorner = Instance.new("UICorner")
-    lineCorner.Parent = line
-    lineCorner.CornerRadius = UDim.new(0, 2)
-
-    local infoText = Instance.new("TextLabel")
-    infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.9, 0, 0, 120)
-    infoText.Position = UDim2.new(0.05, 0, 0, 55)
-    infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
-                     "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 4.2 (Fast Load)\n" ..
-                     "script type: VIP\n\n" ..
-                     "✨ Fitur:\n" ..
-                     "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
-                     "• Fly, Speed, NoClip\n" ..
-                     "• Teleport ke Player (ketik username)\n" ..
-                     "• Aimbot + Infinity Jump\n" ..
-                     "• 8 Warna Tema Manual\n" ..
-                     "• Timer Sisa Key di Menu\n\n" ..
-                     "📞 Kontak: 088976255131"
-    infoText.TextColor3 = Color3.new(1, 1, 1)
-    infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 13
-    infoText.TextWrapped = true
-    infoText.TextXAlignment = Enum.TextXAlignment.Left
-
-    createButton(tabAbout, "📋 Copy TIKTOK", function()
-        if setclipboard then
-            setclipboard("putzz_mvpp")
-            local notif = Instance.new("TextLabel")
-            notif.Parent = ScreenGui
-            notif.Size = UDim2.new(0, 180, 0, 30)
-            notif.Position = UDim2.new(0.5, -90, 0.8, 0)
-            notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-            notif.BackgroundTransparency = 0.2
-            notif.Text = "✅ TIKTOK copied!"
-            notif.TextColor3 = Color3.new(1,1,1)
-            notif.Font = Enum.Font.GothamBold
-            notif.TextSize = 13
-            notif.BorderSizePixel = 0
-            
-            local notifCorner = Instance.new("UICorner")
-            notifCorner.Parent = notif
-            notifCorner.CornerRadius = UDim.new(0, 8)
-            
-            task.wait(2)
-            notif:Destroy()
+    tpBox.FocusLost:Connect(function(enter)
+        if enter and tpBox.Text ~= "" then
+            teleportToPlayer(tpBox.Text)
+            tpBox.Text = ""
         end
     end)
-
-    -- Update canvas size otomatis
-    task.wait(0.1)
-    
-    -- Aktifkan tab pertama
-    tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
-    contents[1].Visible = true
-
-    -- Notifikasi selamat datang
-    local notifyFrame = Instance.new("Frame")
-    notifyFrame.Parent = ScreenGui
-    notifyFrame.Size = UDim2.new(0, 280, 0, 45)
-    notifyFrame.Position = UDim2.new(0.5, -140, 0.9, 0)
-    notifyFrame.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    notifyFrame.BackgroundTransparency = 0.1
-    notifyFrame.BorderSizePixel = 0
-
-    local notifyCorner = Instance.new("UICorner")
-    notifyCorner.Parent = notifyFrame
-    notifyCorner.CornerRadius = UDim.new(0, 8)
-
-    local notifyText = Instance.new("TextLabel")
-    notifyText.Parent = notifyFrame
-    notifyText.Size = UDim2.new(1, 0, 1, 0)
-    notifyText.BackgroundTransparency = 1
-    notifyText.Text = "✅ Key valid! Selamat datang " .. currentUserKey
-    notifyText.TextColor3 = Color3.new(1, 1, 1)
-    notifyText.Font = Enum.Font.GothamBold
-    notifyText.TextSize = 14
-    notifyText.TextScaled = true
-
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -140, 0.8, 0)}):Play()
-    task.wait(3)
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -140, 0.9, 0)}):Play()
-    task.wait(0.3)
-    notifyFrame:Destroy()
 
     -- Tombol P
     local openBtn = Instance.new("TextButton")
@@ -1411,83 +823,59 @@ local function loadMainScript()
     openBtn.TextColor3 = Color3.new(1, 1, 1)
     openBtn.Font = Enum.Font.GothamBlack
     openBtn.TextSize = 20
-    openBtn.AutoButtonColor = true
-    openBtn.ZIndex = 10
-    openBtn.Active = true
     openBtn.Draggable = true
 
-    local corner = Instance.new("UICorner")
-    corner.Parent = openBtn
-    corner.CornerRadius = UDim.new(1, 0)
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Parent = openBtn
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 1.5
-
-    local menuOpen = true
+    local openCorner = Instance.new("UICorner")
+    openCorner.Parent = openBtn
+    openCorner.CornerRadius = UDim.new(1, 0)
 
     openBtn.MouseButton1Click:Connect(function()
-        menuOpen = not menuOpen
-
-        if menuOpen then
-            mainFrame.Visible = true
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 0.5, -230)
-            }):Play()
-        else
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 1, 0)
-            }):Play()
-            task.wait(0.25)
-            mainFrame.Visible = false
-        end
+        mainFrame.Visible = not mainFrame.Visible
     end)
 
-    print("✅ Putzzdev-HUB - Loaded!")
+    print("✅ Putzzdev-HUB Loaded!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
 VerifyBtn.MouseButton1Click:Connect(function()
     local inputKey = KeyTextBox.Text:gsub("%s+", "")
     if inputKey == "" then
-        StatusLabel.Text = "❌ Masukkan key terlebih dahulu!"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        StatusLabel.Text = "❌ Masukkan key!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         return
     end
     
+    -- Show loading
     showLoading(true)
-    StatusLabel.Text = "⏳ Memverifikasi key..."
+    StatusLabel.Text = "⏳ Memverifikasi..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    task.wait(0.5)
-    
+    -- Langsung cek (tanpa delay)
     local isValid, message = checkKeyExpiry(inputKey)
+    
+    -- Hilangkan loading
     showLoading(false)
     
     if isValid then
         StatusLabel.Text = "✅ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        showNotification("✅ BERHASIL", "Key valid! Memuat script...", 1, Color3.fromRGB(0, 150, 0))
         
-        -- Loading 3 detik
-        StatusLabel.Text = "⏳ Memuat script... (3 detik)"
-        task.wait(1)
-        StatusLabel.Text = "⏳ Memuat script... (2 detik)"
-        task.wait(1)
-        StatusLabel.Text = "⏳ Memuat script... (1 detik)"
+        -- Tunggu 2 detik lalu loading 3 detik
         task.wait(1)
         
-        -- Hapus GUI key
-        KeyGui:Destroy()
+        StatusLabel.Text = "⏳ Loading (3)..."
+        task.wait(1)
+        StatusLabel.Text = "⏳ Loading (2)..."
+        task.wait(1)
+        StatusLabel.Text = "⏳ Loading (1)..."
+        task.wait(1)
         
-        -- Panggil fungsi utama
-        pcall(loadMainScript)
+        -- Jalankan script utama
+        loadMainScript()
         
     else
         StatusLabel.Text = "❌ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
@@ -1498,4 +886,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔐 Putzzdev-HUB Key System Loaded - Masukkan key untuk mengakses script")
+print("🔐 Putzzdev-HUB Key System Loaded")
