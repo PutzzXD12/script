@@ -1,5 +1,5 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 4.1 (FIXED - Menu Muncul)
+-- Version: 4.2 (FIXED - Langsung Masuk)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -322,7 +322,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY' di bawah\n2. Website akan terbuka\n3. Copy key dari website\npilih yang 1d\njika ingin lebih buy\nkarna ini script VIP"
+InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY' di bawah\n2. Website akan terbuka\n3. Copy key dari website\n4. Masukkan key dan klik VERIFY"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -352,7 +352,7 @@ VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-VerifyBtn.Text = "✅ cek key"
+VerifyBtn.Text = "✅ VERIFY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 16
@@ -431,7 +431,7 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI UTAMA (DIPISAH AGAR LEBIH RAPI) ==================
+-- ================== FUNGSI UTAMA (LANGSUNG TAMPIL) ==================
 local function loadMainScript()
     print("✅ " .. SCRIPT_NAME .. " key berhasil - Memuat menu utama...")
     
@@ -474,75 +474,21 @@ local function loadMainScript()
         end
         
         if not targetPlayer then
-            local notif = Instance.new("TextLabel")
-            notif.Parent = ScreenGui
-            notif.Size = UDim2.new(0, 200, 0, 30)
-            notif.Position = UDim2.new(0.5, -100, 0.8, 0)
-            notif.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-            notif.BackgroundTransparency = 0.2
-            notif.Text = "❌ Player tidak ditemukan!"
-            notif.TextColor3 = Color3.new(1,1,1)
-            notif.Font = Enum.Font.GothamBold
-            notif.TextSize = 13
-            notif.BorderSizePixel = 0
-            
-            local notifCorner = Instance.new("UICorner")
-            notifCorner.Parent = notif
-            notifCorner.CornerRadius = UDim.new(0, 8)
-            
-            task.wait(2)
-            notif:Destroy()
-            return
+            return false
         end
         
         if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local notif = Instance.new("TextLabel")
-            notif.Parent = ScreenGui
-            notif.Size = UDim2.new(0, 200, 0, 30)
-            notif.Position = UDim2.new(0.5, -100, 0.8, 0)
-            notif.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-            notif.BackgroundTransparency = 0.2
-            notif.Text = "❌ Player tidak memiliki karakter!"
-            notif.TextColor3 = Color3.new(1,1,1)
-            notif.Font = Enum.Font.GothamBold
-            notif.TextSize = 13
-            notif.BorderSizePixel = 0
-            
-            local notifCorner = Instance.new("UICorner")
-            notifCorner.Parent = notif
-            notifCorner.CornerRadius = UDim.new(0, 8)
-            
-            task.wait(2)
-            notif:Destroy()
-            return
+            return false
         end
         
         local myChar = LocalPlayer.Character
         if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-            return
+            return false
         end
         
         local targetRoot = targetPlayer.Character.HumanoidRootPart
         myChar.HumanoidRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-        
-        local notif = Instance.new("TextLabel")
-        notif.Parent = ScreenGui
-        notif.Size = UDim2.new(0, 200, 0, 30)
-        notif.Position = UDim2.new(0.5, -100, 0.8, 0)
-        notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        notif.BackgroundTransparency = 0.2
-        notif.Text = "✅ Teleport ke " .. targetPlayer.Name
-        notif.TextColor3 = Color3.new(1,1,1)
-        notif.Font = Enum.Font.GothamBold
-        notif.TextSize = 13
-        notif.BorderSizePixel = 0
-        
-        local notifCorner = Instance.new("UICorner")
-        notifCorner.Parent = notif
-        notifCorner.CornerRadius = UDim.new(0, 8)
-        
-        task.wait(2)
-        notif:Destroy()
+        return true
     end
 
     -- ================== FUNGSI ESP ==================
@@ -904,7 +850,7 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 460)  -- Lebih tinggi untuk timer
+    mainFrame.Size = UDim2.new(0, 380, 0, 460)
     mainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
@@ -924,7 +870,7 @@ local function loadMainScript()
     })
     gradient.Rotation = 45
 
-    -- Timer Display (di bagian atas)
+    -- Timer Display
     local timerFrame = Instance.new("Frame")
     timerFrame.Parent = mainFrame
     timerFrame.Size = UDim2.new(0.9, 0, 0, 40)
@@ -977,7 +923,7 @@ local function loadMainScript()
         end
     end)
 
-    -- Header (judul digeser ke bawah)
+    -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 45)
@@ -995,7 +941,7 @@ local function loadMainScript()
     title.TextStrokeTransparency = 0.5
     title.TextXAlignment = Enum.TextXAlignment.Center
 
-    -- Tab bar (disesuaikan posisinya)
+    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(1, 0, 0, 40)
@@ -1025,6 +971,7 @@ local function loadMainScript()
         content.ScrollBarThickness = 5
         content.CanvasSize = UDim2.new(0, 0, 0, 0)
         content.Visible = false
+        content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
         local layout = Instance.new("UIListLayout")
         layout.Parent = content
@@ -1378,7 +1325,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 4.1 (FIXED)\n" ..
+                     "📌 Version: 4.2 (Fast Load)\n" ..
                      "script type: VIP\n\n" ..
                      "✨ Fitur:\n" ..
                      "• ESP Box, Line (Rainbow), Health, Skeleton\n" ..
@@ -1418,31 +1365,19 @@ local function loadMainScript()
         end
     end)
 
-    tabAbout.CanvasSize = UDim2.new(0, 0, 0, 300)
-
-    local function updateCanvas()
-        for _, content in pairs(contents) do
-            local height = 0
-            for _, child in pairs(content:GetChildren()) do
-                if child:IsA("Frame") then
-                    height = height + child.Size.Y.Offset + 6
-                end
-            end
-            content.CanvasSize = UDim2.new(0, 0, 0, height)
-        end
-    end
-
+    -- Update canvas size otomatis
     task.wait(0.1)
-    updateCanvas()
-
+    
+    -- Aktifkan tab pertama
     tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
     contents[1].Visible = true
 
+    -- Notifikasi selamat datang
     local notifyFrame = Instance.new("Frame")
     notifyFrame.Parent = ScreenGui
-    notifyFrame.Size = UDim2.new(0, 220, 0, 35)
-    notifyFrame.Position = UDim2.new(0.5, -110, 0.9, 0)
-    notifyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    notifyFrame.Size = UDim2.new(0, 280, 0, 45)
+    notifyFrame.Position = UDim2.new(0.5, -140, 0.9, 0)
+    notifyFrame.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
     notifyFrame.BackgroundTransparency = 0.1
     notifyFrame.BorderSizePixel = 0
 
@@ -1454,14 +1389,15 @@ local function loadMainScript()
     notifyText.Parent = notifyFrame
     notifyText.Size = UDim2.new(1, 0, 1, 0)
     notifyText.BackgroundTransparency = 1
-    notifyText.Text = "developer by Putzz XD"
+    notifyText.Text = "✅ Key valid! Selamat datang " .. currentUserKey
     notifyText.TextColor3 = Color3.new(1, 1, 1)
-    notifyText.Font = Enum.Font.Gotham
+    notifyText.Font = Enum.Font.GothamBold
     notifyText.TextSize = 14
+    notifyText.TextScaled = true
 
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.8, 0)}):Play()
-    task.wait(2)
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -110, 0.9, 0)}):Play()
+    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -140, 0.8, 0)}):Play()
+    task.wait(3)
+    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -140, 0.9, 0)}):Play()
     task.wait(0.3)
     notifyFrame:Destroy()
 
@@ -1508,10 +1444,10 @@ local function loadMainScript()
         end
     end)
 
-    print("✅ Putzzdev-HUB - Timer Display Active")
+    print("✅ Putzzdev-HUB - Loaded!")
 end
 
--- Event verify button (panggil fungsi utama setelah key valid)
+-- ================== EVENT VERIFY BUTTON ==================
 VerifyBtn.MouseButton1Click:Connect(function()
     local inputKey = KeyTextBox.Text:gsub("%s+", "")
     if inputKey == "" then
@@ -1532,13 +1468,21 @@ VerifyBtn.MouseButton1Click:Connect(function()
     if isValid then
         StatusLabel.Text = "✅ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        showNotification("✅ BERHASIL", message, 2, Color3.fromRGB(0, 150, 0))
+        showNotification("✅ BERHASIL", "Key valid! Memuat script...", 1, Color3.fromRGB(0, 150, 0))
         
+        -- Loading 3 detik
+        StatusLabel.Text = "⏳ Memuat script... (3 detik)"
         task.wait(1)
+        StatusLabel.Text = "⏳ Memuat script... (2 detik)"
+        task.wait(1)
+        StatusLabel.Text = "⏳ Memuat script... (1 detik)"
+        task.wait(1)
+        
+        -- Hapus GUI key
         KeyGui:Destroy()
         
         -- Panggil fungsi utama
-        loadMainScript()
+        pcall(loadMainScript)
         
     else
         StatusLabel.Text = "❌ " .. message
