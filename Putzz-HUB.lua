@@ -3,7 +3,7 @@
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
-local KEY_URL = "https://pastebin.com/raw/Y53fTNgy"  -- URL RAW Pastebin key kamu
+local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin key kamu
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Ganti dengan GitHub Pages kamu nanti
 local SCRIPT_NAME = "Putzzdev-HUB"
 
@@ -302,7 +302,7 @@ WebsiteBtn.MouseButton1Click:Connect(function()
             setclipboard(WEBSITE_URL)
             StatusLabel.Text = "✅ URL website sudah di copy! Buka browser dan paste"
             StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            showNotification("✅ URL DISALIN!", "Buka Chrome/HP dan paste linknya", 3, Color3.fromRGB(0, 150, 0))
+            showNotification("✅ URL DISALIN!", 3, Color3.fromRGB(0, 150, 0))
         else
             StatusLabel.Text = "🌐 Website: " .. WEBSITE_URL
             StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
@@ -1357,7 +1357,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        print("✅ Putzzdev-HUB Loaded! (Key Valid) - Tekan P untuk buka/tutup")
+        print("✅ Putzzdev-HUB")
         
     else
         StatusLabel.Text = "❌ Key salah! Coba lagi."
