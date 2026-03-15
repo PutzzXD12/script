@@ -303,7 +303,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY'\n2. Copy key dari website\n3. Masukkan key dan klik VERIFY\n\n🔑 Key Tersedia: PUTZZDEV-HUB-X7K9-1D (1 Hari)"
+InfoText.Text = "dapatkan key gratis cuma 1 hari\n ''\n\n\n\n"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -311,7 +311,7 @@ InfoText.TextWrapped = true
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
 -- TextBox untuk key
-local KeyTextBox = Instance.new("TextBox")
+local KeyTextBox = Instance.new("Key anda")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
 KeyTextBox.Position = UDim2.new(0.1, 0, 0.48, 0)
