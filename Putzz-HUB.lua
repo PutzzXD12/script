@@ -1,5 +1,5 @@
--- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 5.4 (Anti Damage FIXED + Scroll)
+-- ================== PUTZZDEV-HUB V6 (RAINBOW GLOW + DETIK) ==================
+-- Version: 6.1 (Ultimate Rainbow Edition + Timer Detik)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -59,14 +59,16 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ANTI DAMAGE (FIXED - SUPER GOD MODE)
+-- ANTI DAMAGE
 local antiDamageEnabled = false
 local antiDamageConnection = nil
-local godModeEnabled = false
 local antiFallDamageEnabled = false
-local oneHitProtection = false
 
--- ================== FUNGSI KEY SYSTEM (GITHUB JSON) ==================
+-- Rainbow Variables
+local rainbowHue = 0
+local rainbowSpeed = 0.02
+
+-- ================== FUNGSI KEY SYSTEM ==================
 
 -- Load data key dari file
 local function loadKeyData()
@@ -114,36 +116,36 @@ local function getKeysFromGitHub()
     return nil
 end
 
--- Fungsi dapatkan sisa waktu
+-- ================== FUNGSI TIMER DENGAN DETIK ==================
 local function getTimeRemaining(expiryTimestamp)
     local currentTime = os.time()
     local remaining = expiryTimestamp - currentTime
     
     if remaining <= 0 then
-        return 0, 0, "Expired"
+        return 0, 0, 0, 0, "EXPIRED"
     end
     
     local days = math.floor(remaining / 86400)
     local hours = math.floor((remaining % 86400) / 3600)
+    local minutes = math.floor((remaining % 3600) / 60)
+    local seconds = remaining % 60
     
-    if days > 0 then
-        return days, hours, days .. " hari " .. hours .. " jam"
-    else
-        return 0, hours, hours .. " jam"
-    end
+    -- Format string dengan leading zero (01, 02, dll)
+    local timeStr = string.format("%d Hari : %02d Jam : %02d Menit : %02d Detik", 
+        days, hours, minutes, seconds)
+    
+    return days, hours, minutes, seconds, timeStr
 end
 
--- Fungsi cek expiry key (dari GitHub JSON)
+-- Fungsi cek expiry key
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
-    -- Ambil data key dari GitHub
     local keysData = getKeysFromGitHub()
     if not keysData then
         return false, "Gagal mengambil data key dari server"
     end
     
-    -- Cari key yang cocok
     local foundKey = nil
     local expiryDays = nil
     
@@ -159,9 +161,7 @@ local function checkKeyExpiry(inputKey)
         return false, "KEY TIDAK TERDAFTAR!"
     end
     
-    -- Cek apakah key sudah pernah dipakai
     if activeKeys[inputKey] then
-        -- Key sudah dipakai, cek expiry
         local firstUsed = activeKeys[inputKey].firstUsed
         local currentTime = os.time()
         local expiryTime = firstUsed + (expiryDays * 86400)
@@ -169,13 +169,12 @@ local function checkKeyExpiry(inputKey)
         if currentTime > expiryTime then
             return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
         else
-            local days, hours, timeStr = getTimeRemaining(expiryTime)
+            local days, hours, minutes, seconds, timeStr = getTimeRemaining(expiryTime)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
             return true, "KEY VALID! Sisa " .. timeStr
         end
     else
-        -- Key baru pertama kali dipakai
         local currentTime = os.time()
         activeKeys[inputKey] = {
             firstUsed = currentTime,
@@ -234,7 +233,7 @@ local function showNotification(title, text, duration, color)
     notif:Destroy()
 end
 
--- ================== BUAT GUI KEY SYSTEM (PROFESSIONAL) ==================
+-- ================== BUAT GUI KEY SYSTEM ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -277,7 +276,7 @@ local KeyBorderCorner = Instance.new("UICorner")
 KeyBorderCorner.Parent = KeyBorder
 KeyBorderCorner.CornerRadius = UDim.new(0, 16)
 
--- Header premium
+-- Header
 local KeyHeader = Instance.new("Frame")
 KeyHeader.Parent = KeyFrame
 KeyHeader.Size = UDim2.new(1, 0, 0, 80)
@@ -305,7 +304,7 @@ KeyTitle.TextSize = 16
 KeyTitle.TextStrokeTransparency = 0.3
 KeyTitle.TextStrokeColor3 = Color3.fromRGB(0, 200, 255)
 
--- Info Box (PREMIUM)
+-- Info Box
 local InfoFrame = Instance.new("Frame")
 InfoFrame.Parent = KeyFrame
 InfoFrame.Size = UDim2.new(0.9, 0, 0, 70)
@@ -339,7 +338,7 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Label "MASUKAN KEY ANDA" (PREMIUM)
+-- Label "MASUKAN KEY ANDA"
 local KeyLabel = Instance.new("TextLabel")
 KeyLabel.Parent = KeyFrame
 KeyLabel.Size = UDim2.new(0.8, 0, 0, 20)
@@ -351,7 +350,7 @@ KeyLabel.Font = Enum.Font.GothamBold
 KeyLabel.TextSize = 12
 KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- TextBox untuk key (PREMIUM)
+-- TextBox untuk key
 local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
@@ -359,7 +358,7 @@ KeyTextBox.Position = UDim2.new(0.1, 0, 0.42, 0)
 KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 KeyTextBox.BackgroundTransparency = 0.1
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
-KeyTextBox.PlaceholderText = "Contoh: Putzz ganteng"
+KeyTextBox.PlaceholderText = "Masukkan key..."
 KeyTextBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
 KeyTextBox.Font = Enum.Font.Gotham
 KeyTextBox.TextSize = 14
@@ -369,13 +368,7 @@ local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
 KeyBoxCorner.CornerRadius = UDim.new(0, 8)
 
-local KeyBoxStroke = Instance.new("UIStroke")
-KeyBoxStroke.Parent = KeyTextBox
-KeyBoxStroke.Color = Color3.fromRGB(0, 200, 255)
-KeyBoxStroke.Thickness = 1
-KeyBoxStroke.Transparency = 0.5
-
--- Tombol Verify (PREMIUM)
+-- Tombol Verify
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
@@ -391,7 +384,7 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Website (PREMIUM)
+-- Tombol Website
 local WebsiteBtn = Instance.new("TextButton")
 WebsiteBtn.Parent = KeyFrame
 WebsiteBtn.Size = UDim2.new(0.5, 0, 0, 35)
@@ -407,7 +400,7 @@ local WebsiteCorner = Instance.new("UICorner")
 WebsiteCorner.Parent = WebsiteBtn
 WebsiteCorner.CornerRadius = UDim.new(0, 6)
 
--- Status Label (PREMIUM)
+-- Status Label
 local StatusFrame = Instance.new("Frame")
 StatusFrame.Parent = KeyFrame
 StatusFrame.Size = UDim2.new(0.9, 0, 0, 40)
@@ -485,71 +478,24 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI ANTI DAMAGE (SUPER GOD MODE - FIXED) ==================
+-- ================== FUNGSI ANTI DAMAGE ==================
 local function setupAntiDamage()
-    -- Hapus koneksi lama jika ada
     if antiDamageConnection then
         antiDamageConnection:Disconnect()
         antiDamageConnection = nil
     end
     
-    -- Buat koneksi baru yang SUPER CEPAT
     antiDamageConnection = RunService.Heartbeat:Connect(function()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                -- SUPER GOD MODE: Langsung set health ke max setiap saat
-                -- Ini akan mengalahkan one-hit kill
-                if humanoid.Health < humanoid.MaxHealth then
-                    humanoid.Health = humanoid.MaxHealth
-                end
-                
-                -- Tambahan proteksi: cegah death
-                if humanoid.Health <= 0 then
-                    humanoid.Health = humanoid.MaxHealth
-                end
-                
-                -- Anti Fall Damage
-                if antiFallDamageEnabled then
-                    if humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
-                       humanoid:GetState() == Enum.HumanoidStateType.FallingDown then
-                        -- Reset health terus menerus saat jatuh
-                        humanoid.Health = humanoid.MaxHealth
-                    end
-                end
+            if humanoid and humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
             end
         end
     end)
-    
-    -- Tambahan koneksi untuk mendeteksi ketika health berubah (lebih responsif)
-    local char = LocalPlayer.Character
-    if char then
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.HealthChanged:Connect(function(newHealth)
-                if antiDamageEnabled and newHealth < humanoid.MaxHealth then
-                    humanoid.Health = humanoid.MaxHealth
-                end
-            end)
-        end
-    end
 end
 
--- Fungsi untuk god mode (alias anti damage)
-local function toggleGodMode(state)
-    antiDamageEnabled = state
-    if state then
-        setupAntiDamage()
-        showNotification("✅ GOD MODE AKTIF", "bro", 2, Color3.fromRGB(0, 150, 0))
-    else
-        if antiDamageConnection then
-            antiDamageConnection:Disconnect()
-            antiDamageConnection = nil
-        end
-    end
-end
-
--- ================== FUNGSI UTAMA (FULL FITUR) ==================
+-- ================== FUNGSI UTAMA ==================
 local function loadMainScript()
     -- Hapus GUI key
     KeyGui:Destroy()
@@ -641,7 +587,7 @@ local function loadMainScript()
         -- ESP LINE WARNA PUTIH
         local line = Drawing.new("Line")
         line.Thickness = 2
-        line.Color = Color3.fromRGB(255, 255, 255)  -- PUTIH
+        line.Color = Color3.fromRGB(255, 255, 255)
         line.Visible = false
 
         local healthBg = Drawing.new("Square")
@@ -752,8 +698,20 @@ local function loadMainScript()
         return closest
     end
 
-    -- Rainbow color untuk ESP Line (sekarang warna putih, jadi rainbow dimatikan)
+    -- Rainbow color untuk background GUI
+    local hue = 0
     RunService.RenderStepped:Connect(function()
+        hue = (hue + 0.005) % 1
+        local rainbowColor = Color3.fromHSV(hue, 1, 1)
+        
+        -- Update warna border dan glow
+        if mainFrame then
+            local border = mainFrame:FindFirstChild("Border")
+            if border then
+                border.BorderColor3 = rainbowColor
+            end
+        end
+        
         -- ESP Box
         for player, esp in pairs(ESPTable) do
             local box, name, dist, line, healthBg, healthFg = unpack(esp)
@@ -819,7 +777,6 @@ local function loadMainScript()
                         line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
                         line.To = Vector2.new(pos.X, pos.Y)
                         line.Visible = true
-                        -- WARNA TETAP PUTIH (tidak berubah)
                         line.Color = Color3.fromRGB(255, 255, 255)
                     else
                         line.Visible = false
@@ -965,7 +922,7 @@ local function loadMainScript()
         end
     end)
 
-    -- ================== GUI UTAMA (LENGKAP DENGAN SCROLL) ==================
+    -- ================== GUI UTAMA RAINBOW ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "PutzzdevHub"
@@ -995,10 +952,23 @@ local function loadMainScript()
     })
     gradient.Rotation = 45
 
-    -- Timer Display
+    -- Border Rainbow
+    local border = Instance.new("Frame")
+    border.Name = "Border"
+    border.Parent = mainFrame
+    border.Size = UDim2.new(1, 0, 1, 0)
+    border.BackgroundTransparency = 1
+    border.BorderSizePixel = 3
+    border.BorderColor3 = Color3.fromRGB(0, 200, 255)
+
+    local borderCorner = Instance.new("UICorner")
+    borderCorner.Parent = border
+    borderCorner.CornerRadius = UDim.new(0, 16)
+
+    -- Timer Display (DENGAN DETIK)
     local timerFrame = Instance.new("Frame")
     timerFrame.Parent = mainFrame
-    timerFrame.Size = UDim2.new(0.9, 0, 0, 40)
+    timerFrame.Size = UDim2.new(0.9, 0, 0, 50)
     timerFrame.Position = UDim2.new(0.05, 0, 0.02, 0)
     timerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     timerFrame.BackgroundTransparency = 0.3
@@ -1010,36 +980,39 @@ local function loadMainScript()
 
     local timerIcon = Instance.new("TextLabel")
     timerIcon.Parent = timerFrame
-    timerIcon.Size = UDim2.new(0, 30, 1, 0)
+    timerIcon.Size = UDim2.new(0, 40, 1, 0)
     timerIcon.Position = UDim2.new(0, 5, 0, 0)
     timerIcon.BackgroundTransparency = 1
     timerIcon.Text = "⏳"
     timerIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
     timerIcon.Font = Enum.Font.GothamBold
-    timerIcon.TextSize = 20
+    timerIcon.TextSize = 24
 
     local timerLabel = Instance.new("TextLabel")
     timerLabel.Parent = timerFrame
-    timerLabel.Size = UDim2.new(1, -40, 1, 0)
-    timerLabel.Position = UDim2.new(0, 35, 0, 0)
+    timerLabel.Size = UDim2.new(1, -50, 1, 0)
+    timerLabel.Position = UDim2.new(0, 45, 0, 0)
     timerLabel.BackgroundTransparency = 1
     timerLabel.Text = "Memuat informasi key..."
     timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     timerLabel.Font = Enum.Font.GothamBold
-    timerLabel.TextSize = 14
+    timerLabel.TextSize = 13
     timerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    timerLabel.TextWrapped = true
 
-    -- Update timer setiap detik
+    -- Update timer setiap DETIK
     spawn(function()
         while task.wait(1) do
             if currentUserKey and keyExpiryTime > 0 then
-                local days, hours, timeStr = getTimeRemaining(keyExpiryTime)
-                if days == 0 and hours == 0 then
+                local days, hours, minutes, seconds, timeStr = getTimeRemaining(keyExpiryTime)
+                if days == 0 and hours == 0 and minutes == 0 and seconds == 0 then
                     timerLabel.Text = "⚠️ KEY SUDAH EXPIRED! ⚠️"
                     timerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    timerIcon.TextColor3 = Color3.fromRGB(255, 0, 0)
                 else
-                    timerLabel.Text = "Sisa waktu key: " .. timeStr
+                    timerLabel.Text = timeStr
                     timerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    timerIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
                 end
             else
                 timerLabel.Text = "Key: " .. (currentUserKey or "Tidak ada")
@@ -1052,7 +1025,7 @@ local function loadMainScript()
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 45)
-    header.Position = UDim2.new(0, 0, 0, 45)
+    header.Position = UDim2.new(0, 0, 0, 60)
     header.BackgroundTransparency = 1
 
     local title = Instance.new("TextLabel")
@@ -1060,17 +1033,17 @@ local function loadMainScript()
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.Text = "Putzzdev-HUB"
-    title.TextColor3 = Color3.fromRGB(0, 200, 255)
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
     title.TextSize = 30
-    title.TextStrokeTransparency = 0.5
-    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.TextStrokeTransparency = 0
+    title.TextStrokeColor3 = Color3.fromRGB(0, 200, 255)
 
     -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
-    tabBar.Size = UDim2.new(1, 0, 0, 40)
-    tabBar.Position = UDim2.new(0, 0, 0, 90)
+    tabBar.Size = UDim2.new(1, -20, 0, 40)
+    tabBar.Position = UDim2.new(0, 10, 0, 110)
     tabBar.BackgroundTransparency = 1
 
     local tabs = {}
@@ -1079,19 +1052,23 @@ local function loadMainScript()
     local function createTab(name, icon, idx)
         local btn = Instance.new("TextButton")
         btn.Parent = tabBar
-        btn.Size = UDim2.new(0.25, 0, 1, 0)
-        btn.Position = UDim2.new((idx-1)*0.25, 0, 0, 0)
-        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(0.25, -2, 1, -4)
+        btn.Position = UDim2.new((idx-1)*0.25, 5, 0, 2)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        btn.BackgroundTransparency = 0.3
         btn.Text = icon.." "..name
         btn.TextColor3 = Color3.fromRGB(180, 180, 180)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 14
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.Parent = btn
+        btnCorner.CornerRadius = UDim.new(0, 8)
 
-        -- CONTENT DENGAN SCROLL (AUTO)
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(1, -20, 1, -190)
-        content.Position = UDim2.new(0, 10, 0, 135)
+        content.Size = UDim2.new(1, -20, 1, -200)
+        content.Position = UDim2.new(0, 10, 0, 155)
         content.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
         content.BackgroundTransparency = 0.5
         content.BorderSizePixel = 0
@@ -1101,12 +1078,10 @@ local function loadMainScript()
         content.Visible = false
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-        -- Layout untuk content
         local layout = Instance.new("UIListLayout")
         layout.Parent = content
         layout.Padding = UDim.new(0, 8)
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
 
         table.insert(tabs, btn)
         table.insert(contents, content)
@@ -1131,7 +1106,7 @@ local function loadMainScript()
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 38)
+        frame.Size = UDim2.new(0.9, 0, 0, 40)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1155,7 +1130,7 @@ local function loadMainScript()
     local function createToggle(parent, text, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 38)
+        frame.Size = UDim2.new(0.9, 0, 0, 40)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1324,20 +1299,7 @@ local function loadMainScript()
         return frame
     end
 
-    local function changeThemeColor(color)
-        mainFrame.BackgroundColor3 = color
-        title.TextColor3 = color
-        
-        local grad = mainFrame:FindFirstChildOfClass("UIGradient")
-        if grad then
-            grad.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, color),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
-            })
-        end
-    end
-
-    -- ===== TAB MAIN (DENGAN SCROLL) =====
+    -- ===== TAB MAIN =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1375,59 +1337,67 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
 
-    -- ANTI DAMAGE FIXED (SUPER GOD MODE)
-    createToggle(tabMain, "⚡ GOD MODE (Anti Damage)", false, function(s)
+    createToggle(tabMain, "⚡ GOD MODE", false, function(s)
         antiDamageEnabled = s
-        toggleGodMode(s)
-    end)
-
-    createToggle(tabMain, "🛡️ Anti Fall Damage", false, function(s)
-        antiFallDamageEnabled = s
+        if s then
+            setupAntiDamage()
+        elseif antiDamageConnection then
+            antiDamageConnection:Disconnect()
+            antiDamageConnection = nil
+        end
     end)
 
     -- ===== TAB ESP =====
     createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP Line (Putih)", false, function(s) lineEnabled = s end)
+    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
     -- ===== TAB COLOR =====
     createButton(tabColor, "🔴 Merah", function()
-        changeThemeColor(Color3.fromRGB(255, 0, 0))
+        border.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 0, 0)
     end)
 
     createButton(tabColor, "🟢 Hijau", function()
-        changeThemeColor(Color3.fromRGB(0, 255, 0))
+        border.BorderColor3 = Color3.fromRGB(0, 255, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 255, 0)
     end)
 
     createButton(tabColor, "🔵 Biru", function()
-        changeThemeColor(Color3.fromRGB(0, 0, 255))
+        border.BorderColor3 = Color3.fromRGB(0, 0, 255)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 0, 255)
     end)
 
     createButton(tabColor, "🟡 Kuning", function()
-        changeThemeColor(Color3.fromRGB(255, 255, 0))
+        border.BorderColor3 = Color3.fromRGB(255, 255, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 255, 0)
     end)
 
     createButton(tabColor, "🟠 Orange", function()
-        changeThemeColor(Color3.fromRGB(255, 165, 0))
+        border.BorderColor3 = Color3.fromRGB(255, 165, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 165, 0)
     end)
 
     createButton(tabColor, "🟣 Ungu", function()
-        changeThemeColor(Color3.fromRGB(128, 0, 128))
+        border.BorderColor3 = Color3.fromRGB(128, 0, 128)
+        title.TextStrokeColor3 = Color3.fromRGB(128, 0, 128)
     end)
 
     createButton(tabColor, "💗 Pink", function()
-        changeThemeColor(Color3.fromRGB(255, 192, 203))
+        border.BorderColor3 = Color3.fromRGB(255, 192, 203)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 192, 203)
     end)
 
     createButton(tabColor, "🔷 Cyan", function()
-        changeThemeColor(Color3.fromRGB(0, 255, 255))
+        border.BorderColor3 = Color3.fromRGB(0, 255, 255)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 255, 255)
     end)
 
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.9, 0, 0, 180)
+    aboutFrame.Size = UDim2.new(0.9, 0, 0, 150)
     aboutFrame.Position = UDim2.new(0.05, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1449,17 +1419,16 @@ local function loadMainScript()
 
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.9, 0, 0, 110)
+    infoText.Size = UDim2.new(0.9, 0, 0, 80)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 5.4 (Super God Mode)\n" ..
+                     "📌 Version: 5.0 (Rainbow + Detik)\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
                      "✨ Fitur: ESP, Fly, Speed, NoClip,\n" ..
-                     "   Aimbot, Infinity Jump, Teleport,\n" ..
-                     "   ✅ SUPER GOD MODE (Anti One-Hit)\n" ..
-                     "   ✅ Anti Fall Damage\n\n" ..
+                     "   \n" ..
+                     "   \n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1491,7 +1460,7 @@ local function loadMainScript()
         end
     end)
 
-    -- Update canvas size untuk scroll
+    -- Update canvas size
     task.wait(0.1)
     for _, content in pairs(contents) do
         local height = 0
@@ -1507,97 +1476,79 @@ local function loadMainScript()
     tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
     contents[1].Visible = true
 
-    -- Notifikasi selamat datang
-    local notifyFrame = Instance.new("Frame")
-    notifyFrame.Parent = ScreenGui
-    notifyFrame.Size = UDim2.new(0, 320, 0, 60)
-    notifyFrame.Position = UDim2.new(0.5, -160, 0.9, 0)
-    notifyFrame.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    notifyFrame.BackgroundTransparency = 0.1
-    notifyFrame.BorderSizePixel = 0
+    -- ================== TOMBOL P DENGAN EFEK GLOW (OPSI 3) ==================
+    local openBtn = Instance.new("TextButton")
+    openBtn.Parent = ScreenGui
+    openBtn.Size = UDim2.new(0, 60, 0, 60)
+    openBtn.Position = UDim2.new(0, 15, 0.5, -30)
+    openBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    openBtn.BackgroundTransparency = 0.1
+    openBtn.Text = "P"
+    openBtn.TextColor3 = Color3.new(1, 1, 1)
+    openBtn.Font = Enum.Font.GothamBlack
+    openBtn.TextSize = 30
+    openBtn.ZIndex = 2
+    openBtn.Active = true
+    openBtn.Draggable = true
 
-    local notifyCorner = Instance.new("UICorner")
-    notifyCorner.Parent = notifyFrame
-    notifyCorner.CornerRadius = UDim.new(0, 8)
+    -- Bikin bulat
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.Parent = openBtn
+    btnCorner.CornerRadius = UDim.new(1, 0)
 
-    local notifyText = Instance.new("TextLabel")
-    notifyText.Parent = notifyFrame
-    notifyText.Size = UDim2.new(1, 0, 1, 0)
-    notifyText.BackgroundTransparency = 1
-    notifyText.Text = "✅ GOD MODE AKTIF! Kamu tidak akan mati!"
-    notifyText.TextColor3 = Color3.new(1, 1, 1)
-    notifyText.Font = Enum.Font.GothamBold
-    notifyText.TextSize = 14
-    notifyText.TextScaled = true
+    -- Efek Glow
+    local glow = Instance.new("ImageLabel")
+    glow.Parent = openBtn
+    glow.Size = UDim2.new(1.4, 0, 1.4, 0)
+    glow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+    glow.BackgroundTransparency = 1
+    glow.Image = "rbxassetid://3570695787"
+    glow.ImageColor3 = Color3.fromRGB(0, 200, 255)
+    glow.ImageTransparency = 0.5
+    glow.ScaleType = Enum.ScaleType.Slice
+    glow.SliceCenter = Rect.new(10, 10, 118, 118)
+    glow.ZIndex = 1
 
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -160, 0.8, 0)}):Play()
-    task.wait(3)
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -160, 0.9, 0)}):Play()
-    task.wait(0.3)
-    notifyFrame:Destroy()
+    -- Animasi warna glow berubah
+    spawn(function()
+        local hue = 0
+        while true do
+            hue = (hue + 0.01) % 1
+            local rainbow = Color3.fromHSV(hue, 1, 1)
+            glow.ImageColor3 = rainbow
+            task.wait(0.05)
+        end
+    end)
 
-    -- Tombol Utama
-local openBtn = Instance.new("TextButton")
-openBtn.Parent = ScreenGui
-openBtn.Size = UDim2.new(0, 55, 0, 55)
-openBtn.Position = UDim2.new(0, 15, 0.5, -27.5)
-openBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-openBtn.BackgroundTransparency = 0.1
-openBtn.Text = "P"
-openBtn.TextColor3 = Color3.new(1, 1, 1)
-openBtn.Font = Enum.Font.GothamBlack
-openBtn.TextSize = 30
-openBtn.ZIndex = 2
-openBtn.Active = true
-openBtn.Draggable = true
+    -- Fungsi buka/tutup menu
+    local menuOpen = true
+    openBtn.MouseButton1Click:Connect(function()
+        menuOpen = not menuOpen
 
--- Bikin bulat
-local corner = Instance.new("UICorner")
-corner.Parent = openBtn
-corner.CornerRadius = UDim.new(1, 0)
+        if menuOpen then
+            mainFrame.Visible = true
+            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+                Position = UDim2.new(0.5, -190, 0.5, -260)
+            }):Play()
+        else
+            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+                Position = UDim2.new(0.5, -190, 1, 0)
+            }):Play()
+            task.wait(0.25)
+            mainFrame.Visible = false
+        end
+    end)
 
--- Efek Glow (lingkaran 1)
-local glow1 = Instance.new("ImageLabel")
-glow1.Parent = openBtn
-glow1.Size = UDim2.new(1.3, 0, 1.3, 0)
-glow1.Position = UDim2.new(-0.15, 0, -0.15, 0)
-glow1.BackgroundTransparency = 1
-glow1.Image = "rbxassetid://3570695787"
-glow1.ImageColor3 = Color3.fromRGB(0, 200, 255)
-glow1.ImageTransparency = 0.3
-glow1.ZIndex = 1
+    -- Animasi hover
+    openBtn.MouseEnter:Connect(function()
+        TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 65, 0, 65)}):Play()
+    end)
 
--- Efek Glow (lingkaran 2 - lebih besar)
-local glow2 = Instance.new("ImageLabel")
-glow2.Parent = openBtn
-glow2.Size = UDim2.new(1.5, 0, 1.5, 0)
-glow2.Position = UDim2.new(-0.25, 0, -0.25, 0)
-glow2.BackgroundTransparency = 1
-glow2.Image = "rbxassetid://3570695787"
-glow2.ImageColor3 = Color3.fromRGB(0, 200, 255)
-glow2.ImageTransparency = 0.6
-glow2.ZIndex = 0
+    openBtn.MouseLeave:Connect(function()
+        TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
+    end)
 
--- Animasi glow bergerak
-spawn(function()
-    local time = 0
-    while true do
-        time = time + 0.05
-        local pulse = 1.3 + math.sin(time) * 0.1
-        local pulse2 = 1.5 + math.sin(time + 2) * 0.15
-        local trans = 0.3 + math.sin(time) * 0.1
-        local trans2 = 0.6 + math.sin(time + 2) * 0.1
-        
-        glow1.Size = UDim2.new(pulse, 0, pulse, 0)
-        glow1.ImageTransparency = trans
-        glow2.Size = UDim2.new(pulse2, 0, pulse2, 0)
-        glow2.ImageTransparency = trans2
-        
-        task.wait(0.05)
-    end
-end)
-
-    print("✅ Putzzdev-HUB - SUPER GOD MODE ACTIVE! (Anti One-Hit Kill)")
+    print("✅ Putzzdev-HUB - Rainbow + Timer Detik!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1610,16 +1561,13 @@ VerifyBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    -- Show loading
     showLoading(true)
     StatusLabel.Text = "Memverifikasi Key..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
-    -- Langsung cek (tanpa delay)
     local isValid, message = checkKeyExpiry(inputKey)
     
-    -- Hilangkan loading
     showLoading(false)
     
     if isValid then
@@ -1627,9 +1575,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         StatusIcon.Text = "✅"
         
-        -- Tunggu 2 detik lalu loading 3 detik
         task.wait(1)
-        
         StatusLabel.Text = "Loading (3)..."
         task.wait(1)
         StatusLabel.Text = "Loading (2)..."
@@ -1637,7 +1583,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Loading (1)..."
         task.wait(1)
         
-        -- Jalankan script utama
         pcall(loadMainScript)
         
     else
@@ -1655,4 +1600,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("selamat datang di script Putzzdev-HUB - SUPER GOD MODE EDITION")
+print("🔥 Putzzdev-HUB V5.0")
