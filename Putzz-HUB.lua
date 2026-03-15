@@ -59,6 +59,11 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
+48 -- ANTI DAMAGE
+49 local antiDamageEnabled = false
+50 local godModeEnabled = false
+51 local antiFallDamageEnabled = false
+
 -- ================== FUNGSI KEY SYSTEM (GITHUB JSON) ==================
 
 -- Load data key dari file
@@ -512,6 +517,52 @@ local function loadMainScript()
             end
         end)
     end)
+    
+    -- ================== FUNGSI ANTI DAMAGE ==================
+local function setupAntiDamage()
+    local player = LocalPlayer
+    if not player then return end
+    
+    local function blockDamage(char)
+        if not char then return end
+        
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+        
+        spawn(function()
+            while antiDamageEnabled and char and humanoid do
+                wait(0.1)
+                if humanoid.Health < humanoid.MaxHealth then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+            end
+        end)
+        
+        char.ChildAdded:Connect(function(child)
+            if antiFallDamageEnabled and child:IsA("Script") and child.Name:lower():find("fall") then
+                child:Destroy()
+            end
+        end)
+    end
+    
+    if player.Character then
+        blockDamage(player.Character)
+    end
+    
+    player.CharacterAdded:Connect(function(char)
+        wait(0.5)
+        blockDamage(char)
+    end)
+end
+
+RunService.Heartbeat:Connect(function()
+    if antiDamageEnabled and LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = humanoid.MaxHealth
+        end
+    end
+end)
 
     -- ================== FUNGSI TELEPORT KE PLAYER ==================
     local function teleportToPlayer(username)
@@ -1300,6 +1351,24 @@ local function loadMainScript()
     createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
         aimbotSmoothness = s
     end)
+    
+    -- ANTI DAMAGE
+createToggle(tabMain, "Anti Damage", false, function(s)
+    antiDamageEnabled = s
+    if s then
+        setupAntiDamage()
+    end
+end)
+
+createToggle(tabMain, "God Mode (No Damage)", false, function(s)
+    godModeEnabled = s
+    antiDamageEnabled = true
+    setupAntiDamage()
+end)
+
+createToggle(tabMain, "Anti Fall Damage", false, function(s)
+    antiFallDamageEnabled = s
+end)
 
     -- ===== TAB ESP =====
     createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
@@ -1569,4 +1638,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔐 Putzzdev-HUB Key System (Professional GUI) Loaded")
+print("selamat datang di script Putzzdev-HUB")
