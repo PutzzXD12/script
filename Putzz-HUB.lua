@@ -1,5 +1,5 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 5.3 (ESP Line Putih + Anti Damage Fixed)
+-- Version: 5.4 (Anti Damage FIXED + Scroll)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -59,11 +59,12 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ANTI DAMAGE (FIXED)
+-- ANTI DAMAGE (FIXED - SUPER GOD MODE)
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local godModeEnabled = false
 local antiFallDamageEnabled = false
+local oneHitProtection = false
 
 -- ================== FUNGSI KEY SYSTEM (GITHUB JSON) ==================
 
@@ -484,7 +485,7 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI ANTI DAMAGE (FIXED) ==================
+-- ================== FUNGSI ANTI DAMAGE (SUPER GOD MODE - FIXED) ==================
 local function setupAntiDamage()
     -- Hapus koneksi lama jika ada
     if antiDamageConnection then
@@ -492,27 +493,46 @@ local function setupAntiDamage()
         antiDamageConnection = nil
     end
     
-    -- Buat koneksi baru
+    -- Buat koneksi baru yang SUPER CEPAT
     antiDamageConnection = RunService.Heartbeat:Connect(function()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if humanoid then
-                -- God Mode / Anti Damage
+                -- SUPER GOD MODE: Langsung set health ke max setiap saat
+                -- Ini akan mengalahkan one-hit kill
                 if humanoid.Health < humanoid.MaxHealth then
                     humanoid.Health = humanoid.MaxHealth
                 end
                 
-                -- Anti Fall Damage (cek apakah sedang jatuh)
+                -- Tambahan proteksi: cegah death
+                if humanoid.Health <= 0 then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+                
+                -- Anti Fall Damage
                 if antiFallDamageEnabled then
-                    -- Mencegah damage jatuh dengan mengatur ulang health
                     if humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
                        humanoid:GetState() == Enum.HumanoidStateType.FallingDown then
-                        -- Tidak melakukan apa-apa, health tetap dijaga oleh anti damage
+                        -- Reset health terus menerus saat jatuh
+                        humanoid.Health = humanoid.MaxHealth
                     end
                 end
             end
         end
     end)
+    
+    -- Tambahan koneksi untuk mendeteksi ketika health berubah (lebih responsif)
+    local char = LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.HealthChanged:Connect(function(newHealth)
+                if antiDamageEnabled and newHealth < humanoid.MaxHealth then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+            end)
+        end
+    end
 end
 
 -- Fungsi untuk god mode (alias anti damage)
@@ -520,6 +540,7 @@ local function toggleGodMode(state)
     antiDamageEnabled = state
     if state then
         setupAntiDamage()
+        showNotification("✅ GOD MODE AKTIF", "bro", 2, Color3.fromRGB(0, 150, 0))
     else
         if antiDamageConnection then
             antiDamageConnection:Disconnect()
@@ -944,7 +965,7 @@ local function loadMainScript()
         end
     end)
 
-    -- ================== GUI UTAMA (LENGKAP) ==================
+    -- ================== GUI UTAMA (LENGKAP DENGAN SCROLL) ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "PutzzdevHub"
@@ -954,7 +975,7 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 520)  -- Lebih tinggi untuk fitur anti damage
+    mainFrame.Size = UDim2.new(0, 380, 0, 520)
     mainFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
@@ -1066,21 +1087,26 @@ local function loadMainScript()
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 14
 
+        -- CONTENT DENGAN SCROLL (AUTO)
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(1, -10, 1, -190)
-        content.Position = UDim2.new(0, 5, 0, 135)
-        content.BackgroundTransparency = 1
+        content.Size = UDim2.new(1, -20, 1, -190)
+        content.Position = UDim2.new(0, 10, 0, 135)
+        content.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        content.BackgroundTransparency = 0.5
         content.BorderSizePixel = 0
-        content.ScrollBarThickness = 5
+        content.ScrollBarThickness = 6
+        content.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 255)
         content.CanvasSize = UDim2.new(0, 0, 0, 0)
         content.Visible = false
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
+        -- Layout untuk content
         local layout = Instance.new("UIListLayout")
         layout.Parent = content
-        layout.Padding = UDim.new(0, 6)
+        layout.Padding = UDim.new(0, 8)
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
 
         table.insert(tabs, btn)
         table.insert(contents, content)
@@ -1311,7 +1337,7 @@ local function loadMainScript()
         end
     end
 
-    -- ===== TAB MAIN =====
+    -- ===== TAB MAIN (DENGAN SCROLL) =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1349,13 +1375,13 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
 
-    -- ANTI DAMAGE FIXED
-    createToggle(tabMain, "Anti Damage (God Mode)", false, function(s)
+    -- ANTI DAMAGE FIXED (SUPER GOD MODE)
+    createToggle(tabMain, "⚡ GOD MODE (Anti Damage)", false, function(s)
         antiDamageEnabled = s
         toggleGodMode(s)
     end)
 
-    createToggle(tabMain, "Anti Fall Damage", false, function(s)
+    createToggle(tabMain, "🛡️ Anti Fall Damage", false, function(s)
         antiFallDamageEnabled = s
     end)
 
@@ -1401,7 +1427,7 @@ local function loadMainScript()
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.9, 0, 0, 150)
+    aboutFrame.Size = UDim2.new(0.9, 0, 0, 180)
     aboutFrame.Position = UDim2.new(0.05, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1423,16 +1449,17 @@ local function loadMainScript()
 
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.9, 0, 0, 80)
+    infoText.Size = UDim2.new(0.9, 0, 0, 110)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 5.3\n" ..
+                     "📌 Version: 5.4 (Super God Mode)\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
                      "✨ Fitur: ESP, Fly, Speed, NoClip,\n" ..
                      "   Aimbot, Infinity Jump, Teleport,\n" ..
-                     "   Anti Damage, God Mode, Anti Fall\n\n" ..
+                     "   ✅ SUPER GOD MODE (Anti One-Hit)\n" ..
+                     "   ✅ Anti Fall Damage\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1464,13 +1491,13 @@ local function loadMainScript()
         end
     end)
 
-    -- Update canvas size
+    -- Update canvas size untuk scroll
     task.wait(0.1)
     for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
             if child:IsA("Frame") then
-                height = height + child.Size.Y.Offset + 6
+                height = height + child.Size.Y.Offset + 8
             end
         end
         content.CanvasSize = UDim2.new(0, 0, 0, height + 20)
@@ -1483,8 +1510,8 @@ local function loadMainScript()
     -- Notifikasi selamat datang
     local notifyFrame = Instance.new("Frame")
     notifyFrame.Parent = ScreenGui
-    notifyFrame.Size = UDim2.new(0, 300, 0, 50)
-    notifyFrame.Position = UDim2.new(0.5, -150, 0.9, 0)
+    notifyFrame.Size = UDim2.new(0, 320, 0, 60)
+    notifyFrame.Position = UDim2.new(0.5, -160, 0.9, 0)
     notifyFrame.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
     notifyFrame.BackgroundTransparency = 0.1
     notifyFrame.BorderSizePixel = 0
@@ -1497,62 +1524,80 @@ local function loadMainScript()
     notifyText.Parent = notifyFrame
     notifyText.Size = UDim2.new(1, 0, 1, 0)
     notifyText.BackgroundTransparency = 1
-    notifyText.Text = "✅ Key valid! Selamat datang " .. (currentUserKey or "User")
+    notifyText.Text = "✅ GOD MODE AKTIF! Kamu tidak akan mati!"
     notifyText.TextColor3 = Color3.new(1, 1, 1)
     notifyText.Font = Enum.Font.GothamBold
     notifyText.TextSize = 14
     notifyText.TextScaled = true
 
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -150, 0.8, 0)}):Play()
+    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -160, 0.8, 0)}):Play()
     task.wait(3)
-    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -150, 0.9, 0)}):Play()
+    TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -160, 0.9, 0)}):Play()
     task.wait(0.3)
     notifyFrame:Destroy()
 
-    -- Tombol P
-    local openBtn = Instance.new("TextButton")
-    openBtn.Parent = ScreenGui
-    openBtn.Size = UDim2.new(0, 45, 0, 45)
-    openBtn.Position = UDim2.new(0, 20, 0.5, -22.5)
-    openBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    openBtn.Text = "P"
-    openBtn.TextColor3 = Color3.new(1, 1, 1)
-    openBtn.Font = Enum.Font.GothamBlack
-    openBtn.TextSize = 20
-    openBtn.AutoButtonColor = true
-    openBtn.ZIndex = 10
-    openBtn.Active = true
-    openBtn.Draggable = true
+    -- Tombol Utama
+local openBtn = Instance.new("TextButton")
+openBtn.Parent = ScreenGui
+openBtn.Size = UDim2.new(0, 55, 0, 55)
+openBtn.Position = UDim2.new(0, 15, 0.5, -27.5)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+openBtn.BackgroundTransparency = 0.1
+openBtn.Text = "P"
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.Font = Enum.Font.GothamBlack
+openBtn.TextSize = 30
+openBtn.ZIndex = 2
+openBtn.Active = true
+openBtn.Draggable = true
 
-    local corner = Instance.new("UICorner")
-    corner.Parent = openBtn
-    corner.CornerRadius = UDim.new(1, 0)
+-- Bikin bulat
+local corner = Instance.new("UICorner")
+corner.Parent = openBtn
+corner.CornerRadius = UDim.new(1, 0)
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Parent = openBtn
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 1.5
+-- Efek Glow (lingkaran 1)
+local glow1 = Instance.new("ImageLabel")
+glow1.Parent = openBtn
+glow1.Size = UDim2.new(1.3, 0, 1.3, 0)
+glow1.Position = UDim2.new(-0.15, 0, -0.15, 0)
+glow1.BackgroundTransparency = 1
+glow1.Image = "rbxassetid://3570695787"
+glow1.ImageColor3 = Color3.fromRGB(0, 200, 255)
+glow1.ImageTransparency = 0.3
+glow1.ZIndex = 1
 
-    local menuOpen = true
+-- Efek Glow (lingkaran 2 - lebih besar)
+local glow2 = Instance.new("ImageLabel")
+glow2.Parent = openBtn
+glow2.Size = UDim2.new(1.5, 0, 1.5, 0)
+glow2.Position = UDim2.new(-0.25, 0, -0.25, 0)
+glow2.BackgroundTransparency = 1
+glow2.Image = "rbxassetid://3570695787"
+glow2.ImageColor3 = Color3.fromRGB(0, 200, 255)
+glow2.ImageTransparency = 0.6
+glow2.ZIndex = 0
 
-    openBtn.MouseButton1Click:Connect(function()
-        menuOpen = not menuOpen
+-- Animasi glow bergerak
+spawn(function()
+    local time = 0
+    while true do
+        time = time + 0.05
+        local pulse = 1.3 + math.sin(time) * 0.1
+        local pulse2 = 1.5 + math.sin(time + 2) * 0.15
+        local trans = 0.3 + math.sin(time) * 0.1
+        local trans2 = 0.6 + math.sin(time + 2) * 0.1
+        
+        glow1.Size = UDim2.new(pulse, 0, pulse, 0)
+        glow1.ImageTransparency = trans
+        glow2.Size = UDim2.new(pulse2, 0, pulse2, 0)
+        glow2.ImageTransparency = trans2
+        
+        task.wait(0.05)
+    end
+end)
 
-        if menuOpen then
-            mainFrame.Visible = true
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 0.5, -260)
-            }):Play()
-        else
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 1, 0)
-            }):Play()
-            task.wait(0.25)
-            mainFrame.Visible = false
-        end
-    end)
-
-    print("✅ Putzzdev-HUB - ESP Line Putih + Anti Damage Fixed!")
+    print("✅ Putzzdev-HUB - SUPER GOD MODE ACTIVE! (Anti One-Hit Kill)")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1610,4 +1655,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("selamat datang di script Putzzdev-HUB")
+print("selamat datang di script Putzzdev-HUB - SUPER GOD MODE EDITION")
