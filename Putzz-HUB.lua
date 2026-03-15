@@ -1,20 +1,11 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 4.4 (FULL FITUR - ALL FEATURES RESTORED)
+-- Version: 5.0 (GitHub JSON Key System)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
-local KEY_URL = "https://pastebin.com/raw/WfYtM2kY"  -- URL RAW Pastebin berisi key
-local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"  -- Website untuk ambil key
+local KEY_URL = "https://raw.githubusercontent.com/PutzzdevXiT/sefelink-by-putzz/refs/heads/main/key.json"
+local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "Putzzdev-HUB"
-
--- ATUR EXPIRY DI SINI (pakai format: "1d", "2d", "3d", "7d", "30d")
-local KEY_EXPIRY = {
-    ["PUTZZDEV-HUB-X7K9-1D"] = "1d",  -- 1 hari (key di screenshot)
-    ["Putzzdev-KEYpertama"] = "3d",   -- 3 hari
-    ["Putzzdev-KEYkedua"]   = "2d",   -- 2 hari
-    ["Putzzdev-VIP"]        = "7d",   -- 7 hari
-    ["Putzzdev-ADMIN"]      = "30d"   -- 30 hari
-}
 
 -- File untuk menyimpan data key (otomatis)
 local SAVE_FILE = "putzz_key_data.txt"
@@ -68,13 +59,7 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ================== FUNGSI KEY SYSTEM ==================
-
--- Konversi format expiry (contoh: "3d" -> 3 hari)
-local function parseExpiry(expiryStr)
-    local num = expiryStr:match("(%d+)")
-    return tonumber(num) or 0
-end
+-- ================== FUNGSI KEY SYSTEM (GITHUB JSON) ==================
 
 -- Load data key dari file
 local function loadKeyData()
@@ -105,23 +90,24 @@ local function saveKeyData()
     end
 end
 
--- Fungsi ambil key dari Pastebin
-local function getKeysFromPastebin()
+-- Fungsi ambil key dari GitHub JSON
+local function getKeysFromGitHub()
     local success, data = pcall(function()
         return game:HttpGet(KEY_URL)
     end)
     
     if success and data then
-        local keys = {}
-        for key in data:gmatch("[^\r\n]+") do
-            table.insert(keys, key:gsub("%s+", ""))
+        local success2, jsonData = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(data)
+        end)
+        if success2 and jsonData and jsonData.duration_keys then
+            return jsonData.duration_keys
         end
-        return keys
     end
     return nil
 end
 
--- Fungsi dapatkan sisa waktu dalam format hari dan jam
+-- Fungsi dapatkan sisa waktu
 local function getTimeRemaining(expiryTimestamp)
     local currentTime = os.time()
     local remaining = expiryTimestamp - currentTime
@@ -140,47 +126,62 @@ local function getTimeRemaining(expiryTimestamp)
     end
 end
 
--- Fungsi cek expiry key
+-- Fungsi cek expiry key (dari GitHub JSON)
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
-    -- Cek apakah key ada di KEY_EXPIRY
-    if KEY_EXPIRY[inputKey] then
-        local expiryDays = parseExpiry(KEY_EXPIRY[inputKey])
+    -- Ambil data key dari GitHub
+    local keysData = getKeysFromGitHub()
+    if not keysData then
+        return false, "Gagal mengambil data key dari server"
+    end
+    
+    -- Cari key yang cocok
+    local foundKey = nil
+    local expiryDays = nil
+    
+    for _, keyData in ipairs(keysData) do
+        if keyData.key == inputKey then
+            foundKey = keyData.key
+            expiryDays = tonumber(keyData.days)
+            break
+        end
+    end
+    
+    if not foundKey then
+        return false, "Key tidak terdaftar!"
+    end
+    
+    -- Cek apakah key sudah pernah dipakai
+    if activeKeys[inputKey] then
+        -- Key sudah dipakai, cek expiry
+        local firstUsed = activeKeys[inputKey].firstUsed
+        local currentTime = os.time()
+        local expiryTime = firstUsed + (expiryDays * 86400)
         
-        -- Cek apakah key sudah pernah dipakai
-        if activeKeys[inputKey] then
-            -- Key sudah dipakai, cek expiry
-            local firstUsed = activeKeys[inputKey].firstUsed
-            local currentTime = os.time()
-            local expiryTime = firstUsed + (expiryDays * 86400)
-            
-            if currentTime > expiryTime then
-                return false, "Key sudah expired! (" .. expiryDays .. " hari)"
-            else
-                local days, hours, timeStr = getTimeRemaining(expiryTime)
-                keyExpiryTime = expiryTime
-                currentUserKey = inputKey
-                return true, "Key valid! Sisa " .. timeStr
-            end
+        if currentTime > expiryTime then
+            return false, "Key sudah expired! (" .. expiryDays .. " hari)"
         else
-            -- Key baru pertama kali dipakai
-            local currentTime = os.time()
-            activeKeys[inputKey] = {
-                firstUsed = currentTime,
-                key = inputKey,
-                expiryDays = expiryDays
-            }
-            saveKeyData()
-            
-            local expiryTime = currentTime + (expiryDays * 86400)
+            local days, hours, timeStr = getTimeRemaining(expiryTime)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
-            
-            return true, "Key valid! Berlaku " .. expiryDays .. " hari"
+            return true, "Key valid! Sisa " .. timeStr
         end
     else
-        return false, "Key tidak terdaftar!"
+        -- Key baru pertama kali dipakai
+        local currentTime = os.time()
+        activeKeys[inputKey] = {
+            firstUsed = currentTime,
+            key = inputKey,
+            expiryDays = expiryDays
+        }
+        saveKeyData()
+        
+        local expiryTime = currentTime + (expiryDays * 86400)
+        keyExpiryTime = expiryTime
+        currentUserKey = inputKey
+        
+        return true, "Key valid! Berlaku " .. expiryDays .. " hari"
     end
 end
 
@@ -302,7 +303,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY'\n2. Copy key dari website\n3. Masukkan key dan klik VERIFY"
+InfoText.Text = "📢 Cara Dapat Key:\n1 klik get key di bawah"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -310,7 +311,7 @@ InfoText.TextWrapped = true
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
 -- TextBox untuk key
-local KeyTextBox = Instance.new("TextBox")
+local KeyTextBox = Instance.new("KEY ANDA")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
 KeyTextBox.Position = UDim2.new(0.1, 0, 0.48, 0)
@@ -332,7 +333,7 @@ VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-VerifyBtn.Text = "✅ VERIFY"
+VerifyBtn.Text = "✅ VERIFIKASI"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 16
@@ -416,7 +417,7 @@ local function loadMainScript()
     -- Hapus GUI key
     KeyGui:Destroy()
     
-    print("✅ " .. SCRIPT_NAME .. " key berhasil - Memuat semua fitur...")
+    print(" " .. SCRIPT_NAME .. " key berhasil - Memuat semua fitur...")
     
     -- ================== FUNGSI INFINITY JUMP ==================
     local function onJumpRequest()
@@ -1314,7 +1315,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 4.4 (Full Fitur)\n" ..
+                     "📌 Version: 4.0 (GitHub Key)\n" ..
                      "script type: VIP\n\n" ..
                      "✨ Fitur Lengkap:\n" ..
                      "• ESP Box, Line (Rainbow), Health Bar\n" ..
@@ -1323,8 +1324,8 @@ local function loadMainScript()
                      "• Teleport ke Player (ketik username)\n" ..
                      "• Aimbot + Infinity Jump\n" ..
                      "• 8 Warna Tema Manual\n" ..
-                     "• Timer Sisa Key di Menu\n" ..
-                     "• Key System dengan Expiry\n\n" ..
+                     "• wakru\n" ..
+                     "• Key tersimpan di DATABASE\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1444,7 +1445,7 @@ local function loadMainScript()
         end
     end)
 
-    print("✅ Putzzdev-HUB - Full Fitur Loaded!")
+    print("✅ Putzzdev-HUB - Full Fitur Loaded! (GitHub Key System)")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1497,4 +1498,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔐 Putzzdev-HUB Key System Loaded - Full Fitur Siap!")
+print("🔐 Putzzdev-HUB Key System (GitHub JSON) Loaded")
