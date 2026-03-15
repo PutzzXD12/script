@@ -1,5 +1,5 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 5.0 (GitHub JSON Key System)
+-- Version: 5.1 (Professional GUI)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -149,7 +149,7 @@ local function checkKeyExpiry(inputKey)
     end
     
     if not foundKey then
-        return false, "Key tidak terdaftar!"
+        return false, "KEY TIDAK TERDAFTAR!"
     end
     
     -- Cek apakah key sudah pernah dipakai
@@ -160,12 +160,12 @@ local function checkKeyExpiry(inputKey)
         local expiryTime = firstUsed + (expiryDays * 86400)
         
         if currentTime > expiryTime then
-            return false, "Key sudah expired! (" .. expiryDays .. " hari)"
+            return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
         else
             local days, hours, timeStr = getTimeRemaining(expiryTime)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
-            return true, "Key valid! Sisa " .. timeStr
+            return true, "KEY VALID! Sisa " .. timeStr
         end
     else
         -- Key baru pertama kali dipakai
@@ -181,7 +181,7 @@ local function checkKeyExpiry(inputKey)
         keyExpiryTime = expiryTime
         currentUserKey = inputKey
         
-        return true, "Key valid! Berlaku " .. expiryDays .. " hari"
+        return true, "KEY VALID! Berlaku " .. expiryDays .. " hari"
     end
 end
 
@@ -227,7 +227,7 @@ local function showNotification(title, text, duration, color)
     notif:Destroy()
 end
 
--- ================== BUAT GUI KEY SYSTEM ==================
+-- ================== BUAT GUI KEY SYSTEM (PROFESSIONAL) ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -237,9 +237,9 @@ KeyGui.DisplayOrder = 999
 -- Frame utama key system
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 420)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
-KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+KeyFrame.Size = UDim2.new(0, 400, 0, 380)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
 KeyFrame.Active = true
@@ -249,16 +249,28 @@ local KeyCorner = Instance.new("UICorner")
 KeyCorner.Parent = KeyFrame
 KeyCorner.CornerRadius = UDim.new(0, 16)
 
--- Gradient
+-- Gradient premium
 local KeyGradient = Instance.new("UIGradient")
 KeyGradient.Parent = KeyFrame
 KeyGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 45))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 30)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 15))
 })
 KeyGradient.Rotation = 45
 
--- Header
+-- Border premium
+local KeyBorder = Instance.new("Frame")
+KeyBorder.Parent = KeyFrame
+KeyBorder.Size = UDim2.new(1, 0, 1, 0)
+KeyBorder.BackgroundTransparency = 1
+KeyBorder.BorderSizePixel = 2
+KeyBorder.BorderColor3 = Color3.fromRGB(0, 200, 255)
+
+local KeyBorderCorner = Instance.new("UICorner")
+KeyBorderCorner.Parent = KeyBorder
+KeyBorderCorner.CornerRadius = UDim.new(0, 16)
+
+-- Header premium
 local KeyHeader = Instance.new("Frame")
 KeyHeader.Parent = KeyFrame
 KeyHeader.Size = UDim2.new(1, 0, 0, 80)
@@ -267,7 +279,7 @@ KeyHeader.BackgroundTransparency = 1
 local KeyIcon = Instance.new("TextLabel")
 KeyIcon.Parent = KeyHeader
 KeyIcon.Size = UDim2.new(1, 0, 0.5, 0)
-KeyIcon.Position = UDim2.new(0, 0, 0, 5)
+KeyIcon.Position = UDim2.new(0, 0, 0, 10)
 KeyIcon.BackgroundTransparency = 1
 KeyIcon.Text = "🔐"
 KeyIcon.TextColor3 = Color3.fromRGB(0, 200, 255)
@@ -277,63 +289,93 @@ KeyIcon.TextSize = 40
 local KeyTitle = Instance.new("TextLabel")
 KeyTitle.Parent = KeyHeader
 KeyTitle.Size = UDim2.new(1, 0, 0.5, 0)
-KeyTitle.Position = UDim2.new(0, 0, 0, 45)
+KeyTitle.Position = UDim2.new(0, 0, 0, 50)
 KeyTitle.BackgroundTransparency = 1
-KeyTitle.Text = SCRIPT_NAME .. " KEY SYSTEM"
-KeyTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
-KeyTitle.Font = Enum.Font.GothamBlack
-KeyTitle.TextSize = 18
-KeyTitle.TextStrokeTransparency = 0.5
+KeyTitle.Text = "PUTZZDEV AUTHENTICATION"
+KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyTitle.Font = Enum.Font.GothamBold
+KeyTitle.TextSize = 16
+KeyTitle.TextStrokeTransparency = 0.3
+KeyTitle.TextStrokeColor3 = Color3.fromRGB(0, 200, 255)
 
--- Info Box
+-- Info Box (PREMIUM)
 local InfoFrame = Instance.new("Frame")
 InfoFrame.Parent = KeyFrame
-InfoFrame.Size = UDim2.new(0.9, 0, 0, 90)
+InfoFrame.Size = UDim2.new(0.9, 0, 0, 70)
 InfoFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
-InfoFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-InfoFrame.BackgroundTransparency = 0.3
+InfoFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+InfoFrame.BackgroundTransparency = 0.2
 InfoFrame.BorderSizePixel = 0
 
 local InfoCorner = Instance.new("UICorner")
 InfoCorner.Parent = InfoFrame
 InfoCorner.CornerRadius = UDim.new(0, 10)
 
+local InfoIcon = Instance.new("TextLabel")
+InfoIcon.Parent = InfoFrame
+InfoIcon.Size = UDim2.new(0, 30, 1, 0)
+InfoIcon.Position = UDim2.new(0, 10, 0, 0)
+InfoIcon.BackgroundTransparency = 1
+InfoIcon.Text = "ℹ️"
+InfoIcon.TextColor3 = Color3.fromRGB(0, 200, 255)
+InfoIcon.Font = Enum.Font.GothamBold
+InfoIcon.TextSize = 18
+
 local InfoText = Instance.new("TextLabel")
 InfoText.Parent = InfoFrame
-InfoText.Size = UDim2.new(1, -20, 1, -10)
-InfoText.Position = UDim2.new(0, 10, 0, 5)
+InfoText.Size = UDim2.new(1, -50, 1, 0)
+InfoText.Position = UDim2.new(0, 45, 0, 0)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "dapatkan key gratis cuma 1 hari\n ''\n\n\n\n"
+InfoText.Text = "Masukkan Key Anda untuk mengakses script premium"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
-InfoText.TextWrapped = true
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
--- TextBox untuk key
-local KeyTextBox = Instance.new("Key anda")
+-- Label "MASUKAN KEY ANDA" (PREMIUM)
+local KeyLabel = Instance.new("TextLabel")
+KeyLabel.Parent = KeyFrame
+KeyLabel.Size = UDim2.new(0.8, 0, 0, 20)
+KeyLabel.Position = UDim2.new(0.1, 0, 0.38, 0)
+KeyLabel.BackgroundTransparency = 1
+KeyLabel.Text = "MASUKAN KEY ANDA"
+KeyLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+KeyLabel.Font = Enum.Font.GothamBold
+KeyLabel.TextSize = 12
+KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- TextBox untuk key (PREMIUM)
+local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
-KeyTextBox.Position = UDim2.new(0.1, 0, 0.48, 0)
-KeyTextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+KeyTextBox.Position = UDim2.new(0.1, 0, 0.42, 0)
+KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+KeyTextBox.BackgroundTransparency = 0.1
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
-KeyTextBox.PlaceholderText = "Masukkan key disini..."
-KeyTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+KeyTextBox.PlaceholderText = "Contoh: PUTZZDEV-HUB-X7K9-1D"
+KeyTextBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
 KeyTextBox.Font = Enum.Font.Gotham
-KeyTextBox.TextSize = 16
-KeyTextBox.ClearTextOnFocus = false
+KeyTextBox.TextSize = 14
+KeyTextBox.ClearTextOnFocus = true
 
 local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
 KeyBoxCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Verify
+local KeyBoxStroke = Instance.new("UIStroke")
+KeyBoxStroke.Parent = KeyTextBox
+KeyBoxStroke.Color = Color3.fromRGB(0, 200, 255)
+KeyBoxStroke.Thickness = 1
+KeyBoxStroke.Transparency = 0.5
+
+-- Tombol Verify (PREMIUM)
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
-VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
+VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
+VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-VerifyBtn.Text = "✅ VERIFY"
+VerifyBtn.BackgroundTransparency = 0.1
+VerifyBtn.Text = "VERIFY KEY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 16
@@ -342,13 +384,14 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 
--- Tombol Website
+-- Tombol Website (PREMIUM)
 local WebsiteBtn = Instance.new("TextButton")
 WebsiteBtn.Parent = KeyFrame
 WebsiteBtn.Size = UDim2.new(0.5, 0, 0, 35)
-WebsiteBtn.Position = UDim2.new(0.25, 0, 0.74, 0)
+WebsiteBtn.Position = UDim2.new(0.25, 0, 0.67, 0)
 WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-WebsiteBtn.Text = "🔑 GET KEY"
+WebsiteBtn.BackgroundTransparency = 0.1
+WebsiteBtn.Text = "GET KEY"
 WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
 WebsiteBtn.Font = Enum.Font.GothamBold
 WebsiteBtn.TextSize = 14
@@ -357,23 +400,45 @@ local WebsiteCorner = Instance.new("UICorner")
 WebsiteCorner.Parent = WebsiteBtn
 WebsiteCorner.CornerRadius = UDim.new(0, 6)
 
--- Status Label
+-- Status Label (PREMIUM)
+local StatusFrame = Instance.new("Frame")
+StatusFrame.Parent = KeyFrame
+StatusFrame.Size = UDim2.new(0.9, 0, 0, 40)
+StatusFrame.Position = UDim2.new(0.05, 0, 0.78, 0)
+StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+StatusFrame.BackgroundTransparency = 0.3
+StatusFrame.BorderSizePixel = 0
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.Parent = StatusFrame
+StatusCorner.CornerRadius = UDim.new(0, 8)
+
+local StatusIcon = Instance.new("TextLabel")
+StatusIcon.Parent = StatusFrame
+StatusIcon.Size = UDim2.new(0, 30, 1, 0)
+StatusIcon.Position = UDim2.new(0, 5, 0, 0)
+StatusIcon.BackgroundTransparency = 1
+StatusIcon.Text = "🔒"
+StatusIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
+StatusIcon.Font = Enum.Font.GothamBold
+StatusIcon.TextSize = 18
+
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Parent = KeyFrame
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 40)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.82, 0)
+StatusLabel.Parent = StatusFrame
+StatusLabel.Size = UDim2.new(1, -40, 1, 0)
+StatusLabel.Position = UDim2.new(0, 35, 0, 0)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Menunggu key..."
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+StatusLabel.Text = "Menunggu Key..."
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 13
-StatusLabel.TextWrapped = true
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Loading Circle
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.92, -15)
+LoadingCircle.Position = UDim2.new(0.5, -15, 0.9, -15)
 LoadingCircle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 LoadingCircle.BackgroundTransparency = 1
 LoadingCircle.Visible = false
@@ -402,11 +467,12 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     local success = pcall(function()
         if setclipboard then
             setclipboard(WEBSITE_URL)
-            StatusLabel.Text = "✅ Link sudah di copy! Buka browser"
+            StatusLabel.Text = "✓ Link disalin! Buka browser"
             StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            StatusIcon.Text = "✅"
             showNotification("✅ LINK DISALIN!", "Buka browser dan paste linknya", 2, Color3.fromRGB(0, 150, 0))
         else
-            StatusLabel.Text = "🌐 Website: " .. WEBSITE_URL
+            StatusLabel.Text = "🌐 " .. WEBSITE_URL
             StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
         end
     end)
@@ -1315,7 +1381,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 5.0 (GitHub Key)\n" ..
+                     "📌 Version: 5.1 (Professional GUI)\n" ..
                      "script type: VIP\n\n" ..
                      "✨ Fitur Lengkap:\n" ..
                      "• ESP Box, Line (Rainbow), Health Bar\n" ..
@@ -1452,15 +1518,17 @@ end
 VerifyBtn.MouseButton1Click:Connect(function()
     local inputKey = KeyTextBox.Text:gsub("%s+", "")
     if inputKey == "" then
-        StatusLabel.Text = "❌ Masukkan key!"
+        StatusLabel.Text = "Masukkan Key Anda!"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        StatusIcon.Text = "❌"
         return
     end
     
     -- Show loading
     showLoading(true)
-    StatusLabel.Text = "⏳ Memverifikasi..."
+    StatusLabel.Text = "Memverifikasi Key..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    StatusIcon.Text = "⏳"
     
     -- Langsung cek (tanpa delay)
     local isValid, message = checkKeyExpiry(inputKey)
@@ -1469,25 +1537,28 @@ VerifyBtn.MouseButton1Click:Connect(function()
     showLoading(false)
     
     if isValid then
-        StatusLabel.Text = "✅ " .. message
+        StatusLabel.Text = message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        StatusIcon.Text = "✅"
         
         -- Tunggu 2 detik lalu loading 3 detik
         task.wait(1)
         
-        StatusLabel.Text = "⏳ Loading (3)..."
+        StatusLabel.Text = "Loading (3)..."
         task.wait(1)
-        StatusLabel.Text = "⏳ Loading (2)..."
+        StatusLabel.Text = "Loading (2)..."
         task.wait(1)
-        StatusLabel.Text = "⏳ Loading (1)..."
+        StatusLabel.Text = "Loading (1)..."
         task.wait(1)
         
         -- Jalankan script utama
         pcall(loadMainScript)
         
     else
-        StatusLabel.Text = "❌ " .. message
+        StatusLabel.Text = message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        StatusIcon.Text = "❌"
+        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
@@ -1498,4 +1569,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔐 Putzzdev-HUB Key System (GitHub JSON) Loaded")
+print("🔐 Putzzdev-HUB Key System (Professional GUI) Loaded")
