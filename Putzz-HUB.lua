@@ -352,7 +352,7 @@ KeyTextBox.Position = UDim2.new(0.1, 0, 0.42, 0)
 KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 KeyTextBox.BackgroundTransparency = 0.1
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
-KeyTextBox.PlaceholderText = "Contoh: PUTZZDEV-HUB-X7K9-1D"
+KeyTextBox.PlaceholderText = "Contoh: Putzz ganteng"
 KeyTextBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
 KeyTextBox.Font = Enum.Font.Gotham
 KeyTextBox.TextSize = 14
@@ -375,7 +375,7 @@ VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 VerifyBtn.BackgroundTransparency = 0.1
-VerifyBtn.Text = "VERIFY KEY"
+VerifyBtn.Text = "VERIFIKASI KEY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 16
@@ -1381,7 +1381,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 5.1 (Professional GUI)\n" ..
+                     "📌 Version: 4.0\n" ..
                      "script type: VIP\n\n" ..
                      "✨ Fitur Lengkap:\n" ..
                      "• ESP Box, Line (Rainbow), Health Bar\n" ..
@@ -1389,9 +1389,9 @@ local function loadMainScript()
                      "• Fly, Speed, NoClip\n" ..
                      "• Teleport ke Player (ketik username)\n" ..
                      "• Aimbot + Infinity Jump\n" ..
-                     "• 8 Warna Tema Manual\n" ..
-                     "• Timer Sisa Key di Menu\n" ..
-                     "• Key System via GitHub JSON\n\n" ..
+                     "• Kontak: 088976255131\n" ..
+                     "• \n" ..
+                     "•\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
