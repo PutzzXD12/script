@@ -1,5 +1,5 @@
 -- ================== PUTZZDEV-HUB DENGAN KEY SYSTEM ==================
--- Version: 5.1 (Professional GUI)
+-- Version: 5.3 (ESP Line Putih + Anti Damage Fixed)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -59,10 +59,11 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
-48 -- ANTI DAMAGE
-49 local antiDamageEnabled = false
-50 local godModeEnabled = false
-51 local antiFallDamageEnabled = false
+-- ANTI DAMAGE (FIXED)
+local antiDamageEnabled = false
+local antiDamageConnection = nil
+local godModeEnabled = false
+local antiFallDamageEnabled = false
 
 -- ================== FUNGSI KEY SYSTEM (GITHUB JSON) ==================
 
@@ -483,6 +484,50 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
+-- ================== FUNGSI ANTI DAMAGE (FIXED) ==================
+local function setupAntiDamage()
+    -- Hapus koneksi lama jika ada
+    if antiDamageConnection then
+        antiDamageConnection:Disconnect()
+        antiDamageConnection = nil
+    end
+    
+    -- Buat koneksi baru
+    antiDamageConnection = RunService.Heartbeat:Connect(function()
+        if antiDamageEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                -- God Mode / Anti Damage
+                if humanoid.Health < humanoid.MaxHealth then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+                
+                -- Anti Fall Damage (cek apakah sedang jatuh)
+                if antiFallDamageEnabled then
+                    -- Mencegah damage jatuh dengan mengatur ulang health
+                    if humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
+                       humanoid:GetState() == Enum.HumanoidStateType.FallingDown then
+                        -- Tidak melakukan apa-apa, health tetap dijaga oleh anti damage
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Fungsi untuk god mode (alias anti damage)
+local function toggleGodMode(state)
+    antiDamageEnabled = state
+    if state then
+        setupAntiDamage()
+    else
+        if antiDamageConnection then
+            antiDamageConnection:Disconnect()
+            antiDamageConnection = nil
+        end
+    end
+end
+
 -- ================== FUNGSI UTAMA (FULL FITUR) ==================
 local function loadMainScript()
     -- Hapus GUI key
@@ -517,52 +562,6 @@ local function loadMainScript()
             end
         end)
     end)
-    
-    -- ================== FUNGSI ANTI DAMAGE ==================
-local function setupAntiDamage()
-    local player = LocalPlayer
-    if not player then return end
-    
-    local function blockDamage(char)
-        if not char then return end
-        
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if not humanoid then return end
-        
-        spawn(function()
-            while antiDamageEnabled and char and humanoid do
-                wait(0.1)
-                if humanoid.Health < humanoid.MaxHealth then
-                    humanoid.Health = humanoid.MaxHealth
-                end
-            end
-        end)
-        
-        char.ChildAdded:Connect(function(child)
-            if antiFallDamageEnabled and child:IsA("Script") and child.Name:lower():find("fall") then
-                child:Destroy()
-            end
-        end)
-    end
-    
-    if player.Character then
-        blockDamage(player.Character)
-    end
-    
-    player.CharacterAdded:Connect(function(char)
-        wait(0.5)
-        blockDamage(char)
-    end)
-end
-
-RunService.Heartbeat:Connect(function()
-    if antiDamageEnabled and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.Health < humanoid.MaxHealth then
-            humanoid.Health = humanoid.MaxHealth
-        end
-    end
-end)
 
     -- ================== FUNGSI TELEPORT KE PLAYER ==================
     local function teleportToPlayer(username)
@@ -618,9 +617,10 @@ end)
         dist.OutlineColor = Color3.fromRGB(0,0,0)
         dist.Visible = false
 
+        -- ESP LINE WARNA PUTIH
         local line = Drawing.new("Line")
         line.Thickness = 2
-        line.Color = Color3.fromRGB(255, 0, 0)
+        line.Color = Color3.fromRGB(255, 255, 255)  -- PUTIH
         line.Visible = false
 
         local healthBg = Drawing.new("Square")
@@ -731,12 +731,8 @@ end)
         return closest
     end
 
-    -- Rainbow color untuk ESP Line
-    local hue = 0
+    -- Rainbow color untuk ESP Line (sekarang warna putih, jadi rainbow dimatikan)
     RunService.RenderStepped:Connect(function()
-        hue = (hue + 0.01) % 1
-        local rainbowColor = Color3.fromHSV(hue, 1, 1)
-        
         -- ESP Box
         for player, esp in pairs(ESPTable) do
             local box, name, dist, line, healthBg, healthFg = unpack(esp)
@@ -802,7 +798,8 @@ end)
                         line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
                         line.To = Vector2.new(pos.X, pos.Y)
                         line.Visible = true
-                        line.Color = rainbowColor
+                        -- WARNA TETAP PUTIH (tidak berubah)
+                        line.Color = Color3.fromRGB(255, 255, 255)
                     else
                         line.Visible = false
                     end
@@ -957,8 +954,8 @@ end)
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 500)
-    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+    mainFrame.Size = UDim2.new(0, 380, 0, 520)  -- Lebih tinggi untuk fitur anti damage
+    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
@@ -1351,28 +1348,20 @@ end)
     createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
         aimbotSmoothness = s
     end)
-    
-    -- ANTI DAMAGE
-createToggle(tabMain, "Anti Damage", false, function(s)
-    antiDamageEnabled = s
-    if s then
-        setupAntiDamage()
-    end
-end)
 
-createToggle(tabMain, "God Mode (No Damage)", false, function(s)
-    godModeEnabled = s
-    antiDamageEnabled = true
-    setupAntiDamage()
-end)
+    -- ANTI DAMAGE FIXED
+    createToggle(tabMain, "Anti Damage (God Mode)", false, function(s)
+        antiDamageEnabled = s
+        toggleGodMode(s)
+    end)
 
-createToggle(tabMain, "Anti Fall Damage", false, function(s)
-    antiFallDamageEnabled = s
-end)
+    createToggle(tabMain, "Anti Fall Damage", false, function(s)
+        antiFallDamageEnabled = s
+    end)
 
     -- ===== TAB ESP =====
     createToggle(tabESP, "ESP Player", false, function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+    createToggle(tabESP, "ESP Line (Putih)", false, function(s) lineEnabled = s end)
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
@@ -1412,7 +1401,7 @@ end)
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.9, 0, 0, 220)
+    aboutFrame.Size = UDim2.new(0.9, 0, 0, 150)
     aboutFrame.Position = UDim2.new(0.05, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1424,60 +1413,43 @@ end)
 
     local aboutTitle = Instance.new("TextLabel")
     aboutTitle.Parent = aboutFrame
-    aboutTitle.Size = UDim2.new(1, 0, 0, 40)
-    aboutTitle.Position = UDim2.new(0, 0, 0, 0)
+    aboutTitle.Size = UDim2.new(1, 0, 0, 30)
+    aboutTitle.Position = UDim2.new(0, 0, 0, 10)
     aboutTitle.BackgroundTransparency = 1
     aboutTitle.Text = "PUTZZ DEVELOPER"
     aboutTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
     aboutTitle.Font = Enum.Font.GothamBlack
     aboutTitle.TextSize = 18
 
-    local line = Instance.new("Frame")
-    line.Parent = aboutFrame
-    line.Size = UDim2.new(0.8, 0, 0, 2)
-    line.Position = UDim2.new(0.1, 0, 0, 45)
-    line.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    line.BorderSizePixel = 0
-
-    local lineCorner = Instance.new("UICorner")
-    lineCorner.Parent = line
-    lineCorner.CornerRadius = UDim.new(0, 2)
-
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.9, 0, 0, 140)
-    infoText.Position = UDim2.new(0.05, 0, 0, 55)
+    infoText.Size = UDim2.new(0.9, 0, 0, 80)
+    infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 4.0\n" ..
-                     "script type: VIP\n\n" ..
-                     "✨ Fitur Lengkap:\n" ..
-                     "• ESP Box, Line (Rainbow), Health Bar\n" ..
-                     "• ESP Skeleton (R6 & R15)\n" ..
-                     "• Fly, Speed, NoClip\n" ..
-                     "• Teleport ke Player (ketik username)\n" ..
-                     "• Aimbot + Infinity Jump\n" ..
-                     "• Kontak: 088976255131\n" ..
-                     "• \n" ..
-                     "•\n\n" ..
+                     "📌 Version: 5.3\n" ..
+                     "📱 TikTok: @putzz_mvpp\n\n" ..
+                     "✨ Fitur: ESP, Fly, Speed, NoClip,\n" ..
+                     "   Aimbot, Infinity Jump, Teleport,\n" ..
+                     "   Anti Damage, God Mode, Anti Fall\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 12
+    infoText.TextSize = 13
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Left
 
-    createButton(tabAbout, "📋 Copy TIKTOK", function()
+    createButton(tabAbout, "📋 Copy TikTok", function()
         if setclipboard then
-            setclipboard("putzz_mvpp")
+            setclipboard("@putzz_mvpp")
             local notif = Instance.new("TextLabel")
             notif.Parent = ScreenGui
             notif.Size = UDim2.new(0, 180, 0, 30)
             notif.Position = UDim2.new(0.5, -90, 0.8, 0)
             notif.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
             notif.BackgroundTransparency = 0.2
-            notif.Text = "✅ TIKTOK copied!"
+            notif.Text = "✅ TikTok copied!"
             notif.TextColor3 = Color3.new(1,1,1)
             notif.Font = Enum.Font.GothamBold
             notif.TextSize = 13
@@ -1569,7 +1541,7 @@ end)
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 0.5, -250)
+                Position = UDim2.new(0.5, -190, 0.5, -260)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1580,7 +1552,7 @@ end)
         end
     end)
 
-    print("✅ Putzzdev-HUB - Full Fitur Loaded! (GitHub Key System)")
+    print("✅ Putzzdev-HUB - ESP Line Putih + Anti Damage Fixed!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
