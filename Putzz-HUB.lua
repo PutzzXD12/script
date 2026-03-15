@@ -303,7 +303,7 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "📢 Cara Dapat Key:\n1 klik get key di bawah"
+InfoText.Text = "📢 Cara Dapat Key:\n1. Klik tombol '🔑 GET KEY'\n2. Copy key dari website\n3. Masukkan key dan klik VERIFY\n\n🔑 Key Tersedia: PUTZZDEV-HUB-X7K9-1D (1 Hari)"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 13
@@ -311,7 +311,7 @@ InfoText.TextWrapped = true
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
 
 -- TextBox untuk key
-local KeyTextBox = Instance.new("KEY ANDA")
+local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
 KeyTextBox.Position = UDim2.new(0.1, 0, 0.48, 0)
@@ -333,7 +333,7 @@ VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.5, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-VerifyBtn.Text = "✅ VERIFIKASI"
+VerifyBtn.Text = "✅ VERIFY"
 VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 16
@@ -417,7 +417,7 @@ local function loadMainScript()
     -- Hapus GUI key
     KeyGui:Destroy()
     
-    print(" " .. SCRIPT_NAME .. " key berhasil - Memuat semua fitur...")
+    print("✅ " .. SCRIPT_NAME .. " key berhasil - Memuat semua fitur...")
     
     -- ================== FUNGSI INFINITY JUMP ==================
     local function onJumpRequest()
@@ -1315,7 +1315,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 4.0 (GitHub Key)\n" ..
+                     "📌 Version: 5.0 (GitHub Key)\n" ..
                      "script type: VIP\n\n" ..
                      "✨ Fitur Lengkap:\n" ..
                      "• ESP Box, Line (Rainbow), Health Bar\n" ..
@@ -1324,8 +1324,8 @@ local function loadMainScript()
                      "• Teleport ke Player (ketik username)\n" ..
                      "• Aimbot + Infinity Jump\n" ..
                      "• 8 Warna Tema Manual\n" ..
-                     "• wakru\n" ..
-                     "• Key tersimpan di DATABASE\n\n" ..
+                     "• Timer Sisa Key di Menu\n" ..
+                     "• Key System via GitHub JSON\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
