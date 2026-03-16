@@ -1,5 +1,5 @@
--- ================== PUTZZDEV-HUB V8 (SPIN EDITION) ==================
--- Version: 8.0 (Auto Rainbow + SPIN + Anti Damage FIXED)
+-- ================== PUTZZDEV-HUB V8 (SPIN EDITION + INVISIBLE) ==================
+-- Version: 8.1 (Invisible Added)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -59,16 +59,23 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ANTI DAMAGE (SUPER FIXED)
+-- ANTI DAMAGE
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local antiDamageThread = nil
 
--- SPIN MUTER (FITUR BARU)
+-- SPIN MUTER
 local spinEnabled = false
 local spinSpeed = 10
 local spinConnection = nil
 local spinDirection = 1 -- 1 = kanan, -1 = kiri
+
+-- INVISIBLE (DARI SCRIPT LU)
+local invisibleEnabled = false
+local invisibleConnection = nil
+local invisibleParts = {}
+local invisibleRootPart = nil
+local invisibleHumanoid = nil
 
 -- Rainbow Variables
 local rainbowHue = 0
@@ -484,7 +491,7 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI SPIN MUTER (DI MAIN) ==================
+-- ================== FUNGSI SPIN MUTER ==================
 local function toggleSpin(state)
     spinEnabled = state
     
@@ -497,7 +504,6 @@ local function toggleSpin(state)
         spinConnection = RunService.Heartbeat:Connect(function()
             if spinEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local rootPart = LocalPlayer.Character.HumanoidRootPart
-                -- Spin muter dengan kecepatan spinSpeed
                 rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
             end
         end)
@@ -511,9 +517,63 @@ local function toggleSpinDirection()
     showNotification("🔄 ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
 end
 
+-- ================== FUNGSI INVISIBLE (DARI SCRIPT LU) ==================
+local function updateInvisibleData()
+    if LocalPlayer.Character then
+        invisibleRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        invisibleHumanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        invisibleParts = {}
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency == 0 then
+                table.insert(invisibleParts, v)
+            end
+        end
+    end
+end
+
+local function toggleInvisible(state)
+    invisibleEnabled = state
+    
+    if invisibleConnection then
+        invisibleConnection:Disconnect()
+        invisibleConnection = nil
+    end
+    
+    updateInvisibleData()
+    
+    if state then
+        -- Set transparansi parts
+        for _, v in pairs(invisibleParts) do
+            v.Transparency = 0.5
+        end
+        
+        -- Koneksi heartbeat untuk efek invisible (pindah posisi)
+        invisibleConnection = RunService.Heartbeat:Connect(function()
+            if invisibleEnabled and invisibleRootPart and invisibleHumanoid then
+                local oldCF = invisibleRootPart.CFrame
+                local oldOffset = invisibleHumanoid.CameraOffset
+                local hideCF = oldCF * CFrame.new(0, -200000, 0)
+                
+                invisibleRootPart.CFrame = hideCF
+                invisibleHumanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
+                RunService.RenderStepped:Wait()
+                invisibleRootPart.CFrame = oldCF
+                invisibleHumanoid.CameraOffset = oldOffset
+            end
+        end)
+        
+        showNotification("👻 INVISIBLE ON", "Kamu tidak terlihat!", 1.5, Color3.fromRGB(150, 0, 255))
+    else
+        -- Kembalikan transparansi
+        for _, v in pairs(invisibleParts) do
+            v.Transparency = 0
+        end
+        showNotification("👻 INVISIBLE OFF", "Kamu terlihat lagi", 1.5, Color3.fromRGB(255, 0, 0))
+    end
+end
+
 -- ================== FUNGSI ANTI DAMAGE (SUPER FIXED) ==================
 local function setupAntiDamage()
-    -- Hapus koneksi lama jika ada
     if antiDamageConnection then
         antiDamageConnection:Disconnect()
         antiDamageConnection = nil
@@ -523,25 +583,20 @@ local function setupAntiDamage()
         antiDamageThread = nil
     end
     
-    -- Buat thread terpisah untuk anti damage yang lebih agresif
     antiDamageThread = task.spawn(function()
-        while antiDamageEnabled and task.wait(0.01) do -- Cek setiap 0.01 detik (sangat cepat)
+        while antiDamageEnabled and task.wait(0.01) do
             pcall(function()
                 if LocalPlayer.Character then
                     local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                     if humanoid then
-                        -- SUPER GOD MODE: Paksa health selalu max
                         if humanoid.Health < humanoid.MaxHealth then
                             humanoid.Health = humanoid.MaxHealth
                         end
-                        
-                        -- Cegah death dengan memulihkan sebelum mati
                         if humanoid.Health <= 0 then
                             humanoid.Health = humanoid.MaxHealth
                         end
                     end
                     
-                    -- Anti fall damage - cegah damage dari jatuh
                     local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                     if humanoid and (humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
                        humanoid:GetState() == Enum.HumanoidStateType.FallingDown) then
@@ -552,7 +607,6 @@ local function setupAntiDamage()
         end
     end)
     
-    -- Tambahan koneksi untuk HealthChanged event (responsif)
     antiDamageConnection = RunService.Heartbeat:Connect(function()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -773,7 +827,6 @@ local function loadMainScript()
             hue = (hue + 0.005) % 1
             local rainbowColor = Color3.fromHSV(hue, 1, 1)
             
-            -- Update warna border dan glow
             if mainFrame then
                 local border = mainFrame:FindFirstChild("Border")
                 if border then
@@ -781,7 +834,6 @@ local function loadMainScript()
                 end
             end
             
-            -- Update warna title stroke
             if title then
                 title.TextStrokeColor3 = rainbowColor
             end
@@ -1007,8 +1059,8 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 550)
-    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -275)
+    mainFrame.Size = UDim2.new(0, 380, 0, 600) -- Lebih tinggi untuk fitur invisible
+    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -300)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
@@ -1142,7 +1194,7 @@ local function loadMainScript()
 
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(1, -20, 1, -220)
+        content.Size = UDim2.new(1, -20, 1, -250) -- Lebih besar untuk fitur banyak
         content.Position = UDim2.new(0, 10, 0, 155)
         content.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
         content.BackgroundTransparency = 0.5
@@ -1181,7 +1233,7 @@ local function loadMainScript()
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 40)
+        frame.Size = UDim2.new(0.9, 0, 0, 35) -- Lebih kecil biar muat
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1196,7 +1248,7 @@ local function loadMainScript()
         btn.Text = text
         btn.TextColor3 = Color3.new(1, 1, 1)
         btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 15
+        btn.TextSize = 14
 
         btn.MouseButton1Click:Connect(callback)
         return frame
@@ -1205,7 +1257,7 @@ local function loadMainScript()
     local function createToggle(parent, text, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 40)
+        frame.Size = UDim2.new(0.9, 0, 0, 35) -- Lebih kecil
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1221,24 +1273,24 @@ local function loadMainScript()
         label.Text = text
         label.TextColor3 = Color3.new(1, 1, 1)
         label.Font = Enum.Font.Gotham
-        label.TextSize = 15
+        label.TextSize = 14
         label.TextXAlignment = Enum.TextXAlignment.Left
 
         local switch = Instance.new("Frame")
         switch.Parent = frame
-        switch.Size = UDim2.new(0, 44, 0, 22)
-        switch.Position = UDim2.new(0.85, 0, 0.5, -11)
+        switch.Size = UDim2.new(0, 40, 0, 20) -- Lebih kecil
+        switch.Position = UDim2.new(0.85, 0, 0.5, -10)
         switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
         switch.BorderSizePixel = 0
 
         local switchCorner = Instance.new("UICorner")
         switchCorner.Parent = switch
-        switchCorner.CornerRadius = UDim.new(0, 11)
+        switchCorner.CornerRadius = UDim.new(0, 10)
 
         local circle = Instance.new("Frame")
         circle.Parent = switch
-        circle.Size = UDim2.new(0, 18, 0, 18)
-        circle.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)
+        circle.Size = UDim2.new(0, 16, 0, 16) -- Lebih kecil
+        circle.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0.05, 0, 0.5, -8)
         circle.BackgroundColor3 = Color3.new(1, 1, 1)
         circle.BorderSizePixel = 0
 
@@ -1256,7 +1308,7 @@ local function loadMainScript()
         click.MouseButton1Click:Connect(function()
             state = not state
             TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)}):Play()
-            TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0.05, 0, 0.5, -9)}):Play()
+            TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0.05, 0, 0.5, -8)}):Play()
             callback(state)
         end)
         
@@ -1266,7 +1318,7 @@ local function loadMainScript()
     local function createTextBox(parent, placeholder, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 45)
+        frame.Size = UDim2.new(0.9, 0, 0, 40) -- Lebih kecil
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1283,7 +1335,7 @@ local function loadMainScript()
         textBox.PlaceholderText = placeholder
         textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
         textBox.Font = Enum.Font.Gotham
-        textBox.TextSize = 15
+        textBox.TextSize = 14
         textBox.ClearTextOnFocus = false
 
         local boxCorner = Instance.new("UICorner")
@@ -1303,7 +1355,7 @@ local function loadMainScript()
     local function createSlider(parent, text, min, max, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 48)
+        frame.Size = UDim2.new(0.9, 0, 0, 45) -- Lebih kecil
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1319,12 +1371,12 @@ local function loadMainScript()
         label.Text = text .. ": " .. default
         label.TextColor3 = Color3.new(1, 1, 1)
         label.Font = Enum.Font.Gotham
-        label.TextSize = 13
+        label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
 
         local sliderBg = Instance.new("Frame")
         sliderBg.Parent = frame
-        sliderBg.Size = UDim2.new(0.9, 0, 0.3, 0)
+        sliderBg.Size = UDim2.new(0.9, 0, 0.25, 0)
         sliderBg.Position = UDim2.new(0.05, 0, 0.5, 0)
         sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
         sliderBg.BorderSizePixel = 0
@@ -1374,7 +1426,7 @@ local function loadMainScript()
         return frame
     end
 
-    -- ===== TAB MAIN (DENGAN SCROLL) =====
+    -- ===== TAB MAIN (DENGAN SCROLL + INVISIBLE) =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1412,8 +1464,8 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
 
-    -- ANTI DAMAGE (SUPER FIXED)
-    createToggle(tabMain, "⚡ GOD MODE (Anti Damage)", false, function(s)
+    -- ANTI DAMAGE
+    createToggle(tabMain, "⚡ GOD MODE", false, function(s)
         antiDamageEnabled = s
         if s then
             setupAntiDamage()
@@ -1425,7 +1477,7 @@ local function loadMainScript()
         end
     end)
 
-    -- SPIN MUTER (FITUR BARU DI MAIN)
+    -- SPIN MUTER
     createToggle(tabMain, "🌀 SPIN MUTER", false, function(s)
         toggleSpin(s)
     end)
@@ -1436,6 +1488,20 @@ local function loadMainScript()
 
     createButton(tabMain, "🔄 Ganti Arah Spin", function()
         toggleSpinDirection()
+    end)
+
+    -- INVISIBLE (DARI SCRIPT LU)
+    createToggle(tabMain, "👻 INVISIBLE MODE", false, function(s)
+        toggleInvisible(s)
+    end)
+
+    -- Update karakter saat ganti
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        updateInvisibleData()
+        if invisibleEnabled then
+            toggleInvisible(true)
+        end
     end)
 
     -- ===== TAB ESP =====
@@ -1517,18 +1583,19 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.9, 0, 0, 100)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 Putzzdev-HUB V8 🔥\n\n" ..
+    infoText.Text = "🔥 Putzzdev-HUB V8.1 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 8.0 (Spin Edition)\n" ..
+                     "📌 Version: 8.1 (Invisible Added)\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
-                     "✨ Fitur BARU: SPIN MUTER!\n" ..
-                     "   • Auto Rainbow\n" ..
-                     "   • Anti Damage SUPER FIXED\n" ..
-                     "   • Spin dengan kecepatan adjustable\n\n" ..
+                     "✨ Fitur LENGKAP:\n" ..
+                     "   • ESP, Fly, Speed, NoClip\n" ..
+                     "   • Aimbot, Infinity Jump\n" ..
+                     "   • GOD MODE, SPIN MUTER\n" ..
+                     "   • INVISIBLE MODE (Anti Kamera)\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 13
+    infoText.TextSize = 12
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -1626,7 +1693,7 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -190, 0.5, -275)
+                Position = UDim2.new(0.5, -190, 0.5, -300)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1646,7 +1713,7 @@ local function loadMainScript()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
     end)
 
-    print("✅ Putzzdev-HUB V8 - SPIN EDITION (Anti Damage FIXED!)")
+    print("✅ Putzzdev-HUB V8.1 - INVISIBLE ADDED!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1698,4 +1765,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔥 Putzzdev-HUB V8 - SPIN EDITION (Siap dipakai!)")
+print("🔥 Putzzdev-HUB V8.1 - INVISIBLE MODE READY!")
