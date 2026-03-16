@@ -1,5 +1,5 @@
--- ================== PUTZZDEV-HUB V7 (TROL EDITION - FIXED) ==================
--- Version: 7.0 (Ultimate Rainbow + FLING DORONG + FIXED)
+-- ================== PUTZZDEV-HUB V8 (SPIN EDITION) ==================
+-- Version: 8.0 (Auto Rainbow + SPIN + Anti Damage FIXED)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -59,22 +59,21 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ANTI DAMAGE
+-- ANTI DAMAGE (SUPER FIXED)
 local antiDamageEnabled = false
 local antiDamageConnection = nil
-local antiFallDamageEnabled = false
+local antiDamageThread = nil
 
--- FLING DORONG (FITUR TROL BARU)
-local flingEnabled = false
-local flingStrength = 1000
-local flingCooldown = 0.5
-local flingLastUse = 0
-local flingTargetMode = "nearest" -- "nearest", "all", "cursor"
-local flingConnection = nil
+-- SPIN MUTER (FITUR BARU)
+local spinEnabled = false
+local spinSpeed = 10
+local spinConnection = nil
+local spinDirection = 1 -- 1 = kanan, -1 = kiri
 
 -- Rainbow Variables
 local rainbowHue = 0
 local rainbowSpeed = 0.02
+local rainbowActive = true -- Auto aktif
 
 -- ================== FUNGSI KEY SYSTEM ==================
 
@@ -138,7 +137,6 @@ local function getTimeRemaining(expiryTimestamp)
     local minutes = math.floor((remaining % 3600) / 60)
     local seconds = remaining % 60
     
-    -- Format string dengan leading zero (01, 02, dll)
     local timeStr = string.format("%d Hari : %02d Jam : %02d Menit : %02d Detik", 
         days, hours, minutes, seconds)
     
@@ -241,7 +239,7 @@ local function showNotification(title, text, duration, color)
     notif:Destroy()
 end
 
--- ================== BUAT GUI KEY SYSTEM (LENGKAP) ==================
+-- ================== BUAT GUI KEY SYSTEM ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -486,200 +484,75 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLING DORONG (FITUR TROL) ==================
--- Fungsi untuk mendapatkan player terdekat dari kursor
-local function getPlayerAtCursor()
-    local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-    local closestPlayer = nil
-    local closestDistance = 100 -- Jarak maksimal dari kursor (pixel)
+-- ================== FUNGSI SPIN MUTER (DI MAIN) ==================
+local function toggleSpin(state)
+    spinEnabled = state
     
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-            
-            if onScreen then
-                local screenPos = Vector2.new(pos.X, pos.Y)
-                local distance = (mousePos - screenPos).Magnitude
-                
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestPlayer = player
-                end
-            end
-        end
-    end
-    
-    return closestPlayer
-end
-
--- Fungsi untuk mendapatkan player terdekat dari karakter kita
-local function getNearestPlayer()
-    local myChar = LocalPlayer.Character
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
-    
-    local myPos = myChar.HumanoidRootPart.Position
-    local nearestPlayer = nil
-    local nearestDistance = math.huge
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            local distance = (myPos - rootPart.Position).Magnitude
-            
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestPlayer = player
-            end
-        end
-    end
-    
-    return nearestPlayer
-end
-
--- Fungsi untuk fling satu player
-local function flingPlayer(targetPlayer, direction)
-    if not targetPlayer or not targetPlayer.Character then return false end
-    
-    local rootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local humanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-    
-    if not rootPart or not humanoid then return false end
-    
-    -- Set platform stand biar jatuhnya keren
-    humanoid.PlatformStand = true
-    
-    -- Method 1: BodyVelocity (lebih smooth) 
-    local bv = Instance.new("BodyVelocity")
-    bv.Velocity = direction * flingStrength
-    bv.MaxForce = Vector3.new(9e4, 9e4, 9e4)
-    bv.Parent = rootPart
-    
-    -- Hapus setelah beberapa detik
-    task.delay(2, function()
-        if bv and bv.Parent then
-            bv:Destroy()
-        end
-        -- Kembalikan platform stand setelah fling
-        if humanoid and humanoid.Parent then
-            humanoid.PlatformStand = false
-        end
-    end)
-    
-    return true
-end
-
--- Fungsi utama fling
-local function doFling()
-    local currentTime = tick()
-    if currentTime - flingLastUse < flingCooldown then
-        showNotification("⏳ COOLDOWN", "Tunggu " .. math.ceil(flingCooldown - (currentTime - flingLastUse)) .. " detik", 1, Color3.fromRGB(255, 165, 0))
-        return
-    end
-    
-    local myChar = LocalPlayer.Character
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-        showNotification("❌ ERROR", "Karakter tidak ditemukan", 1, Color3.fromRGB(255, 0, 0))
-        return
-    end
-    
-    local myRoot = myChar.HumanoidRootPart
-    local targets = {}
-    
-    -- Tentukan target berdasarkan mode
-    if flingTargetMode == "cursor" then
-        local target = getPlayerAtCursor()
-        if target then
-            table.insert(targets, target)
-        else
-            showNotification("❌ TIDAK ADA", "Tidak ada player di dekat kursor", 1, Color3.fromRGB(255, 0, 0))
-            return
-        end
-    elseif flingTargetMode == "nearest" then
-        local target = getNearestPlayer()
-        if target then
-            table.insert(targets, target)
-        else
-            showNotification("❌ TIDAK ADA", "Tidak ada player terdekat", 1, Color3.fromRGB(255, 0, 0))
-            return
-        end
-    elseif flingTargetMode == "all" then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                table.insert(targets, player)
-            end
-        end
-    end
-    
-    -- Fling semua target
-    local successCount = 0
-    for _, target in ipairs(targets) do
-        -- Hitung arah dari karakter kita ke target 
-        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local targetRoot = target.Character.HumanoidRootPart
-            local direction = (targetRoot.Position - myRoot.Position).Unit
-            
-            -- Tambahin gaya ke atas biar makin keren
-            direction = Vector3.new(direction.X, 0.5, direction.Z).Unit
-            
-            if flingPlayer(target, direction) then
-                successCount = successCount + 1
-                
-                -- Efek notifikasi kecil (optional)
-                spawn(function()
-                    local billboard = Instance.new("BillboardGui")
-                    billboard.Parent = target.Character
-                    billboard.Size = UDim2.new(0, 100, 0, 30)
-                    billboard.StudsOffset = Vector3.new(0, 3, 0)
-                    billboard.AlwaysOnTop = true
-                    
-                    local text = Instance.new("TextLabel")
-                    text.Parent = billboard
-                    text.Size = UDim2.new(1, 0, 1, 0)
-                    text.BackgroundTransparency = 1
-                    text.Text = "💨 BYE BYE!"
-                    text.TextColor3 = Color3.fromRGB(255, 100, 100)
-                    text.Font = Enum.Font.GothamBold
-                    text.TextSize = 20
-                    
-                    task.wait(1)
-                    billboard:Destroy()
-                end)
-            end
-        end
-    end
-    
-    flingLastUse = currentTime
-    showNotification("✅ FLING!", "Berhasil mendorong " .. successCount .. " player", 1.5, Color3.fromRGB(0, 200, 0))
-end
-
--- Fungsi untuk toggle fling otomatis (mode spam)
-local function toggleAutoFling(state)
-    flingEnabled = state
-    
-    if flingConnection then
-        flingConnection:Disconnect()
-        flingConnection = nil
+    if spinConnection then
+        spinConnection:Disconnect()
+        spinConnection = nil
     end
     
     if state then
-        flingConnection = RunService.Heartbeat:Connect(function()
-            -- Auto fling setiap 0.5 detik (bisa diatur)
-            if tick() - flingLastUse > flingCooldown then
-                doFling()
+        spinConnection = RunService.Heartbeat:Connect(function()
+            if spinEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = LocalPlayer.Character.HumanoidRootPart
+                -- Spin muter dengan kecepatan spinSpeed
+                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
             end
         end)
-        showNotification("🔄 AUTO FLING", "Mode spam aktif!", 1.5, Color3.fromRGB(255, 0, 255))
+        showNotification("🌀 SPIN AKTIF", "Kamu muter terus!", 1.5, Color3.fromRGB(255, 0, 255))
     end
 end
 
--- ================== FUNGSI ANTI DAMAGE ==================
+-- Fungsi ganti arah spin
+local function toggleSpinDirection()
+    spinDirection = spinDirection * -1
+    showNotification("🔄 ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
+end
+
+-- ================== FUNGSI ANTI DAMAGE (SUPER FIXED) ==================
 local function setupAntiDamage()
+    -- Hapus koneksi lama jika ada
     if antiDamageConnection then
         antiDamageConnection:Disconnect()
         antiDamageConnection = nil
     end
     
+    if antiDamageThread then
+        antiDamageThread = nil
+    end
+    
+    -- Buat thread terpisah untuk anti damage yang lebih agresif
+    antiDamageThread = task.spawn(function()
+        while antiDamageEnabled and task.wait(0.01) do -- Cek setiap 0.01 detik (sangat cepat)
+            pcall(function()
+                if LocalPlayer.Character then
+                    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        -- SUPER GOD MODE: Paksa health selalu max
+                        if humanoid.Health < humanoid.MaxHealth then
+                            humanoid.Health = humanoid.MaxHealth
+                        end
+                        
+                        -- Cegah death dengan memulihkan sebelum mati
+                        if humanoid.Health <= 0 then
+                            humanoid.Health = humanoid.MaxHealth
+                        end
+                    end
+                    
+                    -- Anti fall damage - cegah damage dari jatuh
+                    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and (humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
+                       humanoid:GetState() == Enum.HumanoidStateType.FallingDown) then
+                        humanoid.Health = humanoid.MaxHealth
+                    end
+                end
+            end)
+        end
+    end)
+    
+    -- Tambahan koneksi untuk HealthChanged event (responsif)
     antiDamageConnection = RunService.Heartbeat:Connect(function()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -893,17 +766,24 @@ local function loadMainScript()
         return closest
     end
 
-    -- Rainbow color untuk background GUI
+    -- Rainbow color untuk background GUI (AUTO AKTIF)
     local hue = 0
     RunService.RenderStepped:Connect(function()
-        hue = (hue + 0.005) % 1
-        local rainbowColor = Color3.fromHSV(hue, 1, 1)
-        
-        -- Update warna border dan glow
-        if mainFrame then
-            local border = mainFrame:FindFirstChild("Border")
-            if border then
-                border.BorderColor3 = rainbowColor
+        if rainbowActive then
+            hue = (hue + 0.005) % 1
+            local rainbowColor = Color3.fromHSV(hue, 1, 1)
+            
+            -- Update warna border dan glow
+            if mainFrame then
+                local border = mainFrame:FindFirstChild("Border")
+                if border then
+                    border.BorderColor3 = rainbowColor
+                end
+            end
+            
+            -- Update warna title stroke
+            if title then
+                title.TextStrokeColor3 = rainbowColor
             end
         end
         
@@ -1127,7 +1007,7 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 550) -- Lebih tinggi untuk fitur fling
+    mainFrame.Size = UDim2.new(0, 380, 0, 550)
     mainFrame.Position = UDim2.new(0.5, -190, 0.5, -275)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
@@ -1147,7 +1027,7 @@ local function loadMainScript()
     })
     gradient.Rotation = 45
 
-    -- Border Rainbow
+    -- Border Rainbow (AUTO AKTIF)
     local border = Instance.new("Frame")
     border.Name = "Border"
     border.Parent = mainFrame
@@ -1295,7 +1175,7 @@ local function loadMainScript()
 
     local tabMain = createTab("MAIN", "🏠", 1)
     local tabESP = createTab("ESP", "👁️", 2)
-    local tabFling = createTab("FLING", "💨", 3)  -- TAB BARU UNTUK FITUR TROL
+    local tabColor = createTab("COLOR", "🎨", 3)
     local tabAbout = createTab("ABOUT", "📋", 4)
 
     local function createButton(parent, text, callback)
@@ -1494,7 +1374,7 @@ local function loadMainScript()
         return frame
     end
 
-    -- ===== TAB MAIN =====
+    -- ===== TAB MAIN (DENGAN SCROLL) =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1532,14 +1412,30 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
 
-    createToggle(tabMain, "⚡ GOD MODE", false, function(s)
+    -- ANTI DAMAGE (SUPER FIXED)
+    createToggle(tabMain, "⚡ GOD MODE (Anti Damage)", false, function(s)
         antiDamageEnabled = s
         if s then
             setupAntiDamage()
+            showNotification("✅ GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
         elseif antiDamageConnection then
             antiDamageConnection:Disconnect()
             antiDamageConnection = nil
+            antiDamageThread = nil
         end
+    end)
+
+    -- SPIN MUTER (FITUR BARU DI MAIN)
+    createToggle(tabMain, "🌀 SPIN MUTER", false, function(s)
+        toggleSpin(s)
+    end)
+
+    createSlider(tabMain, "⚡ Kecepatan Spin", 1, 30, 10, function(s)
+        spinSpeed = s
+    end)
+
+    createButton(tabMain, "🔄 Ganti Arah Spin", function()
+        toggleSpinDirection()
     end)
 
     -- ===== TAB ESP =====
@@ -1548,71 +1444,49 @@ local function loadMainScript()
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
 
-    -- ===== TAB FLING (FITUR TROL BARU) =====
-    createButton(tabFling, "💨 FLING DORONG (Manual)", function()
-        doFling()
+    -- ===== TAB COLOR =====
+    createButton(tabColor, "🔴 Merah", function()
+        border.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 0, 0)
     end)
 
-    createToggle(tabFling, "🔄 Auto Fling (Spam)", false, function(s)
-        toggleAutoFling(s)
+    createButton(tabColor, "🟢 Hijau", function()
+        border.BorderColor3 = Color3.fromRGB(0, 255, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 255, 0)
     end)
 
-    createSlider(tabFling, "💪 Kekuatan Fling", 100, 3000, 1000, function(s)
-        flingStrength = s
+    createButton(tabColor, "🔵 Biru", function()
+        border.BorderColor3 = Color3.fromRGB(0, 0, 255)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 0, 255)
     end)
 
-    createSlider(tabFling, "⏱️ Cooldown (detik)", 0.1, 3, 0.5, function(s)
-        flingCooldown = s
+    createButton(tabColor, "🟡 Kuning", function()
+        border.BorderColor3 = Color3.fromRGB(255, 255, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 255, 0)
     end)
 
-    -- Mode target
-    local modeFrame = Instance.new("Frame")
-    modeFrame.Parent = tabFling
-    modeFrame.Size = UDim2.new(0.9, 0, 0, 40)
-    modeFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    modeFrame.BorderSizePixel = 0
+    createButton(tabColor, "🟠 Orange", function()
+        border.BorderColor3 = Color3.fromRGB(255, 165, 0)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 165, 0)
+    end)
 
-    local modeCorner = Instance.new("UICorner")
-    modeCorner.Parent = modeFrame
-    modeCorner.CornerRadius = UDim.new(0, 8)
+    createButton(tabColor, "🟣 Ungu", function()
+        border.BorderColor3 = Color3.fromRGB(128, 0, 128)
+        title.TextStrokeColor3 = Color3.fromRGB(128, 0, 128)
+    end)
 
-    local modeLabel = Instance.new("TextLabel")
-    modeLabel.Parent = modeFrame
-    modeLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    modeLabel.Position = UDim2.new(0.05, 0, 0, 0)
-    modeLabel.BackgroundTransparency = 1
-    modeLabel.Text = "🎯 Target Mode:"
-    modeLabel.TextColor3 = Color3.new(1, 1, 1)
-    modeLabel.Font = Enum.Font.Gotham
-    modeLabel.TextSize = 15
-    modeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    createButton(tabColor, "💗 Pink", function()
+        border.BorderColor3 = Color3.fromRGB(255, 192, 203)
+        title.TextStrokeColor3 = Color3.fromRGB(255, 192, 203)
+    end)
 
-    local modeBtn = Instance.new("TextButton")
-    modeBtn.Parent = modeFrame
-    modeBtn.Size = UDim2.new(0.25, 0, 0.8, 0)
-    modeBtn.Position = UDim2.new(0.7, 0, 0.1, 0)
-    modeBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    modeBtn.Text = "NEAREST"
-    modeBtn.TextColor3 = Color3.new(1, 1, 1)
-    modeBtn.Font = Enum.Font.GothamBold
-    modeBtn.TextSize = 12
+    createButton(tabColor, "🔷 Cyan", function()
+        border.BorderColor3 = Color3.fromRGB(0, 255, 255)
+        title.TextStrokeColor3 = Color3.fromRGB(0, 255, 255)
+    end)
 
-    local modeBtnCorner = Instance.new("UICorner")
-    modeBtnCorner.Parent = modeBtn
-    modeBtnCorner.CornerRadius = UDim.new(0, 6)
-
-    modeBtn.MouseButton1Click:Connect(function()
-        if flingTargetMode == "nearest" then
-            flingTargetMode = "cursor"
-            modeBtn.Text = "CURSOR"
-        elseif flingTargetMode == "cursor" then
-            flingTargetMode = "all"
-            modeBtn.Text = "ALL"
-        else
-            flingTargetMode = "nearest"
-            modeBtn.Text = "NEAREST"
-        end
-        showNotification("🎯 MODE", "Target: " .. flingTargetMode:upper(), 1, Color3.fromRGB(0, 200, 255))
+    createButton(tabColor, "🌈 Rainbow Auto (Default)", function()
+        rainbowActive = true
     end)
 
     -- ===== TAB ABOUT =====
@@ -1643,14 +1517,14 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.9, 0, 0, 100)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 Putzzdev-HUB V7 🔥\n\n" ..
+    infoText.Text = "🔥 Putzzdev-HUB V8 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 7.0\n" ..
+                     "📌 Version: 8.0 (Spin Edition)\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
-                     "✨ Fitur BARU: FLING DORONG!\n" ..
-                     "   • Manual / Auto Spam\n" ..
-                     "   • 3 Mode Target\n" ..
-                     "   • Kekuatan Bisa Diatur\n\n" ..
+                     "✨ Fitur BARU: SPIN MUTER!\n" ..
+                     "   • Auto Rainbow\n" ..
+                     "   • Anti Damage SUPER FIXED\n" ..
+                     "   • Spin dengan kecepatan adjustable\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1682,7 +1556,7 @@ local function loadMainScript()
         end
     end)
 
-    -- Update canvas size
+    -- Update canvas size untuk scroll
     task.wait(0.1)
     for _, content in pairs(contents) do
         local height = 0
@@ -1698,7 +1572,7 @@ local function loadMainScript()
     tabs[1].TextColor3 = Color3.fromRGB(0, 200, 255)
     contents[1].Visible = true
 
-    -- ================== TOMBOL P DENGAN EFEK GLOW (OPSI 3) ==================
+    -- ================== TOMBOL P DENGAN EFEK GLOW ==================
     local openBtn = Instance.new("TextButton")
     openBtn.Parent = ScreenGui
     openBtn.Size = UDim2.new(0, 60, 0, 60)
@@ -1731,13 +1605,15 @@ local function loadMainScript()
     glow.SliceCenter = Rect.new(10, 10, 118, 118)
     glow.ZIndex = 1
 
-    -- Animasi warna glow berubah
+    -- Animasi warna glow berubah (AUTO RAINBOW)
     spawn(function()
         local hue = 0
         while true do
-            hue = (hue + 0.01) % 1
-            local rainbow = Color3.fromHSV(hue, 1, 1)
-            glow.ImageColor3 = rainbow
+            if rainbowActive then
+                hue = (hue + 0.01) % 1
+                local rainbow = Color3.fromHSV(hue, 1, 1)
+                glow.ImageColor3 = rainbow
+            end
             task.wait(0.05)
         end
     end)
@@ -1770,7 +1646,7 @@ local function loadMainScript()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
     end)
 
-    print("✅ Putzzdev-HUB V7 - TROL EDITION (Fitur Fling Siap!)")
+    print("✅ Putzzdev-HUB V8 - SPIN EDITION (Anti Damage FIXED!)")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1822,4 +1698,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔥 Putzzdev-HUB V7 - TROL EDITION (Siap untuk iseng!)")
+print("🔥 Putzzdev-HUB V8 - SPIN EDITION (Siap dipakai!)")
