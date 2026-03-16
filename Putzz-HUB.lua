@@ -3,7 +3,8 @@
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
-local KEY_URL = "https://raw.githubusercontent.com/PutzzdevXiT/sefelink-by-putzz/refs/heads/main/key.json"
+-- ✅ PERBAIKAN: URL mengarah ke repository baru PutzzdevXiT/Putzzdev
+local KEY_URL = "https://raw.githubusercontent.com/PutzzdevXiT/Putzzdev/refs/heads/main/key.json"
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "Putzzdev-HUB"
 
@@ -123,8 +124,9 @@ local function getKeysFromGitHub()
         local success2, jsonData = pcall(function()
             return game:GetService("HttpService"):JSONDecode(data)
         end)
-        if success2 and jsonData and jsonData.duration_keys then
-            return jsonData.duration_keys
+        if success2 and jsonData then
+            -- ✅ PERUBAHAN: Sekarang jsonData bisa ARRAY (format baru) atau OBJECT (format lama)
+            return jsonData
         end
     end
     return nil
@@ -150,7 +152,7 @@ local function getTimeRemaining(expiryTimestamp)
     return days, hours, minutes, seconds, timeStr
 end
 
--- Fungsi cek expiry key
+-- Fungsi cek expiry key (DIPERBAIKI UNTUK FORMAT ARRAY)
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
@@ -162,11 +164,42 @@ local function checkKeyExpiry(inputKey)
     local foundKey = nil
     local expiryDays = nil
     
-    for _, keyData in ipairs(keysData) do
-        if keyData.key == inputKey then
-            foundKey = keyData.key
-            expiryDays = tonumber(keyData.days)
-            break
+    -- ✅ PERUBAHAN: Cek apakah data berupa ARRAY atau OBJECT
+    if type(keysData) == "table" and not keysData.duration_keys then
+        -- Format ARRAY (baru)
+        for _, keyData in ipairs(keysData) do
+            if keyData.key == inputKey then
+                foundKey = keyData.key
+                
+                -- Tentukan durasi dari field "jenis"
+                if keyData.jenis == "1 JAM" then
+                    expiryDays = 1/24 -- 1 jam = 1/24 hari
+                elseif keyData.jenis == "1 HARI" then
+                    expiryDays = 1
+                elseif keyData.jenis == "2 HARI" then
+                    expiryDays = 2
+                elseif keyData.jenis == "3 HARI" then
+                    expiryDays = 3
+                elseif keyData.jenis == "7 HARI" then
+                    expiryDays = 7
+                elseif keyData.jenis == "30 HARI" then
+                    expiryDays = 30
+                elseif keyData.jenis == "PERMANEN" then
+                    expiryDays = 36500 -- 100 tahun (anggap permanen)
+                else
+                    expiryDays = 1 -- default 1 hari
+                end
+                break
+            end
+        end
+    elseif keysData.duration_keys then
+        -- Format LAMA (dari repo lama)
+        for _, keyData in ipairs(keysData.duration_keys) do
+            if keyData.key == inputKey then
+                foundKey = keyData.key
+                expiryDays = tonumber(keyData.days)
+                break
+            end
         end
     end
     
@@ -300,7 +333,7 @@ KeyIcon.Parent = KeyHeader
 KeyIcon.Size = UDim2.new(1, 0, 0.5, 0)
 KeyIcon.Position = UDim2.new(0, 0, 0, 10)
 KeyIcon.BackgroundTransparency = 1
-KeyIcon.Text = "🔐"
+KeyIcon.Text = ""
 KeyIcon.TextColor3 = Color3.fromRGB(0, 200, 255)
 KeyIcon.Font = Enum.Font.GothamBlack
 KeyIcon.TextSize = 40
@@ -431,7 +464,7 @@ StatusIcon.Parent = StatusFrame
 StatusIcon.Size = UDim2.new(0, 30, 1, 0)
 StatusIcon.Position = UDim2.new(0, 5, 0, 0)
 StatusIcon.BackgroundTransparency = 1
-StatusIcon.Text = "🔒"
+StatusIcon.Text = ""
 StatusIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
 StatusIcon.Font = Enum.Font.GothamBold
 StatusIcon.TextSize = 18
@@ -507,7 +540,7 @@ local function toggleSpin(state)
                 rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
             end
         end)
-        showNotification("🌀 SPIN AKTIF", "Kamu muter terus!", 1.5, Color3.fromRGB(255, 0, 255))
+        showNotification(" SPIN AKTIF", "Kamu muter terus!", 1.5, Color3.fromRGB(255, 0, 255))
     end
 end
 
@@ -1585,7 +1618,7 @@ local function loadMainScript()
     infoText.BackgroundTransparency = 1
     infoText.Text = "🔥 Putzzdev-HUB V8.1 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 8.1 (Invisible Added)\n" ..
+                     "📌 Version:6.0\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
                      "✨ Fitur LENGKAP:\n" ..
                      "   • ESP, Fly, Speed, NoClip\n" ..
