@@ -1,10 +1,10 @@
 -- ================== PUTZZDEV-HUB V8 (SPIN EDITION + INVISIBLE) ==================
--- Version: 8.1 (Invisible Added)
+-- Version: 8.2 (Firebase Edition)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
--- ✅ PERBAIKAN: URL mengarah ke repository baru PutzzdevXiT/Putzzdev
-local KEY_URL = "https://raw.githubusercontent.com/PutzzdevXiT/Putzzdev/refs/heads/main/key.json"
+-- 🔥 FIREBASE CONFIG - Mengambil key dari Firebase!
+local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "Putzzdev-HUB"
 
@@ -71,7 +71,7 @@ local spinSpeed = 10
 local spinConnection = nil
 local spinDirection = 1 -- 1 = kanan, -1 = kiri
 
--- INVISIBLE (DARI SCRIPT LU)
+-- INVISIBLE
 local invisibleEnabled = false
 local invisibleConnection = nil
 local invisibleParts = {}
@@ -80,10 +80,9 @@ local invisibleHumanoid = nil
 
 -- Rainbow Variables
 local rainbowHue = 0
-local rainbowSpeed = 0.02
 local rainbowActive = true -- Auto aktif
 
--- ================== FUNGSI KEY SYSTEM ==================
+-- ================== FUNGSI KEY SYSTEM (FIREBASE) ==================
 
 -- Load data key dari file
 local function loadKeyData()
@@ -114,10 +113,10 @@ local function saveKeyData()
     end
 end
 
--- Fungsi ambil key dari GitHub JSON
-local function getKeysFromGitHub()
+-- 🔥 Fungsi ambil key dari FIREBASE
+local function getKeysFromFirebase()
     local success, data = pcall(function()
-        return game:HttpGet(KEY_URL)
+        return game:HttpGet(FIREBASE_URL)
     end)
     
     if success and data then
@@ -125,8 +124,12 @@ local function getKeysFromGitHub()
             return game:GetService("HttpService"):JSONDecode(data)
         end)
         if success2 and jsonData then
-            -- ✅ PERUBAHAN: Sekarang jsonData bisa ARRAY (format baru) atau OBJECT (format lama)
-            return jsonData
+            -- Firebase returns an object with keys, convert to array
+            local keysArray = {}
+            for _, keyData in pairs(jsonData) do
+                table.insert(keysArray, keyData)
+            end
+            return keysArray
         end
     end
     return nil
@@ -152,11 +155,11 @@ local function getTimeRemaining(expiryTimestamp)
     return days, hours, minutes, seconds, timeStr
 end
 
--- Fungsi cek expiry key (DIPERBAIKI UNTUK FORMAT ARRAY)
+-- 🔥 Fungsi cek expiry key (FIREBASE VERSION)
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
-    local keysData = getKeysFromGitHub()
+    local keysData = getKeysFromFirebase()
     if not keysData then
         return false, "Gagal mengambil data key dari server"
     end
@@ -164,42 +167,30 @@ local function checkKeyExpiry(inputKey)
     local foundKey = nil
     local expiryDays = nil
     
-    -- ✅ PERUBAHAN: Cek apakah data berupa ARRAY atau OBJECT
-    if type(keysData) == "table" and not keysData.duration_keys then
-        -- Format ARRAY (baru)
-        for _, keyData in ipairs(keysData) do
-            if keyData.key == inputKey then
-                foundKey = keyData.key
-                
-                -- Tentukan durasi dari field "jenis"
-                if keyData.jenis == "1 JAM" then
-                    expiryDays = 1/24 -- 1 jam = 1/24 hari
-                elseif keyData.jenis == "1 HARI" then
-                    expiryDays = 1
-                elseif keyData.jenis == "2 HARI" then
-                    expiryDays = 2
-                elseif keyData.jenis == "3 HARI" then
-                    expiryDays = 3
-                elseif keyData.jenis == "7 HARI" then
-                    expiryDays = 7
-                elseif keyData.jenis == "30 HARI" then
-                    expiryDays = 30
-                elseif keyData.jenis == "PERMANEN" then
-                    expiryDays = 36500 -- 100 tahun (anggap permanen)
-                else
-                    expiryDays = 1 -- default 1 hari
-                end
-                break
+    -- Format dari Firebase
+    for _, keyData in ipairs(keysData) do
+        if keyData.key == inputKey then
+            foundKey = keyData.key
+            
+            -- Tentukan durasi dari field "jenis"
+            if keyData.jenis == "1 JAM" then
+                expiryDays = 1/24 -- 1 jam = 1/24 hari
+            elseif keyData.jenis == "1 HARI" then
+                expiryDays = 1
+            elseif keyData.jenis == "2 HARI" then
+                expiryDays = 2
+            elseif keyData.jenis == "3 HARI" then
+                expiryDays = 3
+            elseif keyData.jenis == "7 HARI" then
+                expiryDays = 7
+            elseif keyData.jenis == "30 HARI" then
+                expiryDays = 30
+            elseif keyData.jenis == "PERMANEN" then
+                expiryDays = 36500 -- 100 tahun (anggap permanen)
+            else
+                expiryDays = 1 -- default 1 hari
             end
-        end
-    elseif keysData.duration_keys then
-        -- Format LAMA (dari repo lama)
-        for _, keyData in ipairs(keysData.duration_keys) do
-            if keyData.key == inputKey then
-                foundKey = keyData.key
-                expiryDays = tonumber(keyData.days)
-                break
-            end
+            break
         end
     end
     
@@ -237,7 +228,7 @@ local function checkKeyExpiry(inputKey)
     end
 end
 
--- Fungsi notifikasi
+-- Fungsi notifikasi (SAMA)
 local function showNotification(title, text, duration, color)
     local notif = Instance.new("Frame")
     notif.Parent = KeyGui
@@ -279,7 +270,7 @@ local function showNotification(title, text, duration, color)
     notif:Destroy()
 end
 
--- ================== BUAT GUI KEY SYSTEM ==================
+-- ================== GUI KEY SYSTEM (SAMA) ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -550,7 +541,7 @@ local function toggleSpinDirection()
     showNotification("🔄 ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
 end
 
--- ================== FUNGSI INVISIBLE (DARI SCRIPT LU) ==================
+-- ================== FUNGSI INVISIBLE ==================
 local function updateInvisibleData()
     if LocalPlayer.Character then
         invisibleRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -605,7 +596,7 @@ local function toggleInvisible(state)
     end
 end
 
--- ================== FUNGSI ANTI DAMAGE (SUPER FIXED) ==================
+-- ================== FUNGSI ANTI DAMAGE ==================
 local function setupAntiDamage()
     if antiDamageConnection then
         antiDamageConnection:Disconnect()
@@ -628,12 +619,6 @@ local function setupAntiDamage()
                         if humanoid.Health <= 0 then
                             humanoid.Health = humanoid.MaxHealth
                         end
-                    end
-                    
-                    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if humanoid and (humanoid:GetState() == Enum.HumanoidStateType.Freefall or 
-                       humanoid:GetState() == Enum.HumanoidStateType.FallingDown) then
-                        humanoid.Health = humanoid.MaxHealth
                     end
                 end
             end)
@@ -1092,7 +1077,7 @@ local function loadMainScript()
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 380, 0, 600) -- Lebih tinggi untuk fitur invisible
+    mainFrame.Size = UDim2.new(0, 380, 0, 600)
     mainFrame.Position = UDim2.new(0.5, -190, 0.5, -300)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BackgroundTransparency = 0.1
@@ -1227,7 +1212,7 @@ local function loadMainScript()
 
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(1, -20, 1, -250) -- Lebih besar untuk fitur banyak
+        content.Size = UDim2.new(1, -20, 1, -250)
         content.Position = UDim2.new(0, 10, 0, 155)
         content.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
         content.BackgroundTransparency = 0.5
@@ -1266,7 +1251,7 @@ local function loadMainScript()
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 35) -- Lebih kecil biar muat
+        frame.Size = UDim2.new(0.9, 0, 0, 35)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1290,7 +1275,7 @@ local function loadMainScript()
     local function createToggle(parent, text, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 35) -- Lebih kecil
+        frame.Size = UDim2.new(0.9, 0, 0, 35)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1311,7 +1296,7 @@ local function loadMainScript()
 
         local switch = Instance.new("Frame")
         switch.Parent = frame
-        switch.Size = UDim2.new(0, 40, 0, 20) -- Lebih kecil
+        switch.Size = UDim2.new(0, 40, 0, 20)
         switch.Position = UDim2.new(0.85, 0, 0.5, -10)
         switch.BackgroundColor3 = default and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(100, 100, 100)
         switch.BorderSizePixel = 0
@@ -1322,7 +1307,7 @@ local function loadMainScript()
 
         local circle = Instance.new("Frame")
         circle.Parent = switch
-        circle.Size = UDim2.new(0, 16, 0, 16) -- Lebih kecil
+        circle.Size = UDim2.new(0, 16, 0, 16)
         circle.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0.05, 0, 0.5, -8)
         circle.BackgroundColor3 = Color3.new(1, 1, 1)
         circle.BorderSizePixel = 0
@@ -1351,7 +1336,7 @@ local function loadMainScript()
     local function createTextBox(parent, placeholder, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 40) -- Lebih kecil
+        frame.Size = UDim2.new(0.9, 0, 0, 40)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1388,7 +1373,7 @@ local function loadMainScript()
     local function createSlider(parent, text, min, max, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.9, 0, 0, 45) -- Lebih kecil
+        frame.Size = UDim2.new(0.9, 0, 0, 45)
         frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         frame.BorderSizePixel = 0
 
@@ -1459,7 +1444,7 @@ local function loadMainScript()
         return frame
     end
 
-    -- ===== TAB MAIN (DENGAN SCROLL + INVISIBLE) =====
+    -- ===== TAB MAIN =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1523,7 +1508,7 @@ local function loadMainScript()
         toggleSpinDirection()
     end)
 
-    -- INVISIBLE (DARI SCRIPT LU)
+    -- INVISIBLE
     createToggle(tabMain, "👻 INVISIBLE MODE", false, function(s)
         toggleInvisible(s)
     end)
@@ -1616,15 +1601,16 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.9, 0, 0, 100)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 Putzzdev-HUB V8.1 🔥\n\n" ..
+    infoText.Text = "🔥 Putzzdev-HUB V8.2 (Firebase) 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version:6.0\n" ..
+                     "📌 Version: 6.0\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
-                     "✨ Fitur LENGKAP:\n" ..
+                     "✨ \n" ..
                      "   • ESP, Fly, Speed, NoClip\n" ..
                      "   • Aimbot, Infinity Jump\n" ..
                      "   • GOD MODE, SPIN MUTER\n" ..
-                     "   • INVISIBLE MODE (Anti Kamera)\n\n" ..
+                     "   • INVISIBLE MODE\n" ..
+                     "   • 🔥 FIREBASE KEY SYSTEM\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1746,7 +1732,7 @@ local function loadMainScript()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
     end)
 
-    print("✅ Putzzdev-HUB V8.1 - INVISIBLE ADDED!")
+    print("✅ Putzzdev-HUB V8.2 (Firebase) - INVISIBLE ADDED!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1760,7 +1746,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
     
     showLoading(true)
-    StatusLabel.Text = "Memverifikasi Key..."
+    StatusLabel.Text = "Memverifikasi Key (Firebase)..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
@@ -1798,4 +1784,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔥 Putzzdev-HUB V8.1 - INVISIBLE MODE READY!")
+print("🔥 Putzzdev-HUB V6")
