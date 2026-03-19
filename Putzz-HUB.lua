@@ -1,5 +1,5 @@
--- ================== PUTZZDEV-HUB V8 (SPIN EDITION + INVISIBLE) ==================
--- Version: 8.2 (Firebase Edition)
+-- ================== PUTZZDEV-HUB V8.3 (FIXED RAINBOW + ANTI DAMAGE) ==================
+-- Version: 8.3 (Fully Fixed)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -60,10 +60,11 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- ANTI DAMAGE
+-- ANTI DAMAGE (FIXED - SUPER AGGRESSIVE)
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local antiDamageThread = nil
+local antiDamageHeartbeat = nil
 
 -- SPIN MUTER
 local spinEnabled = false
@@ -78,9 +79,10 @@ local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
--- Rainbow Variables
+-- Rainbow Variables (FIXED - SEKARANG BERFUNGSI)
 local rainbowHue = 0
-local rainbowActive = true -- Auto aktif
+local rainbowActive = true
+local rainbowElements = {} -- Untuk menyimpan elemen yang kena efek rainbow
 
 -- ================== FUNGSI KEY SYSTEM (FIREBASE) ==================
 
@@ -270,7 +272,7 @@ local function showNotification(title, text, duration, color)
     notif:Destroy()
 end
 
--- ================== GUI KEY SYSTEM (SAMA) ==================
+-- ================== GUI KEY SYSTEM ==================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "PutzzKeySystem"
 KeyGui.Parent = game.CoreGui
@@ -596,43 +598,83 @@ local function toggleInvisible(state)
     end
 end
 
--- ================== FUNGSI ANTI DAMAGE ==================
+-- ================== FUNGSI ANTI DAMAGE (FIXED - SUPER AGGRESSIVE) ==================
 local function setupAntiDamage()
+    -- Matikan semua koneksi lama
     if antiDamageConnection then
         antiDamageConnection:Disconnect()
         antiDamageConnection = nil
+    end
+    
+    if antiDamageHeartbeat then
+        antiDamageHeartbeat:Disconnect()
+        antiDamageHeartbeat = nil
     end
     
     if antiDamageThread then
         antiDamageThread = nil
     end
     
+    -- 1. Heartbeat loop (sangat cepat)
+    antiDamageHeartbeat = RunService.Heartbeat:Connect(function()
+        if antiDamageEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                -- Paksa health ke max setiap saat
+                if humanoid.Health < humanoid.MaxHealth then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+                -- Cegah death
+                if humanoid.Health <= 0 then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+            end
+        end
+    end)
+    
+    -- 2. Thread terpisah dengan delay lebih cepat (0.001 detik)
     antiDamageThread = task.spawn(function()
-        while antiDamageEnabled and task.wait(0.01) do
+        while antiDamageEnabled do
+            task.wait(0.001) -- Super cepat!
             pcall(function()
                 if LocalPlayer.Character then
                     local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if humanoid then
-                        if humanoid.Health < humanoid.MaxHealth then
-                            humanoid.Health = humanoid.MaxHealth
-                        end
-                        if humanoid.Health <= 0 then
-                            humanoid.Health = humanoid.MaxHealth
-                        end
+                    if humanoid and humanoid.Health < humanoid.MaxHealth then
+                        humanoid.Health = humanoid.MaxHealth
                     end
                 end
             end)
         end
     end)
     
-    antiDamageConnection = RunService.Heartbeat:Connect(function()
+    -- 3. HealthChanged event (responsif terhadap perubahan health)
+    local function onHealthChanged()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health < humanoid.MaxHealth then
-                humanoid.Health = humanoid.MaxHealth
+            if humanoid then
+                humanoid.HealthChanged:Connect(function(newHealth)
+                    if antiDamageEnabled and newHealth < humanoid.MaxHealth then
+                        humanoid.Health = humanoid.MaxHealth
+                    end
+                end)
             end
         end
+    end
+    
+    -- Panggil saat karakter ada
+    if LocalPlayer.Character then
+        onHealthChanged()
+    end
+    
+    -- 4. Saat karakter berganti
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        if antiDamageEnabled then
+            onHealthChanged()
+        end
     end)
+    
+    showNotification("✅ GOD MODE FIXED", "Anti damage super aktif!", 1.5, Color3.fromRGB(0, 255, 0))
 end
 
 -- ================== FUNGSI UTAMA ==================
@@ -838,22 +880,42 @@ local function loadMainScript()
         return closest
     end
 
-    -- Rainbow color untuk background GUI (AUTO AKTIF)
-    local hue = 0
+    -- ================== FUNGSI RAINBOW (FIXED - SEKARANG BERFUNGSI) ==================
+    -- Fungsi untuk mendapatkan warna rainbow
+    local function getRainbowColor(offset)
+        local hue = (rainbowHue + (offset or 0)) % 1
+        return Color3.fromHSV(hue, 1, 1)
+    end
+
+    -- Rainbow thread terpisah
+    task.spawn(function()
+        while rainbowActive do
+            rainbowHue = (rainbowHue + 0.002) % 1 -- Lebih lambat biar smooth
+            task.wait(0.03)
+        end
+    end)
+
+    -- RenderStepped untuk update warna GUI
     RunService.RenderStepped:Connect(function()
-        if rainbowActive then
-            hue = (hue + 0.005) % 1
-            local rainbowColor = Color3.fromHSV(hue, 1, 1)
+        if rainbowActive and mainFrame and border and title then
+            local rainbowColor = getRainbowColor(0)
             
-            if mainFrame then
-                local border = mainFrame:FindFirstChild("Border")
-                if border then
-                    border.BorderColor3 = rainbowColor
-                end
+            -- Update border GUI
+            border.BorderColor3 = rainbowColor
+            
+            -- Update stroke title
+            title.TextStrokeColor3 = rainbowColor
+            
+            -- Update tombol P glow
+            if glow then
+                glow.ImageColor3 = getRainbowColor(0.3)
             end
             
-            if title then
-                title.TextStrokeColor3 = rainbowColor
+            -- Update tab yang aktif
+            for i, btn in ipairs(tabs) do
+                if contents[i].Visible then
+                    btn.TextColor3 = rainbowColor
+                end
             end
         end
         
@@ -1482,16 +1544,23 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
 
-    -- ANTI DAMAGE
-    createToggle(tabMain, "⚡ GOD MODE", false, function(s)
+    -- ANTI DAMAGE (FIXED - SUPER AGGRESSIVE)
+    createToggle(tabMain, "⚡ GOD MODE (FIXED)", false, function(s)
         antiDamageEnabled = s
         if s then
             setupAntiDamage()
-            showNotification("✅ GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
-        elseif antiDamageConnection then
-            antiDamageConnection:Disconnect()
-            antiDamageConnection = nil
+            showNotification("✅ GOD MODE FIXED", "Anti one-hit kill SUPER!", 1.5, Color3.fromRGB(0, 255, 0))
+        else
+            if antiDamageHeartbeat then
+                antiDamageHeartbeat:Disconnect()
+                antiDamageHeartbeat = nil
+            end
+            if antiDamageConnection then
+                antiDamageConnection:Disconnect()
+                antiDamageConnection = nil
+            end
             antiDamageThread = nil
+            showNotification("❌ GOD MODE OFF", "Proteksi dimatikan", 1.5, Color3.fromRGB(255, 0, 0))
         end
     end)
 
@@ -1530,47 +1599,56 @@ local function loadMainScript()
 
     -- ===== TAB COLOR =====
     createButton(tabColor, "🔴 Merah", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(255, 0, 0)
         title.TextStrokeColor3 = Color3.fromRGB(255, 0, 0)
     end)
 
     createButton(tabColor, "🟢 Hijau", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(0, 255, 0)
         title.TextStrokeColor3 = Color3.fromRGB(0, 255, 0)
     end)
 
     createButton(tabColor, "🔵 Biru", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(0, 0, 255)
         title.TextStrokeColor3 = Color3.fromRGB(0, 0, 255)
     end)
 
     createButton(tabColor, "🟡 Kuning", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(255, 255, 0)
         title.TextStrokeColor3 = Color3.fromRGB(255, 255, 0)
     end)
 
     createButton(tabColor, "🟠 Orange", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(255, 165, 0)
         title.TextStrokeColor3 = Color3.fromRGB(255, 165, 0)
     end)
 
     createButton(tabColor, "🟣 Ungu", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(128, 0, 128)
         title.TextStrokeColor3 = Color3.fromRGB(128, 0, 128)
     end)
 
     createButton(tabColor, "💗 Pink", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(255, 192, 203)
         title.TextStrokeColor3 = Color3.fromRGB(255, 192, 203)
     end)
 
     createButton(tabColor, "🔷 Cyan", function()
+        rainbowActive = false
         border.BorderColor3 = Color3.fromRGB(0, 255, 255)
         title.TextStrokeColor3 = Color3.fromRGB(0, 255, 255)
     end)
 
-    createButton(tabColor, "🌈 Rainbow Auto (Default)", function()
+    createButton(tabColor, "🌈 Rainbow Auto (Aktif)", function()
         rainbowActive = true
+        showNotification("🌈 RAINBOW AKTIF", "Warna berganti otomatis", 1.5, Color3.fromRGB(255, 0, 255))
     end)
 
     -- ===== TAB ABOUT =====
@@ -1601,16 +1679,16 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.9, 0, 0, 100)
     infoText.Position = UDim2.new(0.05, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 Putzzdev-HUB V8.2 (Firebase) 🔥\n\n" ..
+    infoText.Text = "🔥 Putzzdev-HUB V8.3 (FIXED) 🔥\n\n" ..
                      "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 6.0\n" ..
+                     "📌 Version: 8.3\n" ..
                      "📱 TikTok: @putzz_mvpp\n\n" ..
-                     "✨ \n" ..
+                     "✨ FITUR FIXED:\n" ..
+                     "   • 🌈 RAINBOW - BERFUNGSI!\n" ..
+                     "   • ⚡ GOD MODE - SUPER FIXED!\n" ..
                      "   • ESP, Fly, Speed, NoClip\n" ..
                      "   • Aimbot, Infinity Jump\n" ..
-                     "   • GOD MODE, SPIN MUTER\n" ..
-                     "   • INVISIBLE MODE\n" ..
-                     "   • 🔥 FIREBASE KEY SYSTEM\n\n" ..
+                     "   • SPIN MUTER, INVISIBLE\n\n" ..
                      "📞 Kontak: 088976255131"
     infoText.TextColor3 = Color3.new(1, 1, 1)
     infoText.Font = Enum.Font.Gotham
@@ -1691,19 +1769,6 @@ local function loadMainScript()
     glow.SliceCenter = Rect.new(10, 10, 118, 118)
     glow.ZIndex = 1
 
-    -- Animasi warna glow berubah (AUTO RAINBOW)
-    spawn(function()
-        local hue = 0
-        while true do
-            if rainbowActive then
-                hue = (hue + 0.01) % 1
-                local rainbow = Color3.fromHSV(hue, 1, 1)
-                glow.ImageColor3 = rainbow
-            end
-            task.wait(0.05)
-        end
-    end)
-
     -- Fungsi buka/tutup menu
     local menuOpen = true
     openBtn.MouseButton1Click:Connect(function()
@@ -1732,7 +1797,7 @@ local function loadMainScript()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
     end)
 
-    print("✅ Putzzdev-HUB V8.2 (Firebase) - INVISIBLE ADDED!")
+    print("✅ Putzzdev-HUB V8.3 - RAINBOW & GOD MODE FIXED!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1784,4 +1849,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("🔥 Putzzdev-HUB V6")
+print("🔥 Putzzdev-HUB V8.3 - ALL FIXED!")
