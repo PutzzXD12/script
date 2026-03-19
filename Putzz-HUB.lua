@@ -67,7 +67,7 @@ local antiDamageThread = nil
 
 -- SPIN MUTER
 local spinEnabled = false
-local spinSpeed = 10
+local spinSpeed = 100
 local spinConnection = nil
 local spinDirection = 1 -- 1 = kanan, -1 = kiri
 
@@ -186,7 +186,7 @@ local function checkKeyExpiry(inputKey)
             elseif keyData.jenis == "30 HARI" then
                 expiryDays = 30
             elseif keyData.jenis == "PERMANEN" then
-                expiryDays = 36500 -- 100 tahun (anggap permanen)
+                expiryDays = 9999999 -- 100 tahun (anggap permanen)
             else
                 expiryDays = 1 -- default 1 hari
             end
