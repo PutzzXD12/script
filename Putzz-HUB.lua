@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V9.5 (PURPLE EDITION) ==================
--- Version: 9.5 (Ultimate Purple Theme)
+-- ================== DRIP CLIENT V9.6 (PURPLE EDITION - SCROLL FIXED) ==================
+-- Version: 9.6 (Purple Edition)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -65,8 +65,7 @@ local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
 -- Warna Tema UNGU
-local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu
-local accentColor = Color3.fromRGB(186, 104, 200) -- Ungu Muda
+local themeColor = Color3.fromRGB(156, 39, 176)
 local darkPurple = Color3.fromRGB(74, 20, 90)
 
 -- ================== FUNGSI KEY SYSTEM ==================
@@ -289,7 +288,7 @@ KeyIcon.Parent = KeyHeader
 KeyIcon.Size = UDim2.new(1, 0, 0.5, 0)
 KeyIcon.Position = UDim2.new(0, 0, 0, 10)
 KeyIcon.BackgroundTransparency = 1
-KeyIcon.Text = "💜"
+KeyIcon.Text = ""
 KeyIcon.TextColor3 = themeColor
 KeyIcon.Font = Enum.Font.GothamBlack
 KeyIcon.TextSize = 45
@@ -299,7 +298,7 @@ KeyTitle.Parent = KeyHeader
 KeyTitle.Size = UDim2.new(1, 0, 0.5, 0)
 KeyTitle.Position = UDim2.new(0, 0, 0, 50)
 KeyTitle.BackgroundTransparency = 1
-KeyTitle.Text = "DRIP CLIENT"
+KeyTitle.Text = "DRIP CLIENT AUTH"
 KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 KeyTitle.Font = Enum.Font.GothamBold
 KeyTitle.TextSize = 16
@@ -472,13 +471,13 @@ local function toggleSpin(state)
                 rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
             end
         end)
-        showNotification(" SPIN AKTIF", "✅", 1.5, Color3.fromRGB(255, 0, 255))
+        showNotification("SPIN AKTIF", "Kamu muter terus!", 1.5, Color3.fromRGB(255, 0, 255))
     end
 end
 
 local function toggleSpinDirection()
     spinDirection = spinDirection * -1
-    showNotification("🔄 ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
+    showNotification("ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
 end
 
 -- ================== FUNGSI INVISIBLE ==================
@@ -513,10 +512,10 @@ local function toggleInvisible(state)
                 invisibleHumanoid.CameraOffset = oldOffset
             end
         end)
-        showNotification("👻 INVISIBLE ON", "Kamu tidak terlihat!", 1.5, Color3.fromRGB(150, 0, 255))
+        showNotification("INVISIBLE ON", "Kamu tidak terlihat!", 1.5, Color3.fromRGB(150, 0, 255))
     else
         for _, v in pairs(invisibleParts) do v.Transparency = 0 end
-        showNotification("👻 INVISIBLE OFF", "Kamu terlihat lagi", 1.5, Color3.fromRGB(255, 0, 0))
+        showNotification("INVISIBLE OFF", "Kamu terlihat lagi", 1.5, Color3.fromRGB(255, 0, 0))
     end
 end
 
@@ -561,7 +560,7 @@ local function setupAntiDamage()
     
     if LocalPlayer.Character then onHealthChanged() end
     LocalPlayer.CharacterAdded:Connect(function() task.wait(0.5); if antiDamageEnabled then onHealthChanged() end end)
-    showNotification("✅ GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
+    showNotification("GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
 end
 
 -- ================== FUNGSI UTAMA ==================
@@ -910,8 +909,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 580)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -290)
+    mainFrame.Size = UDim2.new(0, 400, 0, 600)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -947,7 +946,7 @@ local function loadMainScript()
     borderCorner.Parent = premiumBorder
     borderCorner.CornerRadius = UDim.new(0, 24)
     
-    -- Header dengan gradient ungu
+    -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 80)
@@ -974,7 +973,7 @@ local function loadMainScript()
     headerIcon.Size = UDim2.new(0, 50, 1, 0)
     headerIcon.Position = UDim2.new(0, 15, 0, 0)
     headerIcon.BackgroundTransparency = 1
-    headerIcon.Text = "💜"
+    headerIcon.Text = ""
     headerIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
     headerIcon.Font = Enum.Font.GothamBlack
     headerIcon.TextSize = 40
@@ -998,7 +997,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, -70, 0.3, 0)
     subtitle.Position = UDim2.new(0, 65, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "PREMIUM SCRIPT"
+    subtitle.Text = "PURPLE EDITION"
     subtitle.TextColor3 = Color3.fromRGB(200, 200, 255)
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1060,7 +1059,7 @@ local function loadMainScript()
         end
     end)
     
-    -- Tab bar ungu
+    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(0.9, 0, 0, 45)
@@ -1094,8 +1093,8 @@ local function loadMainScript()
         
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.37)
-        content.Position = UDim2.new(0.03, 0, 0.31, 0)
+        content.Size = UDim2.new(0.94, 0, 1, -0.39)
+        content.Position = UDim2.new(0.03, 0, 0.32, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1131,10 +1130,10 @@ local function loadMainScript()
         return content
     end
     
-    local tabMain = createTab("MAIN", "💎", 1)
-    local tabESP = createTab("ESP", "👁️", 2)
-    local tabColor = createTab("COLOR", "🎨", 3)
-    local tabAbout = createTab("ABOUT", "📋", 4)
+    local tabMain = createTab("MAIN", "▸", 1)
+    local tabESP = createTab("ESP", "▸", 2)
+    local tabColor = createTab("COLOR", "▸", 3)
+    local tabAbout = createTab("ABOUT", "▸", 4)
     
     -- Button Style
     local function createButton(parent, text, callback)
@@ -1341,67 +1340,67 @@ local function loadMainScript()
     end
     
     -- ===== TAB MAIN =====
-    createToggle(tabMain, "🦅 Fly", false, function(s)
+    createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
     end)
     
-    createToggle(tabMain, "⚡ Speed Boost", false, function(s)
+    createToggle(tabMain, "Speed Boost", false, function(s)
         speedEnabled = s
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = s and fastSpeed or normalSpeed end
     end)
     
-    createToggle(tabMain, "🔄 NoClip", false, function(s)
+    createToggle(tabMain, "NoClip", false, function(s)
         noclipEnabled = s
     end)
     
-    createTextBox(tabMain, "📞 Masukkan username player...", function(username)
+    createTextBox(tabMain, "Masukkan username player...", function(username)
         teleportToPlayer(username)
     end)
     
-    createToggle(tabMain, "👻 Infinity Jump", false, function(s)
+    createToggle(tabMain, "Infinity Jump", false, function(s)
         infinityJumpEnabled = s
     end)
     
-    createToggle(tabMain, "🎯 Aimbot", false, function(s)
+    createToggle(tabMain, "Aimbot", false, function(s)
         aimbotEnabled = s
     end)
     
-    createSlider(tabMain, "🎯 Aimbot FOV", 50, 500, 150, function(s)
+    createSlider(tabMain, "Aimbot FOV", 50, 500, 150, function(s)
         aimbotFOV = s
     end)
     
-    createSlider(tabMain, "⚙️ Smoothness", 1, 20, 5, function(s)
+    createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
         aimbotSmoothness = s
     end)
     
-    createToggle(tabMain, "⚡ GOD MODE", false, function(s)
+    createToggle(tabMain, "God Mode", false, function(s)
         antiDamageEnabled = s
         if s then
             setupAntiDamage()
-            showNotification("✅ GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
+            showNotification("GOD MODE AKTIF", "Anti one-hit kill!", 1.5, Color3.fromRGB(0, 255, 0))
         else
             if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
             if antiDamageConnection then antiDamageConnection:Disconnect() end
             antiDamageThread = nil
-            showNotification("❌ GOD MODE OFF", "Proteksi dimatikan", 1.5, Color3.fromRGB(255, 0, 0))
+            showNotification("GOD MODE OFF", "Proteksi dimatikan", 1.5, Color3.fromRGB(255, 0, 0))
         end
     end)
     
-    createToggle(tabMain, "🌀 SPIN MUTER", false, function(s)
+    createToggle(tabMain, "Spin Muter", false, function(s)
         toggleSpin(s)
     end)
     
-    createSlider(tabMain, "⚡ Kecepatan Spin", 1, 30, 10, function(s)
+    createSlider(tabMain, "Spin Speed", 1, 30, 10, function(s)
         spinSpeed = s
     end)
     
-    createButton(tabMain, "🔄 Ganti Arah Spin", function()
+    createButton(tabMain, "Ganti Arah Spin", function()
         toggleSpinDirection()
     end)
     
-    createToggle(tabMain, "👻 INVISIBLE MODE", false, function(s)
+    createToggle(tabMain, "Invisible Mode", false, function(s)
         toggleInvisible(s)
     end)
     
@@ -1412,10 +1411,10 @@ local function loadMainScript()
     end)
     
     -- ===== TAB ESP =====
-    createToggle(tabESP, " ESP Box", false, function(s) espEnabled = s end)
-    createToggle(tabESP, " ESP Line", false, function(s) lineEnabled = s end)
-    createToggle(tabESP, " Health Bar", false, function(s) healthEnabled = s end)
-    createToggle(tabESP, " ESP Skeleton", false, function(s) skeletonEnabled = s end)
+    createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
+    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+    createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
+    createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
     
     -- ===== TAB COLOR =====
     local function changeTheme(newColor)
@@ -1437,50 +1436,42 @@ local function loadMainScript()
         end
     end
     
-    createButton(tabColor, " Ungu (Default)", function()
+    createButton(tabColor, "Ungu (Default)", function()
         changeTheme(Color3.fromRGB(156, 39, 176))
-        showNotification("🎨 TEMA UNGU", "Warna berubah!", 1, themeColor)
     end)
     
-    createButton(tabColor, "💗 Pink", function()
+    createButton(tabColor, "Pink", function()
         changeTheme(Color3.fromRGB(255, 105, 180))
-        showNotification("🎨 TEMA PINK", "Warna berubah!", 1, Color3.fromRGB(255, 105, 180))
     end)
     
-    createButton(tabColor, "🔴 Merah", function()
+    createButton(tabColor, "Merah", function()
         changeTheme(Color3.fromRGB(255, 0, 0))
-        showNotification("🎨 TEMA MERAH", "Warna berubah!", 1, Color3.fromRGB(255, 0, 0))
     end)
     
-    createButton(tabColor, "🟢 Hijau", function()
+    createButton(tabColor, "Hijau", function()
         changeTheme(Color3.fromRGB(0, 255, 0))
-        showNotification("🎨 TEMA HIJAU", "Warna berubah!", 1, Color3.fromRGB(0, 255, 0))
     end)
     
-    createButton(tabColor, "🔵 Biru", function()
+    createButton(tabColor, "Biru", function()
         changeTheme(Color3.fromRGB(0, 0, 255))
-        showNotification("🎨 TEMA BIRU", "Warna berubah!", 1, Color3.fromRGB(0, 0, 255))
     end)
     
-    createButton(tabColor, "🟡 Kuning", function()
+    createButton(tabColor, "Kuning", function()
         changeTheme(Color3.fromRGB(255, 255, 0))
-        showNotification("🎨 TEMA KUNING", "Warna berubah!", 1, Color3.fromRGB(255, 255, 0))
     end)
     
-    createButton(tabColor, "🟠 Orange", function()
+    createButton(tabColor, "Orange", function()
         changeTheme(Color3.fromRGB(255, 165, 0))
-        showNotification("🎨 TEMA ORANGE", "Warna berubah!", 1, Color3.fromRGB(255, 165, 0))
     end)
     
-    createButton(tabColor, "🔷 Cyan", function()
+    createButton(tabColor, "Cyan", function()
         changeTheme(Color3.fromRGB(0, 255, 255))
-        showNotification("🎨 TEMA CYAN", "Warna berubah!", 1, Color3.fromRGB(0, 255, 255))
     end)
     
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.95, 0, 0, 200)
+    aboutFrame.Size = UDim2.new(0.95, 0, 0, 180)
     aboutFrame.Position = UDim2.new(0.025, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1492,48 +1483,47 @@ local function loadMainScript()
     
     local aboutTitle = Instance.new("TextLabel")
     aboutTitle.Parent = aboutFrame
-    aboutTitle.Size = UDim2.new(1, 0, 0, 40)
+    aboutTitle.Size = UDim2.new(1, 0, 0, 35)
     aboutTitle.Position = UDim2.new(0, 0, 0, 10)
     aboutTitle.BackgroundTransparency = 1
-    aboutTitle.Text = " DRIP CLIENT"
+    aboutTitle.Text = "DRIP CLIENT"
     aboutTitle.TextColor3 = themeColor
     aboutTitle.Font = Enum.Font.GothamBlack
     aboutTitle.TextSize = 22
     
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 130)
+    infoText.Size = UDim2.new(0.95, 0, 0, 115)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🔥 DRIP CLIENT V9.5 🔥\n\n" ..
-                     "👤 Developer: Putzz XD\n" ..
-                     "📌 Version: 9.5 (Purple Edition)\n" ..
-                     "📱 TikTok: @putzz_mvpp\n\n" ..
-                     "✨ FITUR LENGKAP:\n" ..
-                     "   •  ESP Box & Line (Warna Ungu)\n" ..
-                     "   • 🦴 ESP Skeleton\n" ..
-                     "   • 🦅 Fly, ⚡ Speed, 🔄 NoClip\n" ..
-                     "   • 🎯 Aimbot, 👻 Infinity Jump\n" ..
-                     "   • ⚡ GOD MODE,  SPIN MUTER\n" ..
-                     "   • 👻 INVISIBLE MODE\n" ..
-                     "   • 🔥 FIREBASE KEY SYSTEM\n\n" ..
-                     "📞 Kontak: 088976255131"
+    infoText.Text = "DRIP CLIENT V9.6\n\n" ..
+                     "Developer: Putzz XD\n" ..
+                     "Version: 9.6 (Purple Edition)\n" ..
+                     "TikTok: @putzz_mvpp\n\n" ..
+                     "Fitur Lengkap:\n" ..
+                     "  - ESP Box, Line, Health, Skeleton\n" ..
+                     "  - Fly, Speed, NoClip\n" ..
+                     "  - Aimbot, Infinity Jump\n" ..
+                     "  - God Mode, Spin Muter\n" ..
+                     "  - Invisible Mode\n" ..
+                     "  - Firebase Key System\n\n" ..
+                     "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 11
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Left
     
-    createButton(tabAbout, "📋 Copy TikTok", function()
+    createButton(tabAbout, "Copy TikTok", function()
         if setclipboard then
             setclipboard("@putzz_mvpp")
             local notif = Instance.new("TextLabel")
             notif.Parent = ScreenGui
             notif.Size = UDim2.new(0, 180, 0, 30)
             notif.Position = UDim2.new(0.5, -90, 0.8, 0)
-            notif.BackgroundColor3 = Color3.fromRGB(themeColor.r * 255, themeColor.g * 255, themeColor.b * 255)
+            notif.BackgroundColor3 = themeColor
             notif.BackgroundTransparency = 0.2
-            notif.Text = "✅ TikTok copied!"
+            notif.Text = "TikTok copied!"
             notif.TextColor3 = Color3.fromRGB(255, 255, 255)
             notif.Font = Enum.Font.GothamBold
             notif.TextSize = 13
@@ -1557,7 +1547,7 @@ local function loadMainScript()
                 height = height + child.Size.Y.Offset + 8
             end
         end
-        content.CanvasSize = UDim2.new(0, 0, 0, height + 20)
+        content.CanvasSize = UDim2.new(0, 0, 0, height + 30)
     end
     
     -- Aktifkan tab pertama
@@ -1597,7 +1587,7 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -290)
+                Position = UDim2.new(0.5, -200, 0.5, -300)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1619,7 +1609,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V6.0")
+    print("DRIP CLIENT V9.6 - Purple Edition Loaded!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1660,7 +1650,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         StatusIcon.Text = "❌"
-        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
+        showNotification("GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
@@ -1670,4 +1660,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V6.0")
+print("DRIP CLIENT V6.1")
