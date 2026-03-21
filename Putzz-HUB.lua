@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V9.7 (SCROLL FIXED ALL TABS) ==================
--- Version: 9.7 (Purple Edition - Scroll Fixed)
+-- ================== DRIP CLIENT V9.8 (SCROLL FIXED - DALAM FRAME) ==================
+-- Version: 9.8 (Purple Edition - Scroll Dalam Frame)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -899,7 +899,7 @@ local function loadMainScript()
         end
     end)
     
-    -- ================== GUI UTAMA PURPLE EDITION (SCROLL FIXED) ==================
+    -- ================== GUI UTAMA PURPLE EDITION (SCROLL DALAM FRAME) ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
@@ -909,8 +909,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 620)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -310)
+    mainFrame.Size = UDim2.new(0, 400, 0, 580)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -290)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -949,7 +949,7 @@ local function loadMainScript()
     -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
-    header.Size = UDim2.new(1, 0, 0, 80)
+    header.Size = UDim2.new(1, 0, 0, 75)
     header.Position = UDim2.new(0, 0, 0, 0)
     header.BackgroundColor3 = themeColor
     header.BackgroundTransparency = 0.15
@@ -967,74 +967,62 @@ local function loadMainScript()
     })
     headerGradient.Rotation = 90
     
-    -- Icon di header
-    local headerIcon = Instance.new("TextLabel")
-    headerIcon.Parent = header
-    headerIcon.Size = UDim2.new(0, 50, 1, 0)
-    headerIcon.Position = UDim2.new(0, 15, 0, 0)
-    headerIcon.BackgroundTransparency = 1
-    headerIcon.Text = ""
-    headerIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    headerIcon.Font = Enum.Font.GothamBlack
-    headerIcon.TextSize = 40
-    headerIcon.TextXAlignment = Enum.TextXAlignment.Left
-    
     -- Title
     local title = Instance.new("TextLabel")
     title.Parent = header
-    title.Size = UDim2.new(1, -70, 0.5, 0)
-    title.Position = UDim2.new(0, 65, 0, 15)
+    title.Size = UDim2.new(1, 0, 0.6, 0)
+    title.Position = UDim2.new(0, 0, 0, 15)
     title.BackgroundTransparency = 1
     title.Text = "DRIP CLIENT"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 26
-    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.TextSize = 28
+    title.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
-    subtitle.Size = UDim2.new(1, -70, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 65, 0, 48)
+    subtitle.Size = UDim2.new(1, 0, 0.3, 0)
+    subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = ""
-    subtitle.TextColor3 = Color3.fromRGB(200, 200, 255)
+    subtitle.Text = "PURPLE EDITION"
+    subtitle.TextColor3 = themeColor
     subtitle.Font = Enum.Font.Gotham
-    subtitle.TextSize = 11
-    subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.TextSize = 12
+    subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Timer Display
     local timerFrame = Instance.new("Frame")
     timerFrame.Parent = mainFrame
-    timerFrame.Size = UDim2.new(0.9, 0, 0, 55)
-    timerFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
+    timerFrame.Size = UDim2.new(0.9, 0, 0, 50)
+    timerFrame.Position = UDim2.new(0.05, 0, 0.13, 0)
     timerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     timerFrame.BackgroundTransparency = 0.3
     timerFrame.BorderSizePixel = 0
     
     local timerCorner = Instance.new("UICorner")
     timerCorner.Parent = timerFrame
-    timerCorner.CornerRadius = UDim.new(0, 14)
+    timerCorner.CornerRadius = UDim.new(0, 12)
     
     local timerIcon = Instance.new("TextLabel")
     timerIcon.Parent = timerFrame
-    timerIcon.Size = UDim2.new(0, 45, 1, 0)
+    timerIcon.Size = UDim2.new(0, 40, 1, 0)
     timerIcon.Position = UDim2.new(0, 5, 0, 0)
     timerIcon.BackgroundTransparency = 1
     timerIcon.Text = "⏳"
     timerIcon.TextColor3 = themeColor
     timerIcon.Font = Enum.Font.GothamBold
-    timerIcon.TextSize = 26
+    timerIcon.TextSize = 22
     
     local timerLabel = Instance.new("TextLabel")
     timerLabel.Parent = timerFrame
-    timerLabel.Size = UDim2.new(1, -55, 1, 0)
-    timerLabel.Position = UDim2.new(0, 50, 0, 0)
+    timerLabel.Size = UDim2.new(1, -50, 1, 0)
+    timerLabel.Position = UDim2.new(0, 45, 0, 0)
     timerLabel.BackgroundTransparency = 1
     timerLabel.Text = "Memuat informasi key..."
     timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     timerLabel.Font = Enum.Font.GothamBold
-    timerLabel.TextSize = 12
+    timerLabel.TextSize = 11
     timerLabel.TextXAlignment = Enum.TextXAlignment.Left
     timerLabel.TextWrapped = true
     
@@ -1062,15 +1050,15 @@ local function loadMainScript()
     -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
-    tabBar.Size = UDim2.new(0.9, 0, 0, 45)
-    tabBar.Position = UDim2.new(0.05, 0, 0.2, 0)
+    tabBar.Size = UDim2.new(0.9, 0, 0, 42)
+    tabBar.Position = UDim2.new(0.05, 0, 0.21, 0)
     tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     tabBar.BackgroundTransparency = 0.3
     tabBar.BorderSizePixel = 0
     
     local tabBarCorner = Instance.new("UICorner")
     tabBarCorner.Parent = tabBar
-    tabBarCorner.CornerRadius = UDim.new(0, 12)
+    tabBarCorner.CornerRadius = UDim.new(0, 10)
     
     local tabs = {}
     local contents = {}
@@ -1085,16 +1073,17 @@ local function loadMainScript()
         btn.Text = icon .. " " .. name
         btn.TextColor3 = Color3.fromRGB(200, 200, 200)
         btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 14
+        btn.TextSize = 13
         
         local btnCorner = Instance.new("UICorner")
         btnCorner.Parent = btn
-        btnCorner.CornerRadius = UDim.new(0, 10)
+        btnCorner.CornerRadius = UDim.new(0, 8)
         
+        -- SCROLLING FRAME - INI YANG AKAN DISCROLL
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.35)
-        content.Position = UDim2.new(0.03, 0, 0.27, 0)
+        content.Size = UDim2.new(0.94, 0, 1, -0.37)
+        content.Position = UDim2.new(0.03, 0, 0.28, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1103,6 +1092,9 @@ local function loadMainScript()
         content.CanvasSize = UDim2.new(0, 0, 0, 0)
         content.Visible = false
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        content.ScrollingDirection = Enum.ScrollingDirection.Y
+        content.ElasticBehavior = Enum.ElasticBehavior.Never
+        content.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
         
         local contentCorner = Instance.new("UICorner")
         contentCorner.Parent = content
@@ -1125,6 +1117,16 @@ local function loadMainScript()
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.BackgroundTransparency = 0.2
             content.Visible = true
+            
+            -- Update canvas size setiap kali tab dibuka
+            task.wait(0.05)
+            local height = 0
+            for _, child in pairs(content:GetChildren()) do
+                if child:IsA("Frame") then
+                    height = height + child.Size.Y.Offset + 10
+                end
+            end
+            content.CanvasSize = UDim2.new(0, 0, 0, height + 30)
         end)
         
         return content
@@ -1496,9 +1498,9 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 115)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V9.7\n\n" ..
+    infoText.Text = "DRIP CLIENT V9.8\n\n" ..
                      "Developer: Putzz XD\n" ..
-                     "Version: 9.7 (Purple Edition)\n" ..
+                     "Version: 9.8 (Purple Edition)\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
                      "Fitur Lengkap:\n" ..
                      "  - ESP Box, Line, Health, Skeleton\n" ..
@@ -1540,7 +1542,7 @@ local function loadMainScript()
     
     -- Update canvas size untuk semua tab
     task.wait(0.1)
-    for _, content in pairs(contents) do
+    for i, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
             if child:IsA("Frame") then
@@ -1554,6 +1556,17 @@ local function loadMainScript()
     tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
     tabs[1].BackgroundTransparency = 0.2
     contents[1].Visible = true
+    
+    -- Update canvas untuk tab main setelah semua fitur ditambahkan
+    task.wait(0.2)
+    local mainContent = contents[1]
+    local mainHeight = 0
+    for _, child in pairs(mainContent:GetChildren()) do
+        if child:IsA("Frame") then
+            mainHeight = mainHeight + child.Size.Y.Offset + 10
+        end
+    end
+    mainContent.CanvasSize = UDim2.new(0, 0, 0, mainHeight + 40)
     
     -- ================== TOMBOL MENU DRIP CLIENT ==================
     local openBtn = Instance.new("TextButton")
@@ -1587,7 +1600,7 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -310)
+                Position = UDim2.new(0.5, -200, 0.5, -290)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1609,7 +1622,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V9.7 - Scroll Fixed All Tabs")
+    print("DRIP CLIENT V9.8 - Scroll Dalam Frame Siap!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1660,4 +1673,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V9.7 - Ready!")
+print("DRIP CLIENT V9.8 - Scroll Dalam Frame Siap!")
