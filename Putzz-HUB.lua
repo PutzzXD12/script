@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V9.8 (SCROLL FIXED - DALAM FRAME) ==================
--- Version: 9.8 (Purple Edition - Scroll Dalam Frame)
+-- ================== DRIP CLIENT V9.9 (UTILITY TAB - SCROLL FIXED) ==================
+-- Version: 9.9 (Purple Edition - With Utility Tab)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -22,6 +22,7 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ================== VARIABEL FITUR ==================
+-- ESP
 local espEnabled = false
 local lineEnabled = false
 local healthEnabled = false
@@ -29,6 +30,7 @@ local skeletonEnabled = false
 local ESPTable = {}
 local SkeletonESP = {}
 
+-- Movement
 local flyEnabled = false
 local flySpeed = 60
 local bv = nil
@@ -40,6 +42,7 @@ local fastSpeed = 60
 
 local noclipEnabled = false
 
+-- Combat
 local aimbotEnabled = false
 local aimbotFOV = 150
 local aimbotSmoothness = 5
@@ -48,6 +51,7 @@ local aimbotPart = "Head"
 local infinityJumpEnabled = false
 local jumpCount = 0
 
+-- Utility (akan dipindah ke tab UTILITY)
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local antiDamageThread = nil
@@ -460,7 +464,8 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI SPIN ==================
+-- ================== FUNGSI UTILITY ==================
+-- SPIN
 local function toggleSpin(state)
     spinEnabled = state
     if spinConnection then spinConnection:Disconnect() spinConnection = nil end
@@ -480,7 +485,7 @@ local function toggleSpinDirection()
     showNotification("ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
 end
 
--- ================== FUNGSI INVISIBLE ==================
+-- INVISIBLE
 local function updateInvisibleData()
     if LocalPlayer.Character then
         invisibleRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -519,7 +524,7 @@ local function toggleInvisible(state)
     end
 end
 
--- ================== FUNGSI ANTI DAMAGE ==================
+-- GOD MODE (ANTI DAMAGE)
 local function setupAntiDamage()
     if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
     if antiDamageConnection then antiDamageConnection:Disconnect() end
@@ -899,7 +904,7 @@ local function loadMainScript()
         end
     end)
     
-    -- ================== GUI UTAMA PURPLE EDITION (SCROLL DALAM FRAME) ==================
+    -- ================== GUI UTAMA DENGAN 5 TAB ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
@@ -909,8 +914,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 580)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -290)
+    mainFrame.Size = UDim2.new(0, 430, 0, 580)
+    mainFrame.Position = UDim2.new(0.5, -215, 0.5, -290)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -949,7 +954,7 @@ local function loadMainScript()
     -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
-    header.Size = UDim2.new(1, 0, 0, 75)
+    header.Size = UDim2.new(1, 0, 0, 70)
     header.Position = UDim2.new(0, 0, 0, 0)
     header.BackgroundColor3 = themeColor
     header.BackgroundTransparency = 0.15
@@ -971,31 +976,31 @@ local function loadMainScript()
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.Size = UDim2.new(1, 0, 0.6, 0)
-    title.Position = UDim2.new(0, 0, 0, 15)
+    title.Position = UDim2.new(0, 0, 0, 12)
     title.BackgroundTransparency = 1
     title.Text = "DRIP CLIENT"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 28
+    title.TextSize = 26
     title.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 0, 0, 48)
+    subtitle.Position = UDim2.new(0, 0, 0, 44)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "PURPLE EDITION"
+    subtitle.Text = "DRIP VIP"
     subtitle.TextColor3 = themeColor
     subtitle.Font = Enum.Font.Gotham
-    subtitle.TextSize = 12
+    subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Timer Display
     local timerFrame = Instance.new("Frame")
     timerFrame.Parent = mainFrame
-    timerFrame.Size = UDim2.new(0.9, 0, 0, 50)
-    timerFrame.Position = UDim2.new(0.05, 0, 0.13, 0)
+    timerFrame.Size = UDim2.new(0.9, 0, 0, 48)
+    timerFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
     timerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     timerFrame.BackgroundTransparency = 0.3
     timerFrame.BorderSizePixel = 0
@@ -1047,11 +1052,11 @@ local function loadMainScript()
         end
     end)
     
-    -- Tab bar
+    -- Tab bar (5 tab)
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
-    tabBar.Size = UDim2.new(0.9, 0, 0, 42)
-    tabBar.Position = UDim2.new(0.05, 0, 0.21, 0)
+    tabBar.Size = UDim2.new(0.95, 0, 0, 42)
+    tabBar.Position = UDim2.new(0.025, 0, 0.2, 0)
     tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     tabBar.BackgroundTransparency = 0.3
     tabBar.BorderSizePixel = 0
@@ -1066,24 +1071,24 @@ local function loadMainScript()
     local function createTab(name, icon, idx)
         local btn = Instance.new("TextButton")
         btn.Parent = tabBar
-        btn.Size = UDim2.new(0.25, -2, 1, -6)
-        btn.Position = UDim2.new((idx-1)*0.25, 5, 0, 3)
+        btn.Size = UDim2.new(0.2, -2, 1, -6)
+        btn.Position = UDim2.new((idx-1)*0.2, 5, 0, 3)
         btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
         btn.BackgroundTransparency = 0.5
         btn.Text = icon .. " " .. name
         btn.TextColor3 = Color3.fromRGB(200, 200, 200)
         btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 13
+        btn.TextSize = 12
         
         local btnCorner = Instance.new("UICorner")
         btnCorner.Parent = btn
         btnCorner.CornerRadius = UDim.new(0, 8)
         
-        -- SCROLLING FRAME - INI YANG AKAN DISCROLL
+        -- SCROLLING FRAME
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
         content.Size = UDim2.new(0.94, 0, 1, -0.37)
-        content.Position = UDim2.new(0.03, 0, 0.28, 0)
+        content.Position = UDim2.new(0.03, 0, 0.27, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1118,7 +1123,7 @@ local function loadMainScript()
             btn.BackgroundTransparency = 0.2
             content.Visible = true
             
-            -- Update canvas size setiap kali tab dibuka
+            -- Update canvas size
             task.wait(0.05)
             local height = 0
             for _, child in pairs(content:GetChildren()) do
@@ -1126,16 +1131,18 @@ local function loadMainScript()
                     height = height + child.Size.Y.Offset + 10
                 end
             end
-            content.CanvasSize = UDim2.new(0, 0, 0, height + 30)
+            content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
         end)
         
         return content
     end
     
+    -- 5 TAB
     local tabMain = createTab("MAIN", "▸", 1)
     local tabESP = createTab("ESP", "▸", 2)
-    local tabColor = createTab("COLOR", "▸", 3)
-    local tabAbout = createTab("ABOUT", "▸", 4)
+    local tabUtility = createTab("UTILITY", "▸", 3)
+    local tabColor = createTab("COLOR", "▸", 4)
+    local tabAbout = createTab("ABOUT", "▸", 5)
     
     -- Button Style
     local function createButton(parent, text, callback)
@@ -1341,7 +1348,7 @@ local function loadMainScript()
         return frame
     end
     
-    -- ===== TAB MAIN =====
+    -- ===== TAB MAIN (Ringan - Hanya Movement & Combat) =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1377,7 +1384,14 @@ local function loadMainScript()
         aimbotSmoothness = s
     end)
     
-    createToggle(tabMain, "God Mode", false, function(s)
+    -- ===== TAB ESP =====
+    createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
+    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
+    createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
+    createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
+    
+    -- ===== TAB UTILITY (Fitur yang dipindah) =====
+    createToggle(tabUtility, "God Mode", false, function(s)
         antiDamageEnabled = s
         if s then
             setupAntiDamage()
@@ -1390,33 +1404,28 @@ local function loadMainScript()
         end
     end)
     
-    createToggle(tabMain, "Spin Muter", false, function(s)
+    createToggle(tabUtility, "Spin Muter", false, function(s)
         toggleSpin(s)
     end)
     
-    createSlider(tabMain, "Spin Speed", 1, 30, 10, function(s)
+    createSlider(tabUtility, "Spin Speed", 1, 30, 10, function(s)
         spinSpeed = s
     end)
     
-    createButton(tabMain, "Ganti Arah Spin", function()
+    createButton(tabUtility, "Ganti Arah Spin", function()
         toggleSpinDirection()
     end)
     
-    createToggle(tabMain, "Invisible Mode", false, function(s)
+    createToggle(tabUtility, "Invisible Mode", false, function(s)
         toggleInvisible(s)
     end)
     
+    -- Update karakter untuk invisible
     LocalPlayer.CharacterAdded:Connect(function()
         task.wait(1)
         updateInvisibleData()
         if invisibleEnabled then toggleInvisible(true) end
     end)
-    
-    -- ===== TAB ESP =====
-    createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
-    createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
-    createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
     
     -- ===== TAB COLOR =====
     local function changeTheme(newColor)
@@ -1498,17 +1507,15 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 115)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V9.8\n\n" ..
+    infoText.Text = "DRIP CLIENT V9.9\n\n" ..
                      "Developer: Putzz XD\n" ..
-                     "Version: 9.8 (Purple Edition)\n" ..
+                     "Version: 9.9 (Utility Tab)\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
                      "Fitur Lengkap:\n" ..
-                     "  - ESP Box, Line, Health, Skeleton\n" ..
-                     "  - Fly, Speed, NoClip\n" ..
-                     "  - Aimbot, Infinity Jump\n" ..
-                     "  - God Mode, Spin Muter\n" ..
-                     "  - Invisible Mode\n" ..
-                     "  - Firebase Key System\n\n" ..
+                     "  - MAIN: Fly, Speed, NoClip, Teleport\n" ..
+                     "  - MAIN: Infinity Jump, Aimbot\n" ..
+                     "  - UTILITY: God Mode, Spin, Invisible\n" ..
+                     "  - ESP: Box, Line, Health, Skeleton\n\n" ..
                      "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
@@ -1557,17 +1564,6 @@ local function loadMainScript()
     tabs[1].BackgroundTransparency = 0.2
     contents[1].Visible = true
     
-    -- Update canvas untuk tab main setelah semua fitur ditambahkan
-    task.wait(0.2)
-    local mainContent = contents[1]
-    local mainHeight = 0
-    for _, child in pairs(mainContent:GetChildren()) do
-        if child:IsA("Frame") then
-            mainHeight = mainHeight + child.Size.Y.Offset + 10
-        end
-    end
-    mainContent.CanvasSize = UDim2.new(0, 0, 0, mainHeight + 40)
-    
     -- ================== TOMBOL MENU DRIP CLIENT ==================
     local openBtn = Instance.new("TextButton")
     openBtn.Parent = ScreenGui
@@ -1600,11 +1596,11 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -290)
+                Position = UDim2.new(0.5, -215, 0.5, -290)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 1, 0)
+                Position = UDim2.new(0.5, -215, 1, 0)
             }):Play()
             task.wait(0.25)
             mainFrame.Visible = false
@@ -1622,7 +1618,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V9.8 - Scroll Dalam Frame Siap!")
+    print("DRIP CLIENT V9.9 - Utility Tab Added!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1673,4 +1669,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V9.8 - Scroll Dalam Frame Siap!")
+print("DRIP CLIENT V7 - Ready!")
