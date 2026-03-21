@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V9.9 (UTILITY TAB - SCROLL FIXED) ==================
--- Version: 9.9 (Purple Edition - With Utility Tab)
+-- ================== DRIP CLIENT V10 (CLEAN EDITION) ==================
+-- Version: 10.0 (Clean - No Aimbot, No Timer Box)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -42,16 +42,11 @@ local fastSpeed = 60
 
 local noclipEnabled = false
 
--- Combat
-local aimbotEnabled = false
-local aimbotFOV = 150
-local aimbotSmoothness = 5
-local aimbotPart = "Head"
-
+-- Combat (AIMBOT DIHAPUS)
 local infinityJumpEnabled = false
 local jumpCount = 0
 
--- Utility (akan dipindah ke tab UTILITY)
+-- Utility
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local antiDamageThread = nil
@@ -702,31 +697,6 @@ local function loadMainScript()
         end
     end
     
-    -- ================== FUNGSI AIMBOT ==================
-    local function getClosestEnemy()
-        local closest = nil
-        local shortestDistance = aimbotFOV
-        local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(aimbotPart) then
-                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health > 0 then
-                    local part = player.Character[aimbotPart]
-                    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
-                    if onScreen then
-                        local screenPos = Vector2.new(pos.X, pos.Y)
-                        local distance = (mousePos - screenPos).Magnitude
-                        if distance < shortestDistance then
-                            shortestDistance = distance
-                            closest = player
-                        end
-                    end
-                end
-            end
-        end
-        return closest
-    end
-    
     -- Render Stepped
     RunService.RenderStepped:Connect(function()
         for player, esp in pairs(ESPTable) do
@@ -805,17 +775,6 @@ local function loadMainScript()
         else
             for _, lines in pairs(SkeletonESP) do
                 for _, lineData in pairs(lines) do lineData[1].Visible = false end
-            end
-        end
-        
-        if aimbotEnabled then
-            local target = getClosestEnemy()
-            if target and target.Character and target.Character:FindFirstChild(aimbotPart) then
-                local targetPart = target.Character[aimbotPart]
-                local targetPos = targetPart.Position
-                local cameraPos = Camera.CFrame.Position
-                local lookAt = CFrame.lookAt(cameraPos, targetPos)
-                Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / aimbotSmoothness, Enum.EasingStyle.Sine)
             end
         end
     end)
@@ -904,7 +863,7 @@ local function loadMainScript()
         end
     end)
     
-    -- ================== GUI UTAMA DENGAN 5 TAB ==================
+    -- ================== GUI UTAMA CLEAN EDITION ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
@@ -914,8 +873,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 430, 0, 580)
-    mainFrame.Position = UDim2.new(0.5, -215, 0.5, -290)
+    mainFrame.Size = UDim2.new(0, 400, 0, 550)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -951,7 +910,7 @@ local function loadMainScript()
     borderCorner.Parent = premiumBorder
     borderCorner.CornerRadius = UDim.new(0, 24)
     
-    -- Header
+    -- Header (tanpa timer)
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 70)
@@ -976,7 +935,7 @@ local function loadMainScript()
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.Size = UDim2.new(1, 0, 0.6, 0)
-    title.Position = UDim2.new(0, 0, 0, 12)
+    title.Position = UDim2.new(0, 0, 0, 15)
     title.BackgroundTransparency = 1
     title.Text = "DRIP CLIENT"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -988,75 +947,19 @@ local function loadMainScript()
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 0, 0, 44)
+    subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "DRIP VIP"
+    subtitle.Text = "PURPLE EDITION"
     subtitle.TextColor3 = themeColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Timer Display
-    local timerFrame = Instance.new("Frame")
-    timerFrame.Parent = mainFrame
-    timerFrame.Size = UDim2.new(0.9, 0, 0, 48)
-    timerFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
-    timerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    timerFrame.BackgroundTransparency = 0.3
-    timerFrame.BorderSizePixel = 0
-    
-    local timerCorner = Instance.new("UICorner")
-    timerCorner.Parent = timerFrame
-    timerCorner.CornerRadius = UDim.new(0, 12)
-    
-    local timerIcon = Instance.new("TextLabel")
-    timerIcon.Parent = timerFrame
-    timerIcon.Size = UDim2.new(0, 40, 1, 0)
-    timerIcon.Position = UDim2.new(0, 5, 0, 0)
-    timerIcon.BackgroundTransparency = 1
-    timerIcon.Text = "⏳"
-    timerIcon.TextColor3 = themeColor
-    timerIcon.Font = Enum.Font.GothamBold
-    timerIcon.TextSize = 22
-    
-    local timerLabel = Instance.new("TextLabel")
-    timerLabel.Parent = timerFrame
-    timerLabel.Size = UDim2.new(1, -50, 1, 0)
-    timerLabel.Position = UDim2.new(0, 45, 0, 0)
-    timerLabel.BackgroundTransparency = 1
-    timerLabel.Text = "Memuat informasi key..."
-    timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    timerLabel.Font = Enum.Font.GothamBold
-    timerLabel.TextSize = 11
-    timerLabel.TextXAlignment = Enum.TextXAlignment.Left
-    timerLabel.TextWrapped = true
-    
-    -- Update timer
-    spawn(function()
-        while task.wait(1) do
-            if currentUserKey and keyExpiryTime > 0 then
-                local days, hours, minutes, seconds, timeStr = getTimeRemaining(keyExpiryTime)
-                if days == 0 and hours == 0 and minutes == 0 and seconds == 0 then
-                    timerLabel.Text = "⚠️ KEY SUDAH EXPIRED! ⚠️"
-                    timerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-                    timerIcon.TextColor3 = Color3.fromRGB(255, 0, 0)
-                else
-                    timerLabel.Text = "⏳ " .. timeStr
-                    timerLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-                    timerIcon.TextColor3 = themeColor
-                end
-            else
-                timerLabel.Text = "Key: " .. (currentUserKey or "Belum ada key")
-                timerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            end
-        end
-    end)
-    
-    -- Tab bar (5 tab)
+    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(0.95, 0, 0, 42)
-    tabBar.Position = UDim2.new(0.025, 0, 0.2, 0)
+    tabBar.Position = UDim2.new(0.025, 0, 0.13, 0)
     tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     tabBar.BackgroundTransparency = 0.3
     tabBar.BorderSizePixel = 0
@@ -1087,8 +990,8 @@ local function loadMainScript()
         -- SCROLLING FRAME
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.37)
-        content.Position = UDim2.new(0.03, 0, 0.27, 0)
+        content.Size = UDim2.new(0.94, 0, 1, -0.28)
+        content.Position = UDim2.new(0.03, 0, 0.2, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1272,83 +1175,7 @@ local function loadMainScript()
         return frame
     end
     
-    -- Slider Style
-    local function createSlider(parent, text, min, max, default, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 52)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        
-        local label = Instance.new("TextLabel")
-        label.Parent = frame
-        label.Size = UDim2.new(1, 0, 0.4, 0)
-        label.Position = UDim2.new(0.05, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text .. ": " .. default
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 12
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local sliderBg = Instance.new("Frame")
-        sliderBg.Parent = frame
-        sliderBg.Size = UDim2.new(0.9, 0, 0.28, 0)
-        sliderBg.Position = UDim2.new(0.05, 0, 0.55, 0)
-        sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-        sliderBg.BorderSizePixel = 0
-        
-        local sliderCorner = Instance.new("UICorner")
-        sliderCorner.Parent = sliderBg
-        sliderCorner.CornerRadius = UDim.new(0, 4)
-        
-        local sliderFill = Instance.new("Frame")
-        sliderFill.Parent = sliderBg
-        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-        sliderFill.BackgroundColor3 = themeColor
-        sliderFill.BorderSizePixel = 0
-        
-        local fillCorner = Instance.new("UICorner")
-        fillCorner.Parent = sliderFill
-        fillCorner.CornerRadius = UDim.new(0, 4)
-        
-        local value = default
-        local dragging = false
-        
-        sliderBg.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-            end
-        end)
-        
-        sliderBg.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-        
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = UserInputService:GetMouseLocation()
-                local absPos = sliderBg.AbsolutePosition
-                local absSize = sliderBg.AbsoluteSize
-                local relativeX = math.clamp((mousePos.X - absPos.X) / absSize.X, 0, 1)
-                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                value = math.floor(min + (max - min) * relativeX)
-                label.Text = text .. ": " .. value
-                callback(value)
-            end
-        end)
-        
-        return frame
-    end
-    
-    -- ===== TAB MAIN (Ringan - Hanya Movement & Combat) =====
+    -- ===== TAB MAIN (Tanpa Aimbot) =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1372,25 +1199,13 @@ local function loadMainScript()
         infinityJumpEnabled = s
     end)
     
-    createToggle(tabMain, "Aimbot", false, function(s)
-        aimbotEnabled = s
-    end)
-    
-    createSlider(tabMain, "Aimbot FOV", 50, 500, 150, function(s)
-        aimbotFOV = s
-    end)
-    
-    createSlider(tabMain, "Smoothness", 1, 20, 5, function(s)
-        aimbotSmoothness = s
-    end)
-    
     -- ===== TAB ESP =====
     createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
     createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
     
-    -- ===== TAB UTILITY (Fitur yang dipindah) =====
+    -- ===== TAB UTILITY =====
     createToggle(tabUtility, "God Mode", false, function(s)
         antiDamageEnabled = s
         if s then
@@ -1406,10 +1221,6 @@ local function loadMainScript()
     
     createToggle(tabUtility, "Spin Muter", false, function(s)
         toggleSpin(s)
-    end)
-    
-    createSlider(tabUtility, "Spin Speed", 1, 30, 10, function(s)
-        spinSpeed = s
     end)
     
     createButton(tabUtility, "Ganti Arah Spin", function()
@@ -1431,7 +1242,6 @@ local function loadMainScript()
     local function changeTheme(newColor)
         themeColor = newColor
         premiumBorder.BorderColor3 = themeColor
-        timerIcon.TextColor3 = themeColor
         for _, content in pairs(contents) do
             content.ScrollBarImageColor3 = themeColor
         end
@@ -1482,7 +1292,7 @@ local function loadMainScript()
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.95, 0, 0, 180)
+    aboutFrame.Size = UDim2.new(0.95, 0, 0, 150)
     aboutFrame.Position = UDim2.new(0.025, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1504,16 +1314,14 @@ local function loadMainScript()
     
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 115)
+    infoText.Size = UDim2.new(0.95, 0, 0, 90)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V9.9\n\n" ..
+    infoText.Text = "DRIP CLIENT V10\n\n" ..
                      "Developer: Putzz XD\n" ..
-                     "Version: 9.9 (Utility Tab)\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
-                     "Fitur Lengkap:\n" ..
-                     "  - MAIN: Fly, Speed, NoClip, Teleport\n" ..
-                     "  - MAIN: Infinity Jump, Aimbot\n" ..
+                     "Fitur:\n" ..
+                     "  - MAIN: Fly, Speed, NoClip, Teleport, Infinity Jump\n" ..
                      "  - UTILITY: God Mode, Spin, Invisible\n" ..
                      "  - ESP: Box, Line, Health, Skeleton\n\n" ..
                      "Kontak: 088976255131"
@@ -1547,7 +1355,7 @@ local function loadMainScript()
         end
     end)
     
-    -- Update canvas size untuk semua tab
+    -- Update canvas size
     task.wait(0.1)
     for i, content in pairs(contents) do
         local height = 0
@@ -1596,11 +1404,11 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -215, 0.5, -290)
+                Position = UDim2.new(0.5, -200, 0.5, -275)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -215, 1, 0)
+                Position = UDim2.new(0.5, -200, 1, 0)
             }):Play()
             task.wait(0.25)
             mainFrame.Visible = false
@@ -1618,7 +1426,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V9.9 - Utility Tab Added!")
+    print("DRIP CLIENT V10 - Clean Edition Ready!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1669,4 +1477,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7 - Ready!")
+print("DRIP CLIENT V10 - Ready!")
