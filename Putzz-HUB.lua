@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10 (CLEAN EDITION) ==================
--- Version: 10.0 (Clean - No Aimbot, No Timer Box)
+-- ================== DRIP CLIENT V10.1 (FIXED SCROLL) ==================
+-- Version: 10.1 (Purple Edition - Scroll Fixed)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -42,7 +42,7 @@ local fastSpeed = 60
 
 local noclipEnabled = false
 
--- Combat (AIMBOT DIHAPUS)
+-- Combat
 local infinityJumpEnabled = false
 local jumpCount = 0
 
@@ -873,8 +873,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 550)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
+    mainFrame.Size = UDim2.new(0, 420, 0, 560)
+    mainFrame.Position = UDim2.new(0.5, -210, 0.5, -280)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -910,7 +910,7 @@ local function loadMainScript()
     borderCorner.Parent = premiumBorder
     borderCorner.CornerRadius = UDim.new(0, 24)
     
-    -- Header (tanpa timer)
+    -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 70)
@@ -935,19 +935,19 @@ local function loadMainScript()
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.Size = UDim2.new(1, 0, 0.6, 0)
-    title.Position = UDim2.new(0, 0, 0, 15)
+    title.Position = UDim2.new(0, 0, 0, 12)
     title.BackgroundTransparency = 1
     title.Text = "DRIP CLIENT"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 26
+    title.TextSize = 28
     title.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 0, 0, 48)
+    subtitle.Position = UDim2.new(0, 0, 0, 44)
     subtitle.BackgroundTransparency = 1
     subtitle.Text = "DRIP VIP"
     subtitle.TextColor3 = themeColor
@@ -990,8 +990,8 @@ local function loadMainScript()
         -- SCROLLING FRAME
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.28)
-        content.Position = UDim2.new(0.03, 0, 0.2, 0)
+        content.Size = UDim2.new(0.94, 0, 1, -0.27)
+        content.Position = UDim2.new(0.03, 0, 0.19, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1175,7 +1175,7 @@ local function loadMainScript()
         return frame
     end
     
-    -- ===== TAB MAIN (Tanpa Aimbot) =====
+    -- ===== TAB MAIN =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then startFly() else stopFly() end
@@ -1261,8 +1261,8 @@ local function loadMainScript()
         changeTheme(Color3.fromRGB(156, 39, 176))
     end)
     
-    createButton(tabColor, "Pink", function()
-        changeTheme(Color3.fromRGB(255, 105, 180))
+    createButton(tabColor, "Putih", function()
+        changeTheme(Color3.fromRGB(255, 255, 255))
     end)
     
     createButton(tabColor, "Merah", function()
@@ -1292,7 +1292,7 @@ local function loadMainScript()
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.95, 0, 0, 150)
+    aboutFrame.Size = UDim2.new(0.95, 0, 0, 130)
     aboutFrame.Position = UDim2.new(0.025, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1314,20 +1314,16 @@ local function loadMainScript()
     
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 90)
+    infoText.Size = UDim2.new(0.95, 0, 0, 70)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V7.0\n\n" ..
-                     "Developer: Putzzdev\n" ..
+    infoText.Text = "DRIP CLIENT V10.1\n\n" ..
+                     "Developer: Putzz XD\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
-                     "Kontak:\n" ..
-                     "088976255131\n" ..
-                     "\n" ..
-                     "\n\n" ..
                      "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 11
+    infoText.TextSize = 12
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Left
     
@@ -1404,11 +1400,11 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -275)
+                Position = UDim2.new(0.5, -210, 0.5, -280)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 1, 0)
+                Position = UDim2.new(0.5, -210, 1, 0)
             }):Play()
             task.wait(0.25)
             mainFrame.Visible = false
@@ -1426,7 +1422,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V7.0")
+    print("DRIP CLIENT V10.1 - Ready!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
