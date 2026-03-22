@@ -949,7 +949,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "PURPLE EDITION"
+    subtitle.Text = "DRIP VIP"
     subtitle.TextColor3 = themeColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1317,13 +1317,13 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 90)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10\n\n" ..
-                     "Developer: Putzz XD\n" ..
+    infoText.Text = "DRIP CLIENT V7.0\n\n" ..
+                     "Developer: Putzzdev\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
-                     "Fitur:\n" ..
-                     "  - MAIN: Fly, Speed, NoClip, Teleport, Infinity Jump\n" ..
-                     "  - UTILITY: God Mode, Spin, Invisible\n" ..
-                     "  - ESP: Box, Line, Health, Skeleton\n\n" ..
+                     "Kontak:\n" ..
+                     "088976255131\n" ..
+                     "\n" ..
+                     "\n\n" ..
                      "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
@@ -1426,7 +1426,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V10 - Clean Edition Ready!")
+    print("DRIP CLIENT V7.0")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1477,4 +1477,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V10 - Ready!")
+print("DRIP CLIENT V7.0 - Ready!")
