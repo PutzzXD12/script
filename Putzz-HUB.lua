@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10.1 (FIXED SCROLL) ==================
--- Version: 10.1 (Purple Edition - Scroll Fixed)
+-- ================== DRIP CLIENT V10.2 (ESP FIXED) ==================
+-- Version: 10.2 (Purple Edition - ESP Fixed)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -32,7 +32,7 @@ local SkeletonESP = {}
 
 -- Movement
 local flyEnabled = false
-local flySpeed = 60
+local flySpeed = 70
 local bv = nil
 local bg = nil
 
@@ -53,7 +53,7 @@ local antiDamageThread = nil
 local antiDamageHeartbeat = nil
 
 local spinEnabled = false
-local spinSpeed = 10
+local spinSpeed = 100
 local spinConnection = nil
 local spinDirection = 1
 
@@ -63,9 +63,11 @@ local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
--- Warna Tema UNGU
+-- Warna Tema UNGU (untuk ESP Line)
 local themeColor = Color3.fromRGB(156, 39, 176)
 local darkPurple = Color3.fromRGB(74, 20, 90)
+-- ESP Box warna putih tipis (tetap)
+local boxColor = Color3.fromRGB(255, 255, 255)
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
@@ -460,7 +462,6 @@ WebsiteBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ================== FUNGSI UTILITY ==================
--- SPIN
 local function toggleSpin(state)
     spinEnabled = state
     if spinConnection then spinConnection:Disconnect() spinConnection = nil end
@@ -480,7 +481,6 @@ local function toggleSpinDirection()
     showNotification("ARAH SPIN", spinDirection == 1 and "KANAN" or "KIRI", 1, Color3.fromRGB(0, 200, 255))
 end
 
--- INVISIBLE
 local function updateInvisibleData()
     if LocalPlayer.Character then
         invisibleRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -519,7 +519,6 @@ local function toggleInvisible(state)
     end
 end
 
--- GOD MODE (ANTI DAMAGE)
 local function setupAntiDamage()
     if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
     if antiDamageConnection then antiDamageConnection:Disconnect() end
@@ -604,15 +603,19 @@ local function loadMainScript()
         return false
     end
 
-    -- ================== FUNGSI ESP ==================
+    -- ================== FUNGSI ESP (FIXED) ==================
     local function createESP(player)
         if player == LocalPlayer then return end
+        
+        -- ESP BOX: warna putih tipis (TETAP, tidak ikut berubah)
         local box = Drawing.new("Square")
-        box.Thickness = 2.5
-        box.Color = themeColor
+        box.Thickness = 1.5
+        box.Color = boxColor  -- PUTIH TIPIS
         box.Filled = false
         box.Visible = false
+        box.Transparency = 0.3
         
+        -- NAMA
         local name = Drawing.new("Text")
         name.Size = 16
         name.Color = Color3.fromRGB(255, 255, 255)
@@ -621,6 +624,7 @@ local function loadMainScript()
         name.OutlineColor = Color3.fromRGB(0, 0, 0)
         name.Visible = false
         
+        -- JARAK
         local dist = Drawing.new("Text")
         dist.Size = 13
         dist.Color = Color3.fromRGB(200, 200, 200)
@@ -629,11 +633,13 @@ local function loadMainScript()
         dist.OutlineColor = Color3.fromRGB(0, 0, 0)
         dist.Visible = false
         
+        -- ESP LINE: warna ikut tema (ungu)
         local line = Drawing.new("Line")
-        line.Thickness = 2.5
+        line.Thickness = 2
         line.Color = themeColor
         line.Visible = false
         
+        -- HEALTH BAR (di samping kiri box)
         local healthBg = Drawing.new("Square")
         healthBg.Thickness = 1
         healthBg.Color = Color3.fromRGB(30, 30, 30)
@@ -697,7 +703,7 @@ local function loadMainScript()
         end
     end
     
-    -- Render Stepped
+    -- Render Stepped untuk ESP
     RunService.RenderStepped:Connect(function()
         for player, esp in pairs(ESPTable) do
             local box, name, dist, line, healthBg, healthFg = unpack(esp)
@@ -711,15 +717,21 @@ local function loadMainScript()
                     local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                     local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
                     local height = math.abs(top.Y - bottom.Y)
-                    local width = height / 2
+                    local width = height / 2.2
                     
                     if espEnabled then
+                        -- BOX (putih tipis)
                         box.Size = Vector2.new(width, height)
                         box.Position = Vector2.new(pos.X - width/2, top.Y)
                         box.Visible = true
+                        box.Color = boxColor  -- PUTIH TIPIS
+                        
+                        -- NAMA
                         name.Position = Vector2.new(pos.X, top.Y - 18)
                         name.Text = player.Name
                         name.Visible = true
+                        
+                        -- JARAK
                         local myChar = LocalPlayer.Character
                         if myChar and myChar:FindFirstChild("HumanoidRootPart") then
                             local distance = (myChar.HumanoidRootPart.Position - hrp.Position).Magnitude
@@ -727,30 +739,37 @@ local function loadMainScript()
                             dist.Position = Vector2.new(pos.X, bottom.Y + 5)
                             dist.Visible = true
                         end
+                        
+                        -- HEALTH BAR (di samping kiri box)
+                        if healthEnabled and humanoid then
+                            local healthPercent = humanoid.Health / humanoid.MaxHealth
+                            local barHeight = height * 0.8
+                            local barWidth = 4
+                            local barX = pos.X - width/2 - 8
+                            local barY = top.Y + (height - barHeight) / 2
+                            
+                            healthBg.Size = Vector2.new(barWidth, barHeight)
+                            healthBg.Position = Vector2.new(barX, barY)
+                            healthBg.Visible = true
+                            
+                            healthFg.Size = Vector2.new(barWidth, barHeight * healthPercent)
+                            healthFg.Position = Vector2.new(barX, barY + barHeight * (1 - healthPercent))
+                            healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                            healthFg.Visible = true
+                        else
+                            healthBg.Visible = false
+                            healthFg.Visible = false
+                        end
+                        
                     else
                         box.Visible = false
                         name.Visible = false
                         dist.Visible = false
-                    end
-                    
-                    if healthEnabled and humanoid then
-                        local healthPercent = humanoid.Health / humanoid.MaxHealth
-                        local barWidth = width * 0.8
-                        local barHeight = 4
-                        local barX = pos.X - barWidth / 2
-                        local barY = top.Y - 22
-                        healthBg.Size = Vector2.new(barWidth, barHeight)
-                        healthBg.Position = Vector2.new(barX, barY)
-                        healthBg.Visible = true
-                        healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
-                        healthFg.Position = Vector2.new(barX, barY)
-                        healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                        healthFg.Visible = true
-                    else
                         healthBg.Visible = false
                         healthFg.Visible = false
                     end
                     
+                    -- ESP LINE (warna ikut tema)
                     if lineEnabled then
                         line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
                         line.To = Vector2.new(pos.X, pos.Y)
@@ -770,6 +789,7 @@ local function loadMainScript()
             end
         end
         
+        -- ESP Skeleton
         if skeletonEnabled then
             for player, lines in pairs(SkeletonESP) do updateSkeleton(player, lines) end
         else
@@ -863,7 +883,7 @@ local function loadMainScript()
         end
     end)
     
-    -- ================== GUI UTAMA CLEAN EDITION ==================
+    -- ================== GUI UTAMA ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
@@ -987,7 +1007,6 @@ local function loadMainScript()
         btnCorner.Parent = btn
         btnCorner.CornerRadius = UDim.new(0, 8)
         
-        -- SCROLLING FRAME
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
         content.Size = UDim2.new(0.94, 0, 1, -0.27)
@@ -1026,7 +1045,6 @@ local function loadMainScript()
             btn.BackgroundTransparency = 0.2
             content.Visible = true
             
-            -- Update canvas size
             task.wait(0.05)
             local height = 0
             for _, child in pairs(content:GetChildren()) do
@@ -1040,7 +1058,6 @@ local function loadMainScript()
         return content
     end
     
-    -- 5 TAB
     local tabMain = createTab("MAIN", "▸", 1)
     local tabESP = createTab("ESP", "▸", 2)
     local tabUtility = createTab("UTILITY", "▸", 3)
@@ -1073,7 +1090,6 @@ local function loadMainScript()
         return frame
     end
     
-    -- Toggle Style
     local function createToggle(parent, text, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
@@ -1136,7 +1152,6 @@ local function loadMainScript()
         return frame
     end
     
-    -- TextBox Style
     local function createTextBox(parent, placeholder, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
@@ -1231,7 +1246,6 @@ local function loadMainScript()
         toggleInvisible(s)
     end)
     
-    -- Update karakter untuk invisible
     LocalPlayer.CharacterAdded:Connect(function()
         task.wait(1)
         updateInvisibleData()
@@ -1245,10 +1259,9 @@ local function loadMainScript()
         for _, content in pairs(contents) do
             content.ScrollBarImageColor3 = themeColor
         end
-        -- Update ESP warna
+        -- Update ESP LINE dan SKELETON (BOX tetap putih)
         for player, esp in pairs(ESPTable) do
-            if esp and esp[1] then esp[1].Color = themeColor end
-            if esp and esp[4] then esp[4].Color = themeColor end
+            if esp and esp[4] then esp[4].Color = themeColor end  -- LINE
         end
         for player, lines in pairs(SkeletonESP) do
             for _, lineData in pairs(lines) do
@@ -1317,7 +1330,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 70)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10.1\n\n" ..
+    infoText.Text = "DRIP CLIENT V10.2\n\n" ..
                      "Developer: Putzz XD\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
                      "Kontak: 088976255131"
@@ -1392,7 +1405,6 @@ local function loadMainScript()
     openBtnStroke.Color = Color3.fromRGB(255, 255, 255)
     openBtnStroke.Thickness = 1.5
     
-    -- Fungsi buka/tutup menu
     local menuOpen = true
     openBtn.MouseButton1Click:Connect(function()
         menuOpen = not menuOpen
@@ -1411,7 +1423,6 @@ local function loadMainScript()
         end
     end)
     
-    -- Animasi hover
     openBtn.MouseEnter:Connect(function()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 130, 0, 48)}):Play()
         openBtn.BackgroundTransparency = 0
@@ -1422,7 +1433,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V10.1 - Ready!")
+    print("DRIP CLIENT V7.0")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
