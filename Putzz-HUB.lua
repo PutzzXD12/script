@@ -609,7 +609,7 @@ local function loadMainScript()
         
         -- ESP BOX: warna putih tipis (TETAP, tidak ikut berubah)
         local box = Drawing.new("Square")
-        box.Thickness = 1.5
+        box.Thickness = 2.5
         box.Color = boxColor  -- PUTIH TIPIS
         box.Filled = false
         box.Visible = false
