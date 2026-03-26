@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10.2 (ESP FIXED) ==================
--- Version: 10.2 (Purple Edition - ESP Fixed)
+-- ================== DRIP CLIENT V10.3 (GREEN BOX EDITION) ==================
+-- Version: 10.3 (Green Box - Skeleton Fixed)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -63,11 +63,11 @@ local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
--- Warna Tema UNGU (untuk ESP Line)
-local themeColor = Color3.fromRGB(156, 39, 176)
+-- Warna Tema
+local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line
 local darkPurple = Color3.fromRGB(74, 20, 90)
--- ESP Box warna putih tipis (tetap)
-local boxColor = Color3.fromRGB(255, 255, 255)
+-- ESP Box warna HIJAU (seperti awal)
+local boxColor = Color3.fromRGB(0, 255, 0)
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
@@ -603,17 +603,16 @@ local function loadMainScript()
         return false
     end
 
-    -- ================== FUNGSI ESP (FIXED) ==================
+    -- ================== FUNGSI ESP (GREEN BOX) ==================
     local function createESP(player)
         if player == LocalPlayer then return end
         
-        -- ESP BOX: warna putih tipis (TETAP, tidak ikut berubah)
+        -- ESP BOX: warna HIJAU (seperti awal)
         local box = Drawing.new("Square")
         box.Thickness = 2.5
-        box.Color = boxColor  -- PUTIH TIPIS
+        box.Color = boxColor  -- HIJAU
         box.Filled = false
         box.Visible = false
-        box.Transparency = 0.3
         
         -- NAMA
         local name = Drawing.new("Text")
@@ -655,45 +654,79 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
     
-    -- ================== ESP SKELETON ==================
+    -- ================== ESP SKELETON (FIXED UNTUK ALL MAP) ==================
     local function createSkeleton(player)
         if player == LocalPlayer then return end
         local lines = {}
+        
+        -- Connection untuk R6 dan R15 (universal)
         local connections = {
-            {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
-            {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
-            {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-            {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-            {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+            -- Kepala ke Badan
+            {"Head", "UpperTorso"}, {"Head", "Torso"},
+            -- Badan
+            {"UpperTorso", "LowerTorso"}, {"Torso", "HumanoidRootPart"},
+            -- Lengan Kiri
+            {"UpperTorso", "LeftUpperArm"}, {"Torso", "Left Arm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+            -- Lengan Kanan
+            {"UpperTorso", "RightUpperArm"}, {"Torso", "Right Arm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+            -- Kaki Kiri
+            {"LowerTorso", "LeftUpperLeg"}, {"HumanoidRootPart", "Left Leg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+            -- Kaki Kanan
+            {"LowerTorso", "RightUpperLeg"}, {"HumanoidRootPart", "Right Leg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
         }
+        
         for i = 1, #connections do
             local line = Drawing.new("Line")
             line.Thickness = 2.5
-            line.Color = themeColor
+            line.Color = Color3.fromRGB(255, 100, 0)  -- Oranye
             line.Visible = false
             table.insert(lines, {line, connections[i][1], connections[i][2]})
         end
+        
         SkeletonESP[player] = lines
     end
     
     local function updateSkeleton(player, lines)
         local char = player.Character
         if not char then
-            for _, lineData in pairs(lines) do lineData[1].Visible = false end
+            for _, lineData in pairs(lines) do
+                lineData[1].Visible = false
+            end
             return
         end
+        
         for _, lineData in pairs(lines) do
             local line, part1Name, part2Name = unpack(lineData)
-            local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
-            local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
+            local part1 = char:FindFirstChild(part1Name)
+            local part2 = char:FindFirstChild(part2Name)
+            
+            -- Coba cari dengan nama alternatif
+            if not part1 then
+                if part1Name == "UpperTorso" then part1 = char:FindFirstChild("Torso") end
+                if part1Name == "LowerTorso" then part1 = char:FindFirstChild("HumanoidRootPart") end
+                if part1Name == "LeftUpperArm" then part1 = char:FindFirstChild("Left Arm") end
+                if part1Name == "RightUpperArm" then part1 = char:FindFirstChild("Right Arm") end
+                if part1Name == "LeftUpperLeg" then part1 = char:FindFirstChild("Left Leg") end
+                if part1Name == "RightUpperLeg" then part1 = char:FindFirstChild("Right Leg") end
+            end
+            if not part2 then
+                if part2Name == "UpperTorso" then part2 = char:FindFirstChild("Torso") end
+                if part2Name == "LowerTorso" then part2 = char:FindFirstChild("HumanoidRootPart") end
+                if part2Name == "LeftUpperArm" then part2 = char:FindFirstChild("Left Arm") end
+                if part2Name == "RightUpperArm" then part2 = char:FindFirstChild("Right Arm") end
+                if part2Name == "LeftUpperLeg" then part2 = char:FindFirstChild("Left Leg") end
+                if part2Name == "RightUpperLeg" then part2 = char:FindFirstChild("Right Leg") end
+            end
+            
             if part1 and part2 then
                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
+                
                 if vis1 and vis2 then
                     line.From = Vector2.new(pos1.X, pos1.Y)
                     line.To = Vector2.new(pos2.X, pos2.Y)
                     line.Visible = skeletonEnabled
-                    line.Color = themeColor
+                    line.Color = Color3.fromRGB(255, 100, 0)  -- Oranye
                 else
                     line.Visible = false
                 end
@@ -720,11 +753,11 @@ local function loadMainScript()
                     local width = height / 2.2
                     
                     if espEnabled then
-                        -- BOX (putih tipis)
+                        -- BOX (hijau)
                         box.Size = Vector2.new(width, height)
                         box.Position = Vector2.new(pos.X - width/2, top.Y)
                         box.Visible = true
-                        box.Color = boxColor  -- PUTIH TIPIS
+                        box.Color = boxColor  -- HIJAU
                         
                         -- NAMA
                         name.Position = Vector2.new(pos.X, top.Y - 18)
@@ -791,10 +824,14 @@ local function loadMainScript()
         
         -- ESP Skeleton
         if skeletonEnabled then
-            for player, lines in pairs(SkeletonESP) do updateSkeleton(player, lines) end
+            for player, lines in pairs(SkeletonESP) do
+                updateSkeleton(player, lines)
+            end
         else
             for _, lines in pairs(SkeletonESP) do
-                for _, lineData in pairs(lines) do lineData[1].Visible = false end
+                for _, lineData in pairs(lines) do
+                    lineData[1].Visible = false
+                end
             end
         end
     end)
@@ -970,7 +1007,7 @@ local function loadMainScript()
     subtitle.Position = UDim2.new(0, 0, 0, 44)
     subtitle.BackgroundTransparency = 1
     subtitle.Text = "DRIP VIP"
-    subtitle.TextColor3 = themeColor
+    subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
@@ -1259,13 +1296,13 @@ local function loadMainScript()
         for _, content in pairs(contents) do
             content.ScrollBarImageColor3 = themeColor
         end
-        -- Update ESP LINE dan SKELETON (BOX tetap putih)
+        -- Update ESP LINE (BOX tetap hijau)
         for player, esp in pairs(ESPTable) do
             if esp and esp[4] then esp[4].Color = themeColor end  -- LINE
         end
         for player, lines in pairs(SkeletonESP) do
             for _, lineData in pairs(lines) do
-                if lineData[1] then lineData[1].Color = themeColor end
+                if lineData[1] then lineData[1].Color = Color3.fromRGB(255, 100, 0) end  -- SKELETON tetap oranye
             end
         end
     end
@@ -1330,7 +1367,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 70)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10.2\n\n" ..
+    infoText.Text = "DRIP CLIENT V10.3\n\n" ..
                      "Developer: Putzz XD\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
                      "Kontak: 088976255131"
@@ -1433,7 +1470,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V7.0")
+    print("DRIP CLIENT V10.3 Ready!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1484,4 +1521,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.0 - Ready!")
+print("DRIP CLIENT V10.3 - Ready!")
