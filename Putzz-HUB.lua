@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10.4 (DISTANCE LIMIT 80M) ==================
--- Version: 10.4 (Distance Limit + Green Skeleton)
+-- ================== DRIP CLIENT V10.5 (DISTANCE 115M + SKELETON FIX) ==================
+-- Version: 10.5 (Distance 115m + Skeleton All Avatar)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -42,7 +42,7 @@ local fastSpeed = 60
 
 local noclipEnabled = false
 
--- Combat (AIMBOT DIHAPUS)
+-- Combat
 local infinityJumpEnabled = false
 local jumpCount = 0
 
@@ -64,13 +64,12 @@ local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
 -- Warna Tema
-local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line
+local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line & box
 local darkPurple = Color3.fromRGB(74, 20, 90)
 local skeletonColor = Color3.fromRGB(0, 255, 0) -- HIJAU untuk skeleton
-local boxColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk box
 
--- Jarak maksimum ESP (80 meter)
-local MAX_ESP_DISTANCE = 80
+-- Jarak maksimum ESP (115 meter)
+local MAX_ESP_DISTANCE = 115
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
@@ -652,17 +651,34 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
     
-    -- ================== ESP SKELETON (WARNA HIJAU) ==================
+    -- ================== ESP SKELETON (FIX ALL AVATAR) ==================
     local function createSkeleton(player)
         if player == LocalPlayer then return end
         local lines = {}
+        -- Koneksi universal untuk R6 dan R15
         local connections = {
-            {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
-            {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
-            {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-            {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-            {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+            -- Kepala ke badan
+            {"Head", "UpperTorso"}, {"Head", "Torso"},
+            -- Badan atas ke bawah
+            {"UpperTorso", "LowerTorso"}, {"Torso", "HumanoidRootPart"},
+            -- Lengan kiri
+            {"UpperTorso", "LeftUpperArm"}, {"Torso", "Left Arm"}, 
+            {"LeftUpperArm", "LeftLowerArm"}, {"Left Arm", "LeftLowerArm"},
+            {"LeftLowerArm", "LeftHand"},
+            -- Lengan kanan
+            {"UpperTorso", "RightUpperArm"}, {"Torso", "Right Arm"},
+            {"RightUpperArm", "RightLowerArm"}, {"Right Arm", "RightLowerArm"},
+            {"RightLowerArm", "RightHand"},
+            -- Kaki kiri
+            {"LowerTorso", "LeftUpperLeg"}, {"HumanoidRootPart", "Left Leg"},
+            {"LeftUpperLeg", "LeftLowerLeg"}, {"Left Leg", "LeftLowerLeg"},
+            {"LeftLowerLeg", "LeftFoot"},
+            -- Kaki kanan
+            {"LowerTorso", "RightUpperLeg"}, {"HumanoidRootPart", "Right Leg"},
+            {"RightUpperLeg", "RightLowerLeg"}, {"Right Leg", "RightLowerLeg"},
+            {"RightLowerLeg", "RightFoot"}
         }
+        
         for i = 1, #connections do
             local line = Drawing.new("Line")
             line.Thickness = 2.5
@@ -676,13 +692,55 @@ local function loadMainScript()
     local function updateSkeleton(player, lines)
         local char = player.Character
         if not char then
-            for _, lineData in pairs(lines) do lineData[1].Visible = false end
+            for _, lineData in pairs(lines) do
+                lineData[1].Visible = false
+            end
             return
         end
+        
         for _, lineData in pairs(lines) do
             local line, part1Name, part2Name = unpack(lineData)
-            local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
-            local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
+            local part1 = nil
+            local part2 = nil
+            
+            -- Fungsi bantu untuk mencari part dengan fallback
+            local function findPart(partName)
+                if partName == "UpperTorso" then
+                    return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                elseif partName == "LowerTorso" then
+                    return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart")
+                elseif partName == "LeftUpperArm" then
+                    return char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
+                elseif partName == "RightUpperArm" then
+                    return char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
+                elseif partName == "LeftUpperLeg" then
+                    return char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
+                elseif partName == "RightUpperLeg" then
+                    return char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
+                elseif partName == "LeftLowerArm" then
+                    return char:FindFirstChild("LeftLowerArm") or char:FindFirstChild("Left Arm")
+                elseif partName == "RightLowerArm" then
+                    return char:FindFirstChild("RightLowerArm") or char:FindFirstChild("Right Arm")
+                elseif partName == "LeftLowerLeg" then
+                    return char:FindFirstChild("LeftLowerLeg") or char:FindFirstChild("Left Leg")
+                elseif partName == "RightLowerLeg" then
+                    return char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("Right Leg")
+                elseif partName == "LeftHand" then
+                    return char:FindFirstChild("LeftHand") or char:FindFirstChild("Left Arm")
+                elseif partName == "RightHand" then
+                    return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
+                elseif partName == "LeftFoot" then
+                    return char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg")
+                elseif partName == "RightFoot" then
+                    return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg")
+                else
+                    return char:FindFirstChild(partName)
+                end
+            end
+            
+            part1 = findPart(part1Name)
+            part2 = findPart(part2Name)
+            
             if part1 and part2 then
                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
@@ -690,7 +748,7 @@ local function loadMainScript()
                     line.From = Vector2.new(pos1.X, pos1.Y)
                     line.To = Vector2.new(pos2.X, pos2.Y)
                     line.Visible = skeletonEnabled
-                    line.Color = skeletonColor  -- HIJAU
+                    line.Color = skeletonColor
                 else
                     line.Visible = false
                 end
@@ -700,7 +758,7 @@ local function loadMainScript()
         end
     end
     
-    -- Render Stepped dengan batas jarak 80 meter
+    -- Render Stepped dengan batas jarak 115 meter
     RunService.RenderStepped:Connect(function()
         local myChar = LocalPlayer.Character
         local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
@@ -735,7 +793,7 @@ local function loadMainScript()
                         name.Text = player.Name
                         name.Visible = true
                         
-                        -- Jarak (tampilkan jarak jika dalam range)
+                        -- Jarak
                         if myChar and myChar:FindFirstChild("HumanoidRootPart") then
                             distText.Text = math.floor(distance) .. "m"
                             distText.Position = Vector2.new(pos.X, bottom.Y + 5)
@@ -784,10 +842,9 @@ local function loadMainScript()
             end
         end
         
-        -- ESP Skeleton (juga dengan batas jarak)
+        -- ESP Skeleton (dengan batas jarak 115 meter)
         if skeletonEnabled then
             for player, lines in pairs(SkeletonESP) do
-                -- Cek jarak untuk skeleton juga
                 local char = player.Character
                 if char and char:FindFirstChild("HumanoidRootPart") and myPos then
                     local hrp = char.HumanoidRootPart
@@ -984,7 +1041,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "DISTANCE LIMIT 80M"
+    subtitle.Text = "pengguna script 12"
     subtitle.TextColor3 = skeletonColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1077,7 +1134,7 @@ local function loadMainScript()
     local tabESP = createTab("ESP", "▸", 2)
     local tabUtility = createTab("UTILITY", "▸", 3)
     local tabColor = createTab("COLOR", "▸", 4)
-    local tabAbout = createTab("ABOUT", "▸", 5)
+    local tabAbout = createTab("INFORMASI", "▸", 5)
     
     -- Button Style
     local function createButton(parent, text, callback)
@@ -1342,11 +1399,11 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 90)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10.4\n\n" ..
+    infoText.Text = "DRIP CLIENT V10.5\n\n" ..
                      "Developer: Putzzdev\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
-                     "ESP Jarak Maks: 80 Meter\n" ..
-                     "Skeleton Warna Hijau\n\n" ..
+                     "ESP Jarak Maks: 115 Meter\n" ..
+                     "Skeleton Warna Hijau (All Avatar)\n\n" ..
                      "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
@@ -1447,7 +1504,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V10.4")
+    print("DRIP CLIENT V10.5 - Distance Limit 115M, Green Skeleton (All Avatar)")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1461,7 +1518,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
     
     showLoading(true)
-    StatusLabel.Text = "mengecek Key DATABASE..."
+    StatusLabel.Text = "Memverifikasi Key (Firebase)..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
@@ -1498,4 +1555,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V10.4 - Ready!")
+print("DRIP CLIENT V10.5 - Ready!")
