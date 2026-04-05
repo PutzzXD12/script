@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10.3 (GREEN BOX EDITION) ==================
--- Version: 10.3 (Green Box - Skeleton Fixed)
+-- ================== DRIP CLIENT V10.4 (DISTANCE LIMIT 80M) ==================
+-- Version: 10.4 (Distance Limit + Green Skeleton)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -32,7 +32,7 @@ local SkeletonESP = {}
 
 -- Movement
 local flyEnabled = false
-local flySpeed = 70
+local flySpeed = 60
 local bv = nil
 local bg = nil
 
@@ -42,7 +42,7 @@ local fastSpeed = 60
 
 local noclipEnabled = false
 
--- Combat
+-- Combat (AIMBOT DIHAPUS)
 local infinityJumpEnabled = false
 local jumpCount = 0
 
@@ -53,7 +53,7 @@ local antiDamageThread = nil
 local antiDamageHeartbeat = nil
 
 local spinEnabled = false
-local spinSpeed = 100
+local spinSpeed = 10
 local spinConnection = nil
 local spinDirection = 1
 
@@ -66,8 +66,11 @@ local invisibleHumanoid = nil
 -- Warna Tema
 local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line
 local darkPurple = Color3.fromRGB(74, 20, 90)
--- ESP Box warna HIJAU (seperti awal)
-local boxColor = Color3.fromRGB(0, 255, 0)
+local skeletonColor = Color3.fromRGB(0, 255, 0) -- HIJAU untuk skeleton
+local boxColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk box
+
+-- Jarak maksimum ESP (80 meter)
+local MAX_ESP_DISTANCE = 80
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
@@ -603,18 +606,16 @@ local function loadMainScript()
         return false
     end
 
-    -- ================== FUNGSI ESP (GREEN BOX) ==================
+    -- ================== FUNGSI ESP ==================
     local function createESP(player)
         if player == LocalPlayer then return end
         
-        -- ESP BOX: warna HIJAU (seperti awal)
         local box = Drawing.new("Square")
         box.Thickness = 2.5
-        box.Color = boxColor  -- HIJAU
+        box.Color = themeColor
         box.Filled = false
         box.Visible = false
         
-        -- NAMA
         local name = Drawing.new("Text")
         name.Size = 16
         name.Color = Color3.fromRGB(255, 255, 255)
@@ -623,7 +624,6 @@ local function loadMainScript()
         name.OutlineColor = Color3.fromRGB(0, 0, 0)
         name.Visible = false
         
-        -- JARAK
         local dist = Drawing.new("Text")
         dist.Size = 13
         dist.Color = Color3.fromRGB(200, 200, 200)
@@ -632,13 +632,11 @@ local function loadMainScript()
         dist.OutlineColor = Color3.fromRGB(0, 0, 0)
         dist.Visible = false
         
-        -- ESP LINE: warna ikut tema (ungu)
         local line = Drawing.new("Line")
-        line.Thickness = 2
+        line.Thickness = 2.5
         line.Color = themeColor
         line.Visible = false
         
-        -- HEALTH BAR (di samping kiri box)
         local healthBg = Drawing.new("Square")
         healthBg.Thickness = 1
         healthBg.Color = Color3.fromRGB(30, 30, 30)
@@ -654,79 +652,45 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
     
-    -- ================== ESP SKELETON (FIXED UNTUK ALL MAP) ==================
+    -- ================== ESP SKELETON (WARNA HIJAU) ==================
     local function createSkeleton(player)
         if player == LocalPlayer then return end
         local lines = {}
-        
-        -- Connection untuk R6 dan R15 (universal)
         local connections = {
-            -- Kepala ke Badan
-            {"Head", "UpperTorso"}, {"Head", "Torso"},
-            -- Badan
-            {"UpperTorso", "LowerTorso"}, {"Torso", "HumanoidRootPart"},
-            -- Lengan Kiri
-            {"UpperTorso", "LeftUpperArm"}, {"Torso", "Left Arm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
-            -- Lengan Kanan
-            {"UpperTorso", "RightUpperArm"}, {"Torso", "Right Arm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-            -- Kaki Kiri
-            {"LowerTorso", "LeftUpperLeg"}, {"HumanoidRootPart", "Left Leg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-            -- Kaki Kanan
-            {"LowerTorso", "RightUpperLeg"}, {"HumanoidRootPart", "Right Leg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+            {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+            {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+            {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+            {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+            {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
         }
-        
         for i = 1, #connections do
             local line = Drawing.new("Line")
             line.Thickness = 2.5
-            line.Color = Color3.fromRGB(255, 100, 0)  -- Oranye
+            line.Color = skeletonColor  -- HIJAU
             line.Visible = false
             table.insert(lines, {line, connections[i][1], connections[i][2]})
         end
-        
         SkeletonESP[player] = lines
     end
     
     local function updateSkeleton(player, lines)
         local char = player.Character
         if not char then
-            for _, lineData in pairs(lines) do
-                lineData[1].Visible = false
-            end
+            for _, lineData in pairs(lines) do lineData[1].Visible = false end
             return
         end
-        
         for _, lineData in pairs(lines) do
             local line, part1Name, part2Name = unpack(lineData)
-            local part1 = char:FindFirstChild(part1Name)
-            local part2 = char:FindFirstChild(part2Name)
-            
-            -- Coba cari dengan nama alternatif
-            if not part1 then
-                if part1Name == "UpperTorso" then part1 = char:FindFirstChild("Torso") end
-                if part1Name == "LowerTorso" then part1 = char:FindFirstChild("HumanoidRootPart") end
-                if part1Name == "LeftUpperArm" then part1 = char:FindFirstChild("Left Arm") end
-                if part1Name == "RightUpperArm" then part1 = char:FindFirstChild("Right Arm") end
-                if part1Name == "LeftUpperLeg" then part1 = char:FindFirstChild("Left Leg") end
-                if part1Name == "RightUpperLeg" then part1 = char:FindFirstChild("Right Leg") end
-            end
-            if not part2 then
-                if part2Name == "UpperTorso" then part2 = char:FindFirstChild("Torso") end
-                if part2Name == "LowerTorso" then part2 = char:FindFirstChild("HumanoidRootPart") end
-                if part2Name == "LeftUpperArm" then part2 = char:FindFirstChild("Left Arm") end
-                if part2Name == "RightUpperArm" then part2 = char:FindFirstChild("Right Arm") end
-                if part2Name == "LeftUpperLeg" then part2 = char:FindFirstChild("Left Leg") end
-                if part2Name == "RightUpperLeg" then part2 = char:FindFirstChild("Right Leg") end
-            end
-            
+            local part1 = char:FindFirstChild(part1Name) or char:FindFirstChild(part1Name:gsub("Upper", ""):gsub("Lower", ""))
+            local part2 = char:FindFirstChild(part2Name) or char:FindFirstChild(part2Name:gsub("Upper", ""):gsub("Lower", ""))
             if part1 and part2 then
                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
-                
                 if vis1 and vis2 then
                     line.From = Vector2.new(pos1.X, pos1.Y)
                     line.To = Vector2.new(pos2.X, pos2.Y)
                     line.Visible = skeletonEnabled
-                    line.Color = Color3.fromRGB(255, 100, 0)  -- Oranye
+                    line.Color = skeletonColor  -- HIJAU
                 else
                     line.Visible = false
                 end
@@ -736,73 +700,71 @@ local function loadMainScript()
         end
     end
     
-    -- Render Stepped untuk ESP
+    -- Render Stepped dengan batas jarak 80 meter
     RunService.RenderStepped:Connect(function()
+        local myChar = LocalPlayer.Character
+        local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+        
         for player, esp in pairs(ESPTable) do
-            local box, name, dist, line, healthBg, healthFg = unpack(esp)
+            local box, name, distText, line, healthBg, healthFg = unpack(esp)
             local char = player.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
                 local hrp = char.HumanoidRootPart
                 local head = char.Head
                 local humanoid = char:FindFirstChildOfClass("Humanoid")
                 local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-                if visible then
+                
+                -- Hitung jarak
+                local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
+                local withinRange = distance <= MAX_ESP_DISTANCE
+                
+                if visible and withinRange then
                     local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                     local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
                     local height = math.abs(top.Y - bottom.Y)
-                    local width = height / 2.2
+                    local width = height / 2
                     
                     if espEnabled then
-                        -- BOX (hijau)
+                        -- Box
                         box.Size = Vector2.new(width, height)
                         box.Position = Vector2.new(pos.X - width/2, top.Y)
                         box.Visible = true
-                        box.Color = boxColor  -- HIJAU
                         
-                        -- NAMA
+                        -- Name
                         name.Position = Vector2.new(pos.X, top.Y - 18)
                         name.Text = player.Name
                         name.Visible = true
                         
-                        -- JARAK
-                        local myChar = LocalPlayer.Character
+                        -- Jarak (tampilkan jarak jika dalam range)
                         if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                            local distance = (myChar.HumanoidRootPart.Position - hrp.Position).Magnitude
-                            dist.Text = math.floor(distance) .. "m"
-                            dist.Position = Vector2.new(pos.X, bottom.Y + 5)
-                            dist.Visible = true
+                            distText.Text = math.floor(distance) .. "m"
+                            distText.Position = Vector2.new(pos.X, bottom.Y + 5)
+                            distText.Visible = true
                         end
-                        
-                        -- HEALTH BAR (di samping kiri box)
-                        if healthEnabled and humanoid then
-                            local healthPercent = humanoid.Health / humanoid.MaxHealth
-                            local barHeight = height * 0.8
-                            local barWidth = 4
-                            local barX = pos.X - width/2 - 8
-                            local barY = top.Y + (height - barHeight) / 2
-                            
-                            healthBg.Size = Vector2.new(barWidth, barHeight)
-                            healthBg.Position = Vector2.new(barX, barY)
-                            healthBg.Visible = true
-                            
-                            healthFg.Size = Vector2.new(barWidth, barHeight * healthPercent)
-                            healthFg.Position = Vector2.new(barX, barY + barHeight * (1 - healthPercent))
-                            healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                            healthFg.Visible = true
-                        else
-                            healthBg.Visible = false
-                            healthFg.Visible = false
-                        end
-                        
                     else
                         box.Visible = false
                         name.Visible = false
-                        dist.Visible = false
+                        distText.Visible = false
+                    end
+                    
+                    if healthEnabled and humanoid then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        local barWidth = width * 0.8
+                        local barHeight = 4
+                        local barX = pos.X - barWidth / 2
+                        local barY = top.Y - 22
+                        healthBg.Size = Vector2.new(barWidth, barHeight)
+                        healthBg.Position = Vector2.new(barX, barY)
+                        healthBg.Visible = true
+                        healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
+                        healthFg.Position = Vector2.new(barX, barY)
+                        healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                        healthFg.Visible = true
+                    else
                         healthBg.Visible = false
                         healthFg.Visible = false
                     end
                     
-                    -- ESP LINE (warna ikut tema)
                     if lineEnabled then
                         line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
                         line.To = Vector2.new(pos.X, pos.Y)
@@ -814,7 +776,7 @@ local function loadMainScript()
                 else
                     box.Visible = false
                     name.Visible = false
-                    dist.Visible = false
+                    distText.Visible = false
                     line.Visible = false
                     healthBg.Visible = false
                     healthFg.Visible = false
@@ -822,10 +784,26 @@ local function loadMainScript()
             end
         end
         
-        -- ESP Skeleton
+        -- ESP Skeleton (juga dengan batas jarak)
         if skeletonEnabled then
             for player, lines in pairs(SkeletonESP) do
-                updateSkeleton(player, lines)
+                -- Cek jarak untuk skeleton juga
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and myPos then
+                    local hrp = char.HumanoidRootPart
+                    local distance = (myPos - hrp.Position).Magnitude
+                    if distance <= MAX_ESP_DISTANCE then
+                        updateSkeleton(player, lines)
+                    else
+                        for _, lineData in pairs(lines) do
+                            lineData[1].Visible = false
+                        end
+                    end
+                else
+                    for _, lineData in pairs(lines) do
+                        lineData[1].Visible = false
+                    end
+                end
             end
         else
             for _, lines in pairs(SkeletonESP) do
@@ -930,8 +908,8 @@ local function loadMainScript()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 420, 0, 560)
-    mainFrame.Position = UDim2.new(0.5, -210, 0.5, -280)
+    mainFrame.Size = UDim2.new(0, 400, 0, 550)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
@@ -992,22 +970,22 @@ local function loadMainScript()
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.Size = UDim2.new(1, 0, 0.6, 0)
-    title.Position = UDim2.new(0, 0, 0, 12)
+    title.Position = UDim2.new(0, 0, 0, 15)
     title.BackgroundTransparency = 1
     title.Text = "DRIP CLIENT"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 28
+    title.TextSize = 26
     title.TextXAlignment = Enum.TextXAlignment.Center
     
     -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 0, 0, 44)
+    subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "DRIP VIP"
-    subtitle.TextColor3 = boxColor
+    subtitle.Text = "DISTANCE LIMIT 80M"
+    subtitle.TextColor3 = skeletonColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
@@ -1046,8 +1024,8 @@ local function loadMainScript()
         
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.27)
-        content.Position = UDim2.new(0.03, 0, 0.19, 0)
+        content.Size = UDim2.new(0.94, 0, 1, -0.28)
+        content.Position = UDim2.new(0.03, 0, 0.2, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
@@ -1296,23 +1274,20 @@ local function loadMainScript()
         for _, content in pairs(contents) do
             content.ScrollBarImageColor3 = themeColor
         end
-        -- Update ESP LINE (BOX tetap hijau)
+        -- Update ESP warna (box dan line)
         for player, esp in pairs(ESPTable) do
-            if esp and esp[4] then esp[4].Color = themeColor end  -- LINE
+            if esp and esp[1] then esp[1].Color = themeColor end
+            if esp and esp[4] then esp[4].Color = themeColor end
         end
-        for player, lines in pairs(SkeletonESP) do
-            for _, lineData in pairs(lines) do
-                if lineData[1] then lineData[1].Color = Color3.fromRGB(255, 100, 0) end  -- SKELETON tetap oranye
-            end
-        end
+        -- Skeleton tetap hijau (tidak berubah)
     end
     
     createButton(tabColor, "Ungu (Default)", function()
         changeTheme(Color3.fromRGB(156, 39, 176))
     end)
     
-    createButton(tabColor, "Putih", function()
-        changeTheme(Color3.fromRGB(255, 255, 255))
+    createButton(tabColor, "Pink", function()
+        changeTheme(Color3.fromRGB(255, 105, 180))
     end)
     
     createButton(tabColor, "Merah", function()
@@ -1342,7 +1317,7 @@ local function loadMainScript()
     -- ===== TAB ABOUT =====
     local aboutFrame = Instance.new("Frame")
     aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.95, 0, 0, 130)
+    aboutFrame.Size = UDim2.new(0.95, 0, 0, 150)
     aboutFrame.Position = UDim2.new(0.025, 0, 0, 10)
     aboutFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     aboutFrame.BackgroundTransparency = 0.3
@@ -1364,16 +1339,18 @@ local function loadMainScript()
     
     local infoText = Instance.new("TextLabel")
     infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 70)
+    infoText.Size = UDim2.new(0.95, 0, 0, 90)
     infoText.Position = UDim2.new(0.025, 0, 0, 55)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10.3\n\n" ..
-                     "Developer: Putzz XD\n" ..
+    infoText.Text = "DRIP CLIENT V10.4\n\n" ..
+                     "Developer: Putzzdev\n" ..
                      "TikTok: @putzz_mvpp\n\n" ..
+                     "ESP Jarak Maks: 80 Meter\n" ..
+                     "Skeleton Warna Hijau\n\n" ..
                      "Kontak: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 12
+    infoText.TextSize = 11
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Left
     
@@ -1449,11 +1426,11 @@ local function loadMainScript()
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -210, 0.5, -280)
+                Position = UDim2.new(0.5, -200, 0.5, -275)
             }):Play()
         else
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -210, 1, 0)
+                Position = UDim2.new(0.5, -200, 1, 0)
             }):Play()
             task.wait(0.25)
             mainFrame.Visible = false
@@ -1470,7 +1447,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V10.3 Ready!")
+    print("DRIP CLIENT V10.4")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1484,7 +1461,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
     
     showLoading(true)
-    StatusLabel.Text = "Memverifikasi Key (Firebase)..."
+    StatusLabel.Text = "mengecek Key DATABASE..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
@@ -1521,4 +1498,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V10.3 - Ready!")
+print("DRIP CLIENT V10.4 - Ready!")
