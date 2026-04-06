@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V7.0 (FINAL EDITION) ==================
--- Version: 7.0 (Green Box + Info Tab)
+-- ================== DRIP CLIENT V7.1 (FIXED MENU) ==================
+-- Version: 7.1 (Fixed Menu Not Showing)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -8,7 +8,7 @@ local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "DRIP CLIENT"
 
 -- Firebase Online Counter Config
-local ONLINE_DB_URL = "https://putzz-online-stats-default-rtdb.asia-southeast1.firebasedatabase.app/" -- GANTI dengan URL Firebase kamu
+local ONLINE_DB_URL = "https://putzz-online-stats-default-rtdb.asia-southeast1.firebasedatabase.app/"
 local SAVE_FILE = "drip_key_data.txt"
 local activeKeys = {}
 local currentUserKey = nil
@@ -152,7 +152,7 @@ end
 local function setupCleanup()
     game:BindToClose(function()
         updateOnlineStatus(false)
-        wait(0.5)
+        task.wait(0.5)
     end)
 end
 
@@ -164,7 +164,7 @@ local function loadKeyData()
         end)
         if success and content and content ~= "" then
             local success2, data = pcall(function()
-                return game:GetService("HttpService"):JSONDecode(content)
+                return HttpService:JSONDecode(content)
             end)
             if success2 then
                 activeKeys = data
@@ -176,7 +176,7 @@ end
 local function saveKeyData()
     if writefile then
         local success, json = pcall(function()
-            return game:GetService("HttpService"):JSONEncode(activeKeys)
+            return HttpService:JSONEncode(activeKeys)
         end)
         if success then
             writefile(SAVE_FILE, json)
@@ -191,7 +191,7 @@ local function getKeysFromFirebase()
     
     if success and data then
         local success2, jsonData = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(data)
+            return HttpService:JSONDecode(data)
         end)
         if success2 and jsonData then
             local keysArray = {}
@@ -651,7 +651,9 @@ end
 
 -- ================== FUNGSI UTAMA ==================
 local function loadMainScript()
+    -- Hapus GUI key system
     KeyGui:Destroy()
+    
     print("✅ DRIP CLIENT - Memuat semua fitur...")
     
     -- ================== ONLINE COUNTER ==================
@@ -701,7 +703,7 @@ local function loadMainScript()
         -- ESP BOX: warna HIJAU (tetap, tidak berubah)
         local box = Drawing.new("Square")
         box.Thickness = 2.5
-        box.Color = boxColor  -- HIJAU
+        box.Color = boxColor
         box.Filled = false
         box.Visible = false
         
@@ -742,7 +744,7 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
     
-    -- ================== ESP SKELETON (FIX ALL AVATAR, WARNA HIJAU) ==================
+    -- ================== ESP SKELETON ==================
     local function createSkeleton(player)
         if player == LocalPlayer then return end
         local lines = {}
@@ -764,8 +766,8 @@ local function loadMainScript()
         }
         for i = 1, #connections do
             local line = Drawing.new("Line")
-            line.Thickness = 3  -- Lebih tebal agar sesuai badan
-            line.Color = skeletonColor  -- HIJAU
+            line.Thickness = 3
+            line.Color = skeletonColor
             line.Visible = false
             table.insert(lines, {line, connections[i][1], connections[i][2]})
         end
@@ -775,11 +777,15 @@ local function loadMainScript()
     local function updateSkeleton(player, lines)
         local char = player.Character
         if not char then
-            for _, lineData in pairs(lines) do lineData[1].Visible = false end
+            for _, lineData in pairs(lines) do
+                lineData[1].Visible = false
+            end
             return
         end
+        
         for _, lineData in pairs(lines) do
             local line, part1Name, part2Name = unpack(lineData)
+            
             local function findPart(partName)
                 if partName == "UpperTorso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") end
                 if partName == "LowerTorso" then return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart") end
@@ -797,8 +803,10 @@ local function loadMainScript()
                 if partName == "RightFoot" then return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg") end
                 return char:FindFirstChild(partName)
             end
+            
             local part1 = findPart(part1Name)
             local part2 = findPart(part2Name)
+            
             if part1 and part2 then
                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
@@ -815,106 +823,6 @@ local function loadMainScript()
             end
         end
     end
-    
-    -- Render Stepped dengan batas jarak 115 meter
-    RunService.RenderStepped:Connect(function()
-        local myChar = LocalPlayer.Character
-        local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
-        
-        for player, esp in pairs(ESPTable) do
-            local box, name, distText, line, healthBg, healthFg = unpack(esp)
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
-                local hrp = char.HumanoidRootPart
-                local head = char.Head
-                local humanoid = char:FindFirstChildOfClass("Humanoid")
-                local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-                local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
-                local withinRange = distance <= MAX_ESP_DISTANCE
-                
-                if visible and withinRange then
-                    local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                    local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-                    local height = math.abs(top.Y - bottom.Y)
-                    local width = height / 2
-                    
-                    if espEnabled then
-                        -- BOX (hijau)
-                        box.Size = Vector2.new(width, height)
-                        box.Position = Vector2.new(pos.X - width/2, top.Y)
-                        box.Visible = true
-                        box.Color = boxColor  -- HIJAU
-                        
-                        name.Position = Vector2.new(pos.X, top.Y - 18)
-                        name.Text = player.Name
-                        name.Visible = true
-                        distText.Text = math.floor(distance) .. "m"
-                        distText.Position = Vector2.new(pos.X, bottom.Y + 5)
-                        distText.Visible = true
-                    else
-                        box.Visible = false
-                        name.Visible = false
-                        distText.Visible = false
-                    end
-                    
-                    if healthEnabled and humanoid then
-                        local healthPercent = humanoid.Health / humanoid.MaxHealth
-                        local barWidth = width * 0.8
-                        local barHeight = 4
-                        local barX = pos.X - barWidth / 2
-                        local barY = top.Y - 22
-                        healthBg.Size = Vector2.new(barWidth, barHeight)
-                        healthBg.Position = Vector2.new(barX, barY)
-                        healthBg.Visible = true
-                        healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
-                        healthFg.Position = Vector2.new(barX, barY)
-                        healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                        healthFg.Visible = true
-                    else
-                        healthBg.Visible = false
-                        healthFg.Visible = false
-                    end
-                    
-                    if lineEnabled then
-                        line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
-                        line.To = Vector2.new(pos.X, pos.Y)
-                        line.Visible = true
-                        line.Color = themeColor  -- LINE mengikuti tema
-                    else
-                        line.Visible = false
-                    end
-                else
-                    box.Visible = false
-                    name.Visible = false
-                    distText.Visible = false
-                    line.Visible = false
-                    healthBg.Visible = false
-                    healthFg.Visible = false
-                end
-            end
-        end
-        
-        if skeletonEnabled then
-            for player, lines in pairs(SkeletonESP) do
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and myPos then
-                    local hrp = char.HumanoidRootPart
-                    local distance = (myPos - hrp.Position).Magnitude
-                    if distance <= MAX_ESP_DISTANCE then
-                        updateSkeleton(player, lines)
-                    else
-                        for _, lineData in pairs(lines) do lineData[1].Visible = false end
-                    end
-                else
-                    for _, lineData in pairs(lines) do lineData[1].Visible = false end
-                end
-            end
-        else
-            for _, lines in pairs(SkeletonESP) do
-                for _, lineData in pairs(lines) do lineData[1].Visible = false end
-            end
-        end
-    end)
     
     -- Inisialisasi ESP
     for _, p in pairs(Players:GetPlayers()) do
@@ -939,29 +847,6 @@ local function loadMainScript()
                 pcall(function() if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end end)
             end
             SkeletonESP[player] = nil
-        end
-    end)
-    
-    task.spawn(function()
-        while task.wait(30) do
-            pcall(function()
-                for player, drawings in pairs(ESPTable) do
-                    if not player or not player.Parent then
-                        for _, drawing in pairs(drawings) do
-                            if drawing and drawing.Remove then drawing:Remove() end
-                        end
-                        ESPTable[player] = nil
-                    end
-                end
-                for player, lines in pairs(SkeletonESP) do
-                    if not player or not player.Parent then
-                        for _, lineData in pairs(lines) do
-                            if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end
-                        end
-                        SkeletonESP[player] = nil
-                    end
-                end
-            end)
         end
     end)
     
@@ -1083,7 +968,7 @@ local function loadMainScript()
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- ================== TAB BAR ==================
+    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(0.95, 0, 0, 42)
@@ -1161,7 +1046,7 @@ local function loadMainScript()
         return content
     end
     
-    -- TAB: MAIN, ESP, UTILITY, COLOR, INFORMASI
+    -- 5 TAB
     local tabMain = createTab("MAIN", "▸", 1)
     local tabESP = createTab("ESP", "▸", 2)
     local tabUtility = createTab("UTILITY", "▸", 3)
@@ -1348,9 +1233,8 @@ local function loadMainScript()
         end
         -- Hanya ubah warna LINE (box tetap hijau, skeleton tetap hijau)
         for player, esp in pairs(ESPTable) do
-            if esp and esp[4] then esp[4].Color = themeColor end  -- LINE
+            if esp and esp[4] then esp[4].Color = themeColor end
         end
-        -- Skeleton tidak diubah (tetap hijau)
     end
     
     createButton(tabColor, "Ungu (Default)", function()
@@ -1378,7 +1262,7 @@ local function loadMainScript()
         changeTheme(Color3.fromRGB(0, 255, 255))
     end)
     
-    -- ===== TAB INFORMASI (SEDERHANA) =====
+    -- ===== TAB INFORMASI =====
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
     infoFrame.Size = UDim2.new(0.95, 0, 0, 200)
@@ -1400,14 +1284,13 @@ local function loadMainScript()
     infoTitle.Font = Enum.Font.GothamBlack
     infoTitle.TextSize = 20
     
-    -- Isi informasi sesuai permintaan
     local infoText = Instance.new("TextLabel")
     infoText.Parent = infoFrame
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
     infoText.Text = "DRIP CLIENT\n\n" ..
-                     "VERSI 7.0\n\n" ..
+                     "VERSI 7.1\n\n" ..
                      "DEVELOPER: Putzzdev\n\n" ..
                      "KONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1416,7 +1299,6 @@ local function loadMainScript()
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Online counter
     local onlineLabel = Instance.new("TextLabel")
     onlineLabel.Parent = infoFrame
     onlineLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -1436,9 +1318,138 @@ local function loadMainScript()
         end
     end)
     
+    -- ===== UPDATE RENDER STEP UNTUK ESP (DENGAN JARAK) =====
+    RunService.RenderStepped:Connect(function()
+        local myChar = LocalPlayer.Character
+        local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+        
+        for player, esp in pairs(ESPTable) do
+            local box, name, distText, line, healthBg, healthFg = unpack(esp)
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+                local hrp = char.HumanoidRootPart
+                local head = char.Head
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
+                local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
+                local withinRange = distance <= MAX_ESP_DISTANCE
+                
+                if visible and withinRange then
+                    local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    local height = math.abs(top.Y - bottom.Y)
+                    local width = height / 2
+                    
+                    if espEnabled then
+                        box.Size = Vector2.new(width, height)
+                        box.Position = Vector2.new(pos.X - width/2, top.Y)
+                        box.Visible = true
+                        box.Color = boxColor
+                        
+                        name.Position = Vector2.new(pos.X, top.Y - 18)
+                        name.Text = player.Name
+                        name.Visible = true
+                        distText.Text = math.floor(distance) .. "m"
+                        distText.Position = Vector2.new(pos.X, bottom.Y + 5)
+                        distText.Visible = true
+                    else
+                        box.Visible = false
+                        name.Visible = false
+                        distText.Visible = false
+                    end
+                    
+                    if healthEnabled and humanoid then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        local barWidth = width * 0.8
+                        local barHeight = 4
+                        local barX = pos.X - barWidth / 2
+                        local barY = top.Y - 22
+                        healthBg.Size = Vector2.new(barWidth, barHeight)
+                        healthBg.Position = Vector2.new(barX, barY)
+                        healthBg.Visible = true
+                        healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
+                        healthFg.Position = Vector2.new(barX, barY)
+                        healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                        healthFg.Visible = true
+                    else
+                        healthBg.Visible = false
+                        healthFg.Visible = false
+                    end
+                    
+                    if lineEnabled then
+                        line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
+                        line.To = Vector2.new(pos.X, pos.Y)
+                        line.Visible = true
+                        line.Color = themeColor
+                    else
+                        line.Visible = false
+                    end
+                else
+                    box.Visible = false
+                    name.Visible = false
+                    distText.Visible = false
+                    line.Visible = false
+                    healthBg.Visible = false
+                    healthFg.Visible = false
+                end
+            end
+        end
+        
+        if skeletonEnabled then
+            for player, lines in pairs(SkeletonESP) do
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and myPos then
+                    local hrp = char.HumanoidRootPart
+                    local distance = (myPos - hrp.Position).Magnitude
+                    if distance <= MAX_ESP_DISTANCE then
+                        updateSkeleton(player, lines)
+                    else
+                        for _, lineData in pairs(lines) do
+                            lineData[1].Visible = false
+                        end
+                    end
+                else
+                    for _, lineData in pairs(lines) do
+                        lineData[1].Visible = false
+                    end
+                end
+            end
+        else
+            for _, lines in pairs(SkeletonESP) do
+                for _, lineData in pairs(lines) do
+                    lineData[1].Visible = false
+                end
+            end
+        end
+    end)
+    
+    -- Cleanup ESP
+    task.spawn(function()
+        while task.wait(30) do
+            pcall(function()
+                for player, drawings in pairs(ESPTable) do
+                    if not player or not player.Parent then
+                        for _, drawing in pairs(drawings) do
+                            if drawing and drawing.Remove then drawing:Remove() end
+                        end
+                        ESPTable[player] = nil
+                    end
+                end
+                for player, lines in pairs(SkeletonESP) do
+                    if not player or not player.Parent then
+                        for _, lineData in pairs(lines) do
+                            if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end
+                        end
+                        SkeletonESP[player] = nil
+                    end
+                end
+            end)
+        end
+    end)
+    
     -- Update canvas size
     task.wait(0.1)
-    for i, content in pairs(contents) do
+    for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
             if child:IsA("Frame") then
@@ -1502,7 +1513,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V7.0 - Green Box | Skeleton Hijau | Line Ikut Tema")
+    print("✅ DRIP CLIENT V7.1 - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1553,4 +1564,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.0 - Ready!")
+print("DRIP CLIENT V7.1 - Ready! Masukkan key untuk memulai.")
