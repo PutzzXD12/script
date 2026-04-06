@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V7.3 (KEY SYSTEM FIXED) ==================
--- Version: 7.3 (Key System Fixed - Menu Pasti Muncul)
+-- ================== DRIP CLIENT V7.4 (KEY SYSTEM FIXED - MENU PASTI MUNCUL) ==================
+-- Version: 7.4 (Key System Fixed - Menu Pasti Muncul)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -1389,7 +1389,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.3\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
@@ -1481,7 +1481,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V7.3 - MENU BERHASIL DIMUAT!")
+    print("✅ DRIP CLIENT V7.4 - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1523,7 +1523,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         StatusIcon.Text = "❌"
-        showNotification("GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
+        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
@@ -1533,4 +1533,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.3 - Ready! Masukkan key untuk memulai.")
+print("DRIP CLIENT V7.4 - Ready! Masukkan key untuk memulai.")
