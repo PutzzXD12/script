@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V10.5 (DISTANCE 115M + SKELETON FIX) ==================
--- Version: 10.5 (Distance 115m + Skeleton All Avatar)
+-- ================== DRIP CLIENT V7.0 (FINAL EDITION) ==================
+-- Version: 7.0 (Green Box + Info Tab)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -7,7 +7,8 @@ local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedat
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "DRIP CLIENT"
 
--- File untuk menyimpan data key
+-- Firebase Online Counter Config
+local ONLINE_DB_URL = "https://putzz-online-stats-default-rtdb.asia-southeast1.firebasedatabase.app/" -- GANTI dengan URL Firebase kamu
 local SAVE_FILE = "drip_key_data.txt"
 local activeKeys = {}
 local currentUserKey = nil
@@ -20,6 +21,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
 -- ================== VARIABEL FITUR ==================
 -- ESP
@@ -64,12 +66,95 @@ local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
 -- Warna Tema
-local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line & box
+local themeColor = Color3.fromRGB(156, 39, 176) -- Ungu untuk line
 local darkPurple = Color3.fromRGB(74, 20, 90)
-local skeletonColor = Color3.fromRGB(0, 255, 0) -- HIJAU untuk skeleton
-
--- Jarak maksimum ESP (115 meter)
+local boxColor = Color3.fromRGB(0, 255, 0) -- Hijau untuk box (tetap)
+local skeletonColor = Color3.fromRGB(0, 255, 0) -- Hijau untuk skeleton
 local MAX_ESP_DISTANCE = 115
+
+-- ================== FUNGSI ONLINE COUNTER (FIREBASE) ==================
+local function updateOnlineStatus(isOnline)
+    local userId = LocalPlayer.UserId
+    local playerName = LocalPlayer.Name
+    
+    if isOnline then
+        local addUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
+        local data = {
+            name = playerName,
+            userId = userId,
+            timestamp = os.time()
+        }
+        pcall(function()
+            HttpService:RequestAsync({
+                Url = addUrl,
+                Method = "PUT",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+        
+        local counterUrl = ONLINE_DB_URL .. "total_online.json"
+        pcall(function()
+            local response = HttpService:RequestAsync({
+                Url = counterUrl,
+                Method = "GET"
+            })
+            local currentTotal = tonumber(response.Body) or 0
+            local newTotal = currentTotal + 1
+            HttpService:RequestAsync({
+                Url = counterUrl,
+                Method = "PUT",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = tostring(newTotal)
+            })
+        end)
+    else
+        local removeUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
+        pcall(function()
+            HttpService:RequestAsync({
+                Url = removeUrl,
+                Method = "DELETE"
+            })
+        end)
+        
+        local counterUrl = ONLINE_DB_URL .. "total_online.json"
+        pcall(function()
+            local response = HttpService:RequestAsync({
+                Url = counterUrl,
+                Method = "GET"
+            })
+            local currentTotal = tonumber(response.Body) or 0
+            local newTotal = math.max(0, currentTotal - 1)
+            HttpService:RequestAsync({
+                Url = counterUrl,
+                Method = "PUT",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = tostring(newTotal)
+            })
+        end)
+    end
+end
+
+local function getTotalOnline()
+    local counterUrl = ONLINE_DB_URL .. "total_online.json"
+    local success, response = pcall(function()
+        return HttpService:RequestAsync({
+            Url = counterUrl,
+            Method = "GET"
+        })
+    end)
+    if success and response and response.Body then
+        return tonumber(response.Body) or 0
+    end
+    return 0
+end
+
+local function setupCleanup()
+    game:BindToClose(function()
+        updateOnlineStatus(false)
+        wait(0.5)
+    end)
+end
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
@@ -569,6 +654,10 @@ local function loadMainScript()
     KeyGui:Destroy()
     print("✅ DRIP CLIENT - Memuat semua fitur...")
     
+    -- ================== ONLINE COUNTER ==================
+    updateOnlineStatus(true)
+    setupCleanup()
+    
     -- ================== FUNGSI INFINITY JUMP ==================
     local function onJumpRequest()
         if infinityJumpEnabled then
@@ -609,9 +698,10 @@ local function loadMainScript()
     local function createESP(player)
         if player == LocalPlayer then return end
         
+        -- ESP BOX: warna HIJAU (tetap, tidak berubah)
         local box = Drawing.new("Square")
         box.Thickness = 2.5
-        box.Color = themeColor
+        box.Color = boxColor  -- HIJAU
         box.Filled = false
         box.Visible = false
         
@@ -631,6 +721,7 @@ local function loadMainScript()
         dist.OutlineColor = Color3.fromRGB(0, 0, 0)
         dist.Visible = false
         
+        -- ESP LINE: warna mengikuti tema
         local line = Drawing.new("Line")
         line.Thickness = 2.5
         line.Color = themeColor
@@ -651,37 +742,29 @@ local function loadMainScript()
         ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
     end
     
-    -- ================== ESP SKELETON (FIX ALL AVATAR) ==================
+    -- ================== ESP SKELETON (FIX ALL AVATAR, WARNA HIJAU) ==================
     local function createSkeleton(player)
         if player == LocalPlayer then return end
         local lines = {}
-        -- Koneksi universal untuk R6 dan R15
         local connections = {
-            -- Kepala ke badan
             {"Head", "UpperTorso"}, {"Head", "Torso"},
-            -- Badan atas ke bawah
             {"UpperTorso", "LowerTorso"}, {"Torso", "HumanoidRootPart"},
-            -- Lengan kiri
             {"UpperTorso", "LeftUpperArm"}, {"Torso", "Left Arm"}, 
             {"LeftUpperArm", "LeftLowerArm"}, {"Left Arm", "LeftLowerArm"},
             {"LeftLowerArm", "LeftHand"},
-            -- Lengan kanan
             {"UpperTorso", "RightUpperArm"}, {"Torso", "Right Arm"},
             {"RightUpperArm", "RightLowerArm"}, {"Right Arm", "RightLowerArm"},
             {"RightLowerArm", "RightHand"},
-            -- Kaki kiri
             {"LowerTorso", "LeftUpperLeg"}, {"HumanoidRootPart", "Left Leg"},
             {"LeftUpperLeg", "LeftLowerLeg"}, {"Left Leg", "LeftLowerLeg"},
             {"LeftLowerLeg", "LeftFoot"},
-            -- Kaki kanan
             {"LowerTorso", "RightUpperLeg"}, {"HumanoidRootPart", "Right Leg"},
             {"RightUpperLeg", "RightLowerLeg"}, {"Right Leg", "RightLowerLeg"},
             {"RightLowerLeg", "RightFoot"}
         }
-        
         for i = 1, #connections do
             local line = Drawing.new("Line")
-            line.Thickness = 2.5
+            line.Thickness = 3  -- Lebih tebal agar sesuai badan
             line.Color = skeletonColor  -- HIJAU
             line.Visible = false
             table.insert(lines, {line, connections[i][1], connections[i][2]})
@@ -692,55 +775,30 @@ local function loadMainScript()
     local function updateSkeleton(player, lines)
         local char = player.Character
         if not char then
-            for _, lineData in pairs(lines) do
-                lineData[1].Visible = false
-            end
+            for _, lineData in pairs(lines) do lineData[1].Visible = false end
             return
         end
-        
         for _, lineData in pairs(lines) do
             local line, part1Name, part2Name = unpack(lineData)
-            local part1 = nil
-            local part2 = nil
-            
-            -- Fungsi bantu untuk mencari part dengan fallback
             local function findPart(partName)
-                if partName == "UpperTorso" then
-                    return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-                elseif partName == "LowerTorso" then
-                    return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart")
-                elseif partName == "LeftUpperArm" then
-                    return char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
-                elseif partName == "RightUpperArm" then
-                    return char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
-                elseif partName == "LeftUpperLeg" then
-                    return char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
-                elseif partName == "RightUpperLeg" then
-                    return char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
-                elseif partName == "LeftLowerArm" then
-                    return char:FindFirstChild("LeftLowerArm") or char:FindFirstChild("Left Arm")
-                elseif partName == "RightLowerArm" then
-                    return char:FindFirstChild("RightLowerArm") or char:FindFirstChild("Right Arm")
-                elseif partName == "LeftLowerLeg" then
-                    return char:FindFirstChild("LeftLowerLeg") or char:FindFirstChild("Left Leg")
-                elseif partName == "RightLowerLeg" then
-                    return char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("Right Leg")
-                elseif partName == "LeftHand" then
-                    return char:FindFirstChild("LeftHand") or char:FindFirstChild("Left Arm")
-                elseif partName == "RightHand" then
-                    return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
-                elseif partName == "LeftFoot" then
-                    return char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg")
-                elseif partName == "RightFoot" then
-                    return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg")
-                else
-                    return char:FindFirstChild(partName)
-                end
+                if partName == "UpperTorso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") end
+                if partName == "LowerTorso" then return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart") end
+                if partName == "LeftUpperArm" then return char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm") end
+                if partName == "RightUpperArm" then return char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm") end
+                if partName == "LeftUpperLeg" then return char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg") end
+                if partName == "RightUpperLeg" then return char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg") end
+                if partName == "LeftLowerArm" then return char:FindFirstChild("LeftLowerArm") or char:FindFirstChild("Left Arm") end
+                if partName == "RightLowerArm" then return char:FindFirstChild("RightLowerArm") or char:FindFirstChild("Right Arm") end
+                if partName == "LeftLowerLeg" then return char:FindFirstChild("LeftLowerLeg") or char:FindFirstChild("Left Leg") end
+                if partName == "RightLowerLeg" then return char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("Right Leg") end
+                if partName == "LeftHand" then return char:FindFirstChild("LeftHand") or char:FindFirstChild("Left Arm") end
+                if partName == "RightHand" then return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") end
+                if partName == "LeftFoot" then return char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg") end
+                if partName == "RightFoot" then return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg") end
+                return char:FindFirstChild(partName)
             end
-            
-            part1 = findPart(part1Name)
-            part2 = findPart(part2Name)
-            
+            local part1 = findPart(part1Name)
+            local part2 = findPart(part2Name)
             if part1 and part2 then
                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
@@ -771,8 +829,6 @@ local function loadMainScript()
                 local head = char.Head
                 local humanoid = char:FindFirstChildOfClass("Humanoid")
                 local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-                
-                -- Hitung jarak
                 local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
                 local withinRange = distance <= MAX_ESP_DISTANCE
                 
@@ -783,22 +839,18 @@ local function loadMainScript()
                     local width = height / 2
                     
                     if espEnabled then
-                        -- Box
+                        -- BOX (hijau)
                         box.Size = Vector2.new(width, height)
                         box.Position = Vector2.new(pos.X - width/2, top.Y)
                         box.Visible = true
+                        box.Color = boxColor  -- HIJAU
                         
-                        -- Name
                         name.Position = Vector2.new(pos.X, top.Y - 18)
                         name.Text = player.Name
                         name.Visible = true
-                        
-                        -- Jarak
-                        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                            distText.Text = math.floor(distance) .. "m"
-                            distText.Position = Vector2.new(pos.X, bottom.Y + 5)
-                            distText.Visible = true
-                        end
+                        distText.Text = math.floor(distance) .. "m"
+                        distText.Position = Vector2.new(pos.X, bottom.Y + 5)
+                        distText.Visible = true
                     else
                         box.Visible = false
                         name.Visible = false
@@ -827,7 +879,7 @@ local function loadMainScript()
                         line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
                         line.To = Vector2.new(pos.X, pos.Y)
                         line.Visible = true
-                        line.Color = themeColor
+                        line.Color = themeColor  -- LINE mengikuti tema
                     else
                         line.Visible = false
                     end
@@ -842,7 +894,6 @@ local function loadMainScript()
             end
         end
         
-        -- ESP Skeleton (dengan batas jarak 115 meter)
         if skeletonEnabled then
             for player, lines in pairs(SkeletonESP) do
                 local char = player.Character
@@ -852,21 +903,15 @@ local function loadMainScript()
                     if distance <= MAX_ESP_DISTANCE then
                         updateSkeleton(player, lines)
                     else
-                        for _, lineData in pairs(lines) do
-                            lineData[1].Visible = false
-                        end
+                        for _, lineData in pairs(lines) do lineData[1].Visible = false end
                     end
                 else
-                    for _, lineData in pairs(lines) do
-                        lineData[1].Visible = false
-                    end
+                    for _, lineData in pairs(lines) do lineData[1].Visible = false end
                 end
             end
         else
             for _, lines in pairs(SkeletonESP) do
-                for _, lineData in pairs(lines) do
-                    lineData[1].Visible = false
-                end
+                for _, lineData in pairs(lines) do lineData[1].Visible = false end
             end
         end
     end)
@@ -897,7 +942,6 @@ local function loadMainScript()
         end
     end)
     
-    -- Cleanup ESP
     task.spawn(function()
         while task.wait(30) do
             pcall(function()
@@ -977,7 +1021,6 @@ local function loadMainScript()
     mainCorner.Parent = mainFrame
     mainCorner.CornerRadius = UDim.new(0, 24)
     
-    -- Glow Effect
     local glowBg = Instance.new("ImageLabel")
     glowBg.Parent = mainFrame
     glowBg.Size = UDim2.new(1.1, 0, 1.1, 0)
@@ -990,19 +1033,16 @@ local function loadMainScript()
     glowBg.SliceCenter = Rect.new(10, 10, 118, 118)
     glowBg.ZIndex = 0
     
-    -- Border Premium Ungu
     local premiumBorder = Instance.new("Frame")
     premiumBorder.Parent = mainFrame
     premiumBorder.Size = UDim2.new(1, 0, 1, 0)
     premiumBorder.BackgroundTransparency = 1
     premiumBorder.BorderSizePixel = 3
     premiumBorder.BorderColor3 = themeColor
-    
     local borderCorner = Instance.new("UICorner")
     borderCorner.Parent = premiumBorder
     borderCorner.CornerRadius = UDim.new(0, 24)
     
-    -- Header
     local header = Instance.new("Frame")
     header.Parent = mainFrame
     header.Size = UDim2.new(1, 0, 0, 70)
@@ -1010,11 +1050,9 @@ local function loadMainScript()
     header.BackgroundColor3 = themeColor
     header.BackgroundTransparency = 0.15
     header.BorderSizePixel = 0
-    
     local headerCorner = Instance.new("UICorner")
     headerCorner.Parent = header
     headerCorner.CornerRadius = UDim.new(0, 24)
-    
     local headerGradient = Instance.new("UIGradient")
     headerGradient.Parent = header
     headerGradient.Color = ColorSequence.new({
@@ -1023,7 +1061,6 @@ local function loadMainScript()
     })
     headerGradient.Rotation = 90
     
-    -- Title
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.Size = UDim2.new(1, 0, 0.6, 0)
@@ -1035,19 +1072,18 @@ local function loadMainScript()
     title.TextSize = 26
     title.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Parent = header
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "pengguna script 12"
-    subtitle.TextColor3 = skeletonColor
+    subtitle.Text = "GREEN BOX | DISTANCE 115M"
+    subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Tab bar
+    -- ================== TAB BAR ==================
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(0.95, 0, 0, 42)
@@ -1055,7 +1091,6 @@ local function loadMainScript()
     tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     tabBar.BackgroundTransparency = 0.3
     tabBar.BorderSizePixel = 0
-    
     local tabBarCorner = Instance.new("UICorner")
     tabBarCorner.Parent = tabBar
     tabBarCorner.CornerRadius = UDim.new(0, 10)
@@ -1074,7 +1109,6 @@ local function loadMainScript()
         btn.TextColor3 = Color3.fromRGB(200, 200, 200)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 12
-        
         local btnCorner = Instance.new("UICorner")
         btnCorner.Parent = btn
         btnCorner.CornerRadius = UDim.new(0, 8)
@@ -1094,11 +1128,9 @@ local function loadMainScript()
         content.ScrollingDirection = Enum.ScrollingDirection.Y
         content.ElasticBehavior = Enum.ElasticBehavior.Never
         content.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
-        
         local contentCorner = Instance.new("UICorner")
         contentCorner.Parent = content
         contentCorner.CornerRadius = UDim.new(0, 12)
-        
         local layout = Instance.new("UIListLayout")
         layout.Parent = content
         layout.Padding = UDim.new(0, 10)
@@ -1116,7 +1148,6 @@ local function loadMainScript()
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.BackgroundTransparency = 0.2
             content.Visible = true
-            
             task.wait(0.05)
             local height = 0
             for _, child in pairs(content:GetChildren()) do
@@ -1130,13 +1161,14 @@ local function loadMainScript()
         return content
     end
     
+    -- TAB: MAIN, ESP, UTILITY, COLOR, INFORMASI
     local tabMain = createTab("MAIN", "▸", 1)
     local tabESP = createTab("ESP", "▸", 2)
     local tabUtility = createTab("UTILITY", "▸", 3)
     local tabColor = createTab("COLOR", "▸", 4)
-    local tabAbout = createTab("INFORMASI", "▸", 5)
+    local tabInfo = createTab("INFORMASI", "▸", 5)
     
-    -- Button Style
+    -- ================== KOMPONEN UI ==================
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
@@ -1144,11 +1176,9 @@ local function loadMainScript()
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
-        
         local corner = Instance.new("UICorner")
         corner.Parent = frame
         corner.CornerRadius = UDim.new(0, 10)
-        
         local btn = Instance.new("TextButton")
         btn.Parent = frame
         btn.Size = UDim2.new(1, 0, 1, 0)
@@ -1157,7 +1187,6 @@ local function loadMainScript()
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 14
-        
         btn.MouseButton1Click:Connect(callback)
         return frame
     end
@@ -1169,11 +1198,9 @@ local function loadMainScript()
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
-        
         local corner = Instance.new("UICorner")
         corner.Parent = frame
         corner.CornerRadius = UDim.new(0, 10)
-        
         local label = Instance.new("TextLabel")
         label.Parent = frame
         label.Size = UDim2.new(0.65, 0, 1, 0)
@@ -1184,43 +1211,36 @@ local function loadMainScript()
         label.Font = Enum.Font.Gotham
         label.TextSize = 14
         label.TextXAlignment = Enum.TextXAlignment.Left
-        
         local switch = Instance.new("Frame")
         switch.Parent = frame
         switch.Size = UDim2.new(0, 48, 0, 24)
         switch.Position = UDim2.new(0.82, 0, 0.5, -12)
         switch.BackgroundColor3 = default and themeColor or Color3.fromRGB(80, 80, 90)
         switch.BorderSizePixel = 0
-        
         local switchCorner = Instance.new("UICorner")
         switchCorner.Parent = switch
         switchCorner.CornerRadius = UDim.new(0, 12)
-        
         local circle = Instance.new("Frame")
         circle.Parent = switch
         circle.Size = UDim2.new(0, 20, 0, 20)
         circle.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)
         circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         circle.BorderSizePixel = 0
-        
         local circleCorner = Instance.new("UICorner")
         circleCorner.Parent = circle
         circleCorner.CornerRadius = UDim.new(1, 0)
-        
         local state = default
         local click = Instance.new("TextButton")
         click.Parent = frame
         click.Size = UDim2.new(1, 0, 1, 0)
         click.BackgroundTransparency = 1
         click.Text = ""
-        
         click.MouseButton1Click:Connect(function()
             state = not state
             TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
             TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)}):Play()
             callback(state)
         end)
-        
         return frame
     end
     
@@ -1231,11 +1251,9 @@ local function loadMainScript()
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
-        
         local corner = Instance.new("UICorner")
         corner.Parent = frame
         corner.CornerRadius = UDim.new(0, 10)
-        
         local textBox = Instance.new("TextBox")
         textBox.Parent = frame
         textBox.Size = UDim2.new(1, -10, 1, -10)
@@ -1247,18 +1265,15 @@ local function loadMainScript()
         textBox.Font = Enum.Font.Gotham
         textBox.TextSize = 14
         textBox.ClearTextOnFocus = false
-        
         local boxCorner = Instance.new("UICorner")
         boxCorner.Parent = textBox
         boxCorner.CornerRadius = UDim.new(0, 8)
-        
         textBox.FocusLost:Connect(function(enterPressed)
             if enterPressed and textBox.Text ~= "" then
                 callback(textBox.Text)
                 textBox.Text = ""
             end
         end)
-        
         return frame
     end
     
@@ -1331,107 +1346,93 @@ local function loadMainScript()
         for _, content in pairs(contents) do
             content.ScrollBarImageColor3 = themeColor
         end
-        -- Update ESP warna (box dan line)
+        -- Hanya ubah warna LINE (box tetap hijau, skeleton tetap hijau)
         for player, esp in pairs(ESPTable) do
-            if esp and esp[1] then esp[1].Color = themeColor end
-            if esp and esp[4] then esp[4].Color = themeColor end
+            if esp and esp[4] then esp[4].Color = themeColor end  -- LINE
         end
-        -- Skeleton tetap hijau (tidak berubah)
+        -- Skeleton tidak diubah (tetap hijau)
     end
     
     createButton(tabColor, "Ungu (Default)", function()
         changeTheme(Color3.fromRGB(156, 39, 176))
     end)
-    
     createButton(tabColor, "Pink", function()
         changeTheme(Color3.fromRGB(255, 105, 180))
     end)
-    
     createButton(tabColor, "Merah", function()
         changeTheme(Color3.fromRGB(255, 0, 0))
     end)
-    
     createButton(tabColor, "Hijau", function()
         changeTheme(Color3.fromRGB(0, 255, 0))
     end)
-    
     createButton(tabColor, "Biru", function()
         changeTheme(Color3.fromRGB(0, 0, 255))
     end)
-    
     createButton(tabColor, "Kuning", function()
         changeTheme(Color3.fromRGB(255, 255, 0))
     end)
-    
     createButton(tabColor, "Orange", function()
         changeTheme(Color3.fromRGB(255, 165, 0))
     end)
-    
     createButton(tabColor, "Cyan", function()
         changeTheme(Color3.fromRGB(0, 255, 255))
     end)
     
-    -- ===== TAB ABOUT =====
-    local aboutFrame = Instance.new("Frame")
-    aboutFrame.Parent = tabAbout
-    aboutFrame.Size = UDim2.new(0.95, 0, 0, 150)
-    aboutFrame.Position = UDim2.new(0.025, 0, 0, 10)
-    aboutFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    aboutFrame.BackgroundTransparency = 0.3
-    aboutFrame.BorderSizePixel = 0
+    -- ===== TAB INFORMASI (SEDERHANA) =====
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Parent = tabInfo
+    infoFrame.Size = UDim2.new(0.95, 0, 0, 200)
+    infoFrame.Position = UDim2.new(0.025, 0, 0, 10)
+    infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    infoFrame.BackgroundTransparency = 0.3
+    infoFrame.BorderSizePixel = 0
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.Parent = infoFrame
+    infoCorner.CornerRadius = UDim.new(0, 12)
     
-    local aboutCorner = Instance.new("UICorner")
-    aboutCorner.Parent = aboutFrame
-    aboutCorner.CornerRadius = UDim.new(0, 12)
+    local infoTitle = Instance.new("TextLabel")
+    infoTitle.Parent = infoFrame
+    infoTitle.Size = UDim2.new(1, 0, 0, 35)
+    infoTitle.Position = UDim2.new(0, 0, 0, 10)
+    infoTitle.BackgroundTransparency = 1
+    infoTitle.Text = "INFORMASI SCRIPT"
+    infoTitle.TextColor3 = themeColor
+    infoTitle.Font = Enum.Font.GothamBlack
+    infoTitle.TextSize = 20
     
-    local aboutTitle = Instance.new("TextLabel")
-    aboutTitle.Parent = aboutFrame
-    aboutTitle.Size = UDim2.new(1, 0, 0, 35)
-    aboutTitle.Position = UDim2.new(0, 0, 0, 10)
-    aboutTitle.BackgroundTransparency = 1
-    aboutTitle.Text = "DRIP CLIENT"
-    aboutTitle.TextColor3 = themeColor
-    aboutTitle.Font = Enum.Font.GothamBlack
-    aboutTitle.TextSize = 22
-    
+    -- Isi informasi sesuai permintaan
     local infoText = Instance.new("TextLabel")
-    infoText.Parent = aboutFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 90)
-    infoText.Position = UDim2.new(0.025, 0, 0, 55)
+    infoText.Parent = infoFrame
+    infoText.Size = UDim2.new(0.95, 0, 0, 120)
+    infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT V10.5\n\n" ..
-                     "Developer: Putzzdev\n" ..
-                     "TikTok: @putzz_mvpp\n\n" ..
-                     "ESP Jarak Maks: 115 Meter\n" ..
-                     "Skeleton Warna Hijau (All Avatar)\n\n" ..
-                     "Kontak: 088976255131"
-    infoText.TextColor3 = Color3.fromRGB(220, 220, 220)
+    infoText.Text = "DRIP CLIENT\n\n" ..
+                     "VERSI 7.0\n\n" ..
+                     "DEVELOPER: Putzzdev\n\n" ..
+                     "KONTAK: 088976255131"
+    infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 11
+    infoText.TextSize = 14
     infoText.TextWrapped = true
-    infoText.TextXAlignment = Enum.TextXAlignment.Left
+    infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    createButton(tabAbout, "Copy TikTok", function()
-        if setclipboard then
-            setclipboard("@putzz_mvpp")
-            local notif = Instance.new("TextLabel")
-            notif.Parent = ScreenGui
-            notif.Size = UDim2.new(0, 180, 0, 30)
-            notif.Position = UDim2.new(0.5, -90, 0.8, 0)
-            notif.BackgroundColor3 = themeColor
-            notif.BackgroundTransparency = 0.2
-            notif.Text = "TikTok copied!"
-            notif.TextColor3 = Color3.fromRGB(255, 255, 255)
-            notif.Font = Enum.Font.GothamBold
-            notif.TextSize = 13
-            notif.BorderSizePixel = 0
-            
-            local notifCorner = Instance.new("UICorner")
-            notifCorner.Parent = notif
-            notifCorner.CornerRadius = UDim.new(0, 8)
-            
-            task.wait(2)
-            notif:Destroy()
+    -- Online counter
+    local onlineLabel = Instance.new("TextLabel")
+    onlineLabel.Parent = infoFrame
+    onlineLabel.Size = UDim2.new(1, 0, 0, 30)
+    onlineLabel.Position = UDim2.new(0, 0, 0, 170)
+    onlineLabel.BackgroundTransparency = 1
+    onlineLabel.Text = "Loading online count..."
+    onlineLabel.TextColor3 = skeletonColor
+    onlineLabel.Font = Enum.Font.GothamBold
+    onlineLabel.TextSize = 16
+    onlineLabel.TextXAlignment = Enum.TextXAlignment.Center
+    
+    task.spawn(function()
+        while true do
+            local total = getTotalOnline()
+            onlineLabel.Text = "👥 ONLINE: " .. total .. " user"
+            task.wait(5)
         end
     end)
     
@@ -1452,7 +1453,7 @@ local function loadMainScript()
     tabs[1].BackgroundTransparency = 0.2
     contents[1].Visible = true
     
-    -- ================== TOMBOL MENU DRIP CLIENT ==================
+    -- ================== TOMBOL MENU ==================
     local openBtn = Instance.new("TextButton")
     openBtn.Parent = ScreenGui
     openBtn.Size = UDim2.new(0, 120, 0, 45)
@@ -1470,7 +1471,6 @@ local function loadMainScript()
     local openBtnCorner = Instance.new("UICorner")
     openBtnCorner.Parent = openBtn
     openBtnCorner.CornerRadius = UDim.new(0, 14)
-    
     local openBtnStroke = Instance.new("UIStroke")
     openBtnStroke.Parent = openBtn
     openBtnStroke.Color = Color3.fromRGB(255, 255, 255)
@@ -1479,7 +1479,6 @@ local function loadMainScript()
     local menuOpen = true
     openBtn.MouseButton1Click:Connect(function()
         menuOpen = not menuOpen
-        
         if menuOpen then
             mainFrame.Visible = true
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
@@ -1498,13 +1497,12 @@ local function loadMainScript()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 130, 0, 48)}):Play()
         openBtn.BackgroundTransparency = 0
     end)
-    
     openBtn.MouseLeave:Connect(function()
         TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 120, 0, 45)}):Play()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("DRIP CLIENT V10.5 - Distance Limit 115M, Green Skeleton (All Avatar)")
+    print("DRIP CLIENT V7.0 - Green Box | Skeleton Hijau | Line Ikut Tema")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1555,4 +1553,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V10.5 - Ready!")
+print("DRIP CLIENT V7.0 - Ready!")
