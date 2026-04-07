@@ -1,14 +1,13 @@
--- ================== DRIP CLIENT V7.4 (NO ONLINE COUNTER) ==================
--- Version: 7.4 (Tanpa Online Counter - Menu Pasti Muncul)
+-- ================== DRIP CLIENT V7.4 (HP EDITION) ==================
+-- Version: 7.4 (Khusus HP - Touch Control)
 -- Developer: Putzz XD
--- MOD: ESP Line Unlimited Range + Player Counter
+-- MOD: ESP Line Unlimited + Player Counter + Fly HP Touch
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "DRIP CLIENT"
 
--- File untuk menyimpan data key
 local SAVE_FILE = "drip_key_data.txt"
 local activeKeys = {}
 local currentUserKey = nil
@@ -36,21 +35,29 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement
+-- Movement HP
 local flyEnabled = false
 local flySpeed = 60
-local bv = nil
-local bg = nil
+local flyConnection = nil
+local flyBodyVelocity = nil
+
+-- Tombol kontrol fly HP
+local moveForward = false
+local moveBack = false
+local moveLeft = false
+local moveRight = false
+local moveUp = false
+local moveDown = false
+
+local noclipEnabled = false
+local noclipConnection = nil
 
 local speedEnabled = false
 local normalSpeed = 16
 local fastSpeed = 60
 
-local noclipEnabled = false
-
 -- Combat
 local infinityJumpEnabled = false
-local jumpCount = 0
 
 -- Utility
 local antiDamageEnabled = false
@@ -59,7 +66,7 @@ local antiDamageThread = nil
 local antiDamageHeartbeat = nil
 
 local spinEnabled = false
-local spinSpeed = 150
+local spinSpeed = 10
 local spinConnection = nil
 local spinDirection = 1
 
@@ -468,6 +475,241 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
+-- ================== FUNGSI FLY KHUSUS HP ==================
+local function createFlyButtons(parent)
+    -- Frame untuk tombol fly
+    local flyButtons = Instance.new("Frame")
+    flyButtons.Name = "FlyControls"
+    flyButtons.Parent = parent
+    flyButtons.Size = UDim2.new(0, 250, 0, 200)
+    flyButtons.Position = UDim2.new(0.5, -125, 1, -220)
+    flyButtons.BackgroundTransparency = 1
+    flyButtons.Visible = false
+    flyButtons.ZIndex = 20
+    
+    -- Tombol Maju (W)
+    local btnForward = Instance.new("TextButton")
+    btnForward.Parent = flyButtons
+    btnForward.Size = UDim2.new(0, 70, 0, 70)
+    btnForward.Position = UDim2.new(0.5, -35, 0, 0)
+    btnForward.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    btnForward.BackgroundTransparency = 0.3
+    btnForward.Text = "⬆️"
+    btnForward.TextSize = 30
+    btnForward.Font = Enum.Font.GothamBold
+    btnForward.ZIndex = 20
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.Parent = btnForward
+    btnCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Tombol Kiri (A)
+    local btnLeft = Instance.new("TextButton")
+    btnLeft.Parent = flyButtons
+    btnLeft.Size = UDim2.new(0, 70, 0, 70)
+    btnLeft.Position = UDim2.new(0, 0, 0.5, -35)
+    btnLeft.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    btnLeft.BackgroundTransparency = 0.3
+    btnLeft.Text = "⬅️"
+    btnLeft.TextSize = 30
+    btnLeft.Font = Enum.Font.GothamBold
+    btnLeft.ZIndex = 20
+    local btnLeftCorner = Instance.new("UICorner")
+    btnLeftCorner.Parent = btnLeft
+    btnLeftCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Tombol Mundur (S)
+    local btnBack = Instance.new("TextButton")
+    btnBack.Parent = flyButtons
+    btnBack.Size = UDim2.new(0, 70, 0, 70)
+    btnBack.Position = UDim2.new(0.5, -35, 1, -70)
+    btnBack.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    btnBack.BackgroundTransparency = 0.3
+    btnBack.Text = "⬇️"
+    btnBack.TextSize = 30
+    btnBack.Font = Enum.Font.GothamBold
+    btnBack.ZIndex = 20
+    local btnBackCorner = Instance.new("UICorner")
+    btnBackCorner.Parent = btnBack
+    btnBackCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Tombol Kanan (D)
+    local btnRight = Instance.new("TextButton")
+    btnRight.Parent = flyButtons
+    btnRight.Size = UDim2.new(0, 70, 0, 70)
+    btnRight.Position = UDim2.new(1, -70, 0.5, -35)
+    btnRight.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    btnRight.BackgroundTransparency = 0.3
+    btnRight.Text = "➡️"
+    btnRight.TextSize = 30
+    btnRight.Font = Enum.Font.GothamBold
+    btnRight.ZIndex = 20
+    local btnRightCorner = Instance.new("UICorner")
+    btnRightCorner.Parent = btnRight
+    btnRightCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Tombol Naik (Space)
+    local btnUp = Instance.new("TextButton")
+    btnUp.Parent = flyButtons
+    btnUp.Size = UDim2.new(0, 60, 0, 60)
+    btnUp.Position = UDim2.new(0, 10, 1, -70)
+    btnUp.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    btnUp.BackgroundTransparency = 0.3
+    btnUp.Text = "⬆️⬆️"
+    btnUp.TextSize = 20
+    btnUp.Font = Enum.Font.GothamBold
+    btnUp.ZIndex = 20
+    local btnUpCorner = Instance.new("UICorner")
+    btnUpCorner.Parent = btnUp
+    btnUpCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Tombol Turun (Ctrl)
+    local btnDown = Instance.new("TextButton")
+    btnDown.Parent = flyButtons
+    btnDown.Size = UDim2.new(0, 60, 0, 60)
+    btnDown.Position = UDim2.new(1, -70, 1, -70)
+    btnDown.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    btnDown.BackgroundTransparency = 0.3
+    btnDown.Text = "⬇️⬇️"
+    btnDown.TextSize = 20
+    btnDown.Font = Enum.Font.GothamBold
+    btnDown.ZIndex = 20
+    local btnDownCorner = Instance.new("UICorner")
+    btnDownCorner.Parent = btnDown
+    btnDownCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Event Touch untuk tombol
+    btnForward.MouseButton1Down:Connect(function() moveForward = true end)
+    btnForward.MouseButton1Up:Connect(function() moveForward = false end)
+    btnForward.MouseLeave:Connect(function() moveForward = false end)
+    
+    btnBack.MouseButton1Down:Connect(function() moveBack = true end)
+    btnBack.MouseButton1Up:Connect(function() moveBack = false end)
+    btnBack.MouseLeave:Connect(function() moveBack = false end)
+    
+    btnLeft.MouseButton1Down:Connect(function() moveLeft = true end)
+    btnLeft.MouseButton1Up:Connect(function() moveLeft = false end)
+    btnLeft.MouseLeave:Connect(function() moveLeft = false end)
+    
+    btnRight.MouseButton1Down:Connect(function() moveRight = true end)
+    btnRight.MouseButton1Up:Connect(function() moveRight = false end)
+    btnRight.MouseLeave:Connect(function() moveRight = false end)
+    
+    btnUp.MouseButton1Down:Connect(function() moveUp = true end)
+    btnUp.MouseButton1Up:Connect(function() moveUp = false end)
+    btnUp.MouseLeave:Connect(function() moveUp = false end)
+    
+    btnDown.MouseButton1Down:Connect(function() moveDown = true end)
+    btnDown.MouseButton1Up:Connect(function() moveDown = false end)
+    btnDown.MouseLeave:Connect(function() moveDown = false end)
+    
+    return flyButtons
+end
+
+local function startFly()
+    if flyConnection then flyConnection:Disconnect() end
+    
+    flyConnection = RunService.RenderStepped:Connect(function()
+        if flyEnabled and LocalPlayer.Character then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and humanoid then
+                humanoid.PlatformStand = true
+                
+                flyBodyVelocity = hrp:FindFirstChild("FlyBV")
+                if not flyBodyVelocity then
+                    flyBodyVelocity = Instance.new("BodyVelocity")
+                    flyBodyVelocity.Name = "FlyBV"
+                    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    flyBodyVelocity.Parent = hrp
+                end
+                
+                local camCF = workspace.CurrentCamera.CFrame
+                local moveDirection = Vector3.new()
+                
+                if moveForward then
+                    moveDirection = moveDirection + camCF.LookVector
+                end
+                if moveBack then
+                    moveDirection = moveDirection - camCF.LookVector
+                end
+                if moveRight then
+                    moveDirection = moveDirection + camCF.RightVector
+                end
+                if moveLeft then
+                    moveDirection = moveDirection - camCF.RightVector
+                end
+                if moveUp then
+                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
+                end
+                if moveDown then
+                    moveDirection = moveDirection - Vector3.new(0, 1, 0)
+                end
+                
+                if moveDirection.Magnitude > 0 then
+                    moveDirection = moveDirection.Unit
+                end
+                
+                flyBodyVelocity.Velocity = moveDirection * flySpeed
+            end
+        end
+    end)
+end
+
+local function stopFly()
+    if flyConnection then 
+        flyConnection:Disconnect() 
+        flyConnection = nil 
+    end
+    if LocalPlayer.Character then
+        local char = LocalPlayer.Character
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+        if hrp then
+            local bv = hrp:FindFirstChild("FlyBV")
+            if bv then bv:Destroy() end
+        end
+    end
+    moveForward = false
+    moveBack = false
+    moveLeft = false
+    moveRight = false
+    moveUp = false
+    moveDown = false
+end
+
+-- ================== FUNGSI NOCLIP ==================
+local function startNoclip()
+    if noclipConnection then noclipConnection:Disconnect() end
+    noclipConnection = RunService.Stepped:Connect(function()
+        if noclipEnabled and LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+local function stopNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
 -- ================== FUNGSI UTILITY ==================
 local function toggleSpin(state)
     spinEnabled = state
@@ -607,23 +849,18 @@ local function createPlayerCounter()
     enemyCountText.OutlineColor = Color3.fromRGB(0, 0, 0)
     enemyCountText.Position = Vector2.new(Camera.ViewportSize.X / 2, 50)
     enemyCountText.Visible = false
-    enemyCountText.Text = "ENEMIES: 0"
+    enemyCountText.Text = "👥 ENEMIES: 0"
 end
 
 local function updatePlayerCounter()
     if not playerCounterEnabled or not enemyCountText then return end
     
     local count = 0
-    local myChar = LocalPlayer.Character
-    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
-    
     for player, esp in pairs(ESPTable) do
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
             local hrp = char.HumanoidRootPart
             local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-            
-            -- Hitung player yang visible (bisa dilihat kamera)
             if visible then
                 count = count + 1
             end
@@ -823,11 +1060,10 @@ RunService.RenderStepped:Connect(function()
                 healthFg.Visible = false
             end
             
-            -- ESP LINE: TANPA BATAS JARAK (hanya perlu visible)
             if lineEnabled then
                 line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
                 line.To = Vector2.new(pos.X, pos.Y)
-                line.Visible = visible  -- Hanya perlu visible, tanpa cek withinRange
+                line.Visible = visible
                 line.Color = themeColor
             else
                 line.Visible = false
@@ -856,7 +1092,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Update Player Counter
     if playerCounterEnabled then
         updatePlayerCounter()
     elseif enemyCountText then
@@ -864,7 +1099,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Inisialisasi ESP
 for _, p in pairs(Players:GetPlayers()) do
     createESP(p)
     createSkeleton(p)
@@ -890,7 +1124,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Cleanup ESP
 task.spawn(function()
     while task.wait(30) do
         pcall(function()
@@ -916,21 +1149,21 @@ end)
 
 -- ================== FUNGSI UTAMA (MENU) ==================
 local function loadMainScript()
-    -- Hapus GUI key system
     KeyGui:Destroy()
     
     print("✅ DRIP CLIENT - Memuat semua fitur...")
     
-    -- Buat Player Counter
     createPlayerCounter()
     
-    -- ================== GUI UTAMA ==================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.DisplayOrder = 100
+    
+    -- Buat tombol fly HP
+    local flyButtons = createFlyButtons(ScreenGui)
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
@@ -1002,13 +1235,12 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "GREEN BOX | DISTANCE 115M"
+    subtitle.Text = "HP EDITION | GREEN BOX | 115M"
     subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
     tabBar.Size = UDim2.new(0.95, 0, 0, 42)
@@ -1092,7 +1324,6 @@ local function loadMainScript()
     local tabColor = createTab("COLOR", "▸", 4)
     local tabInfo = createTab("INFORMASI", "▸", 5)
     
-    -- Komponen UI
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
@@ -1202,19 +1433,35 @@ local function loadMainScript()
     end
     
     -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly", false, function(s)
+    createToggle(tabMain, "Fly HP (Tombol layar)", false, function(s)
         flyEnabled = s
-        if s then startFly() else stopFly() end
+        if s then 
+            startFly()
+            flyButtons.Visible = true
+        else 
+            stopFly()
+            flyButtons.Visible = false
+        end
     end)
     
     createToggle(tabMain, "Speed Boost", false, function(s)
         speedEnabled = s
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = s and fastSpeed or normalSpeed end
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum and speedEnabled then hum.WalkSpeed = fastSpeed end
+        end)
     end)
     
     createToggle(tabMain, "NoClip", false, function(s)
         noclipEnabled = s
+        if s then 
+            startNoclip() 
+        else 
+            stopNoclip() 
+        end
     end)
     
     createTextBox(tabMain, "Masukkan username player...", function(username)
@@ -1268,6 +1515,11 @@ local function loadMainScript()
         task.wait(1)
         updateInvisibleData()
         if invisibleEnabled then toggleInvisible(true) end
+        if noclipEnabled then startNoclip() end
+        if flyEnabled then 
+            startFly()
+            flyButtons.Visible = true
+        end
     end)
     
     -- ===== TAB COLOR =====
@@ -1337,14 +1589,13 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT HP EDITION\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Update canvas size
     task.wait(0.1)
     for _, content in pairs(contents) do
         local height = 0
@@ -1360,7 +1611,6 @@ local function loadMainScript()
     tabs[1].BackgroundTransparency = 0.2
     contents[1].Visible = true
     
-    -- Tombol menu
     local openBtn = Instance.new("TextButton")
     openBtn.Parent = ScreenGui
     openBtn.Size = UDim2.new(0, 120, 0, 45)
@@ -1409,7 +1659,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V7.4 - MENU BERHASIL DIMUAT!")
+    print("✅ DRIP CLIENT V7.4 HP - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1460,4 +1710,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.4 - Ready! Masukkan key untuk memulai.")
+print("DRIP CLIENT V7.4 HP - Ready! Masukkan key untuk memulai.")
