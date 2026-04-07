@@ -1,6 +1,7 @@
 -- ================== DRIP CLIENT V7.4 (NO ONLINE COUNTER) ==================
 -- Version: 7.4 (Tanpa Online Counter - Menu Pasti Muncul)
 -- Developer: Putzz XD
+-- MOD: ESP Line Unlimited Range + Player Counter
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -31,6 +32,10 @@ local skeletonEnabled = false
 local ESPTable = {}
 local SkeletonESP = {}
 
+-- Player Counter
+local playerCounterEnabled = false
+local enemyCountText = nil
+
 -- Movement
 local flyEnabled = false
 local flySpeed = 60
@@ -54,7 +59,7 @@ local antiDamageThread = nil
 local antiDamageHeartbeat = nil
 
 local spinEnabled = false
-local spinSpeed = 10
+local spinSpeed = 150
 local spinConnection = nil
 local spinDirection = 1
 
@@ -587,6 +592,50 @@ local function teleportToPlayer(username)
     return false
 end
 
+-- ================== FUNGSI PLAYER COUNTER ==================
+local function createPlayerCounter()
+    if enemyCountText then
+        pcall(function() enemyCountText:Remove() end)
+        enemyCountText = nil
+    end
+    
+    enemyCountText = Drawing.new("Text")
+    enemyCountText.Size = 24
+    enemyCountText.Color = themeColor
+    enemyCountText.Center = true
+    enemyCountText.Outline = true
+    enemyCountText.OutlineColor = Color3.fromRGB(0, 0, 0)
+    enemyCountText.Position = Vector2.new(Camera.ViewportSize.X / 2, 50)
+    enemyCountText.Visible = false
+    enemyCountText.Text = "ENEMIES: 0"
+end
+
+local function updatePlayerCounter()
+    if not playerCounterEnabled or not enemyCountText then return end
+    
+    local count = 0
+    local myChar = LocalPlayer.Character
+    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+    
+    for player, esp in pairs(ESPTable) do
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
+            local hrp = char.HumanoidRootPart
+            local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
+            
+            -- Hitung player yang visible (bisa dilihat kamera)
+            if visible then
+                count = count + 1
+            end
+        end
+    end
+    
+    enemyCountText.Text = "👥 ENEMIES: " .. count
+    enemyCountText.Color = themeColor
+    enemyCountText.Visible = playerCounterEnabled
+    enemyCountText.Position = Vector2.new(Camera.ViewportSize.X / 2, 50)
+end
+
 -- ================== FUNGSI ESP ==================
 local function createESP(player)
     if player == LocalPlayer then return end
@@ -709,40 +758,6 @@ local function updateSkeleton(player, lines)
     end
 end
 
--- ================== FUNGSI FLY ==================
-local function startFly()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Parent = hrp
-    bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.Parent = hrp
-    RunService.RenderStepped:Connect(function()
-        if flyEnabled and bv and bg then
-            bg.CFrame = Camera.CFrame
-            bv.Velocity = Camera.CFrame.LookVector * flySpeed
-        end
-    end)
-end
-
-local function stopFly()
-    if bv then bv:Destroy() bv = nil end
-    if bg then bg:Destroy() bg = nil end
-end
-
--- ================== FUNGSI NOCLIP ==================
-RunService.Stepped:Connect(function()
-    if noclipEnabled and LocalPlayer.Character then
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
-    end
-end)
-
 -- ================== RENDER STEP ESP ==================
 RunService.RenderStepped:Connect(function()
     local myChar = LocalPlayer.Character
@@ -800,22 +815,22 @@ RunService.RenderStepped:Connect(function()
                     healthBg.Visible = false
                     healthFg.Visible = false
                 end
-                
-                if lineEnabled then
-                    line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
-                    line.To = Vector2.new(pos.X, pos.Y)
-                    line.Visible = true
-                    line.Color = themeColor
-                else
-                    line.Visible = false
-                end
             else
                 box.Visible = false
                 name.Visible = false
                 distText.Visible = false
-                line.Visible = false
                 healthBg.Visible = false
                 healthFg.Visible = false
+            end
+            
+            -- ESP LINE: TANPA BATAS JARAK (hanya perlu visible)
+            if lineEnabled then
+                line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
+                line.To = Vector2.new(pos.X, pos.Y)
+                line.Visible = visible  -- Hanya perlu visible, tanpa cek withinRange
+                line.Color = themeColor
+            else
+                line.Visible = false
             end
         end
     end
@@ -839,6 +854,13 @@ RunService.RenderStepped:Connect(function()
         for _, lines in pairs(SkeletonESP) do
             for _, lineData in pairs(lines) do lineData[1].Visible = false end
         end
+    end
+    
+    -- Update Player Counter
+    if playerCounterEnabled then
+        updatePlayerCounter()
+    elseif enemyCountText then
+        enemyCountText.Visible = false
     end
 end)
 
@@ -898,6 +920,9 @@ local function loadMainScript()
     KeyGui:Destroy()
     
     print("✅ DRIP CLIENT - Memuat semua fitur...")
+    
+    -- Buat Player Counter
+    createPlayerCounter()
     
     -- ================== GUI UTAMA ==================
     local ScreenGui = Instance.new("ScreenGui")
@@ -1205,6 +1230,15 @@ local function loadMainScript()
     createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
+    createToggle(tabESP, "Player Counter", false, function(s) 
+        playerCounterEnabled = s
+        if s then
+            createPlayerCounter()
+            updatePlayerCounter()
+        elseif enemyCountText then
+            enemyCountText.Visible = false
+        end
+    end)
     
     -- ===== TAB UTILITY =====
     createToggle(tabUtility, "God Mode", false, function(s)
@@ -1245,6 +1279,9 @@ local function loadMainScript()
         end
         for player, esp in pairs(ESPTable) do
             if esp and esp[4] then esp[4].Color = themeColor end
+        end
+        if enemyCountText then
+            enemyCountText.Color = themeColor
         end
     end
     
