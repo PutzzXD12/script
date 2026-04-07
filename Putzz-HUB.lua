@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V7.4 (KEY SYSTEM FIXED - MENU PASTI MUNCUL) ==================
--- Version: 7.4 (Key System Fixed - Menu Pasti Muncul)
+-- ================== DRIP CLIENT V7.5 (MENU FIXED - PASTI MUNCUL) ==================
+-- Version: 7.5 (Menu Fixed - Pasti Muncul)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -977,7 +977,7 @@ task.spawn(function()
     end
 end)
 
--- ================== FUNGSI UTAMA (MENU) ==================
+-- ================== FUNGSI UTAMA (MENU) - FIXED ==================
 local function loadMainScript()
     -- Hapus GUI key system
     KeyGui:Destroy()
@@ -1137,14 +1137,6 @@ local function loadMainScript()
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.BackgroundTransparency = 0.2
             content.Visible = true
-            task.wait(0.05)
-            local height = 0
-            for _, child in pairs(content:GetChildren()) do
-                if child:IsA("Frame") then
-                    height = height + child.Size.Y.Offset + 10
-                end
-            end
-            content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
         end)
         
         return content
@@ -1389,7 +1381,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
@@ -1416,16 +1408,13 @@ local function loadMainScript()
         end
     end)
     
-    -- Update canvas size
-    task.wait(0.1)
+    -- Update canvas size setelah semua widget ditambahkan
+    task.wait(0.2)
     for _, content in pairs(contents) do
-        local height = 0
-        for _, child in pairs(content:GetChildren()) do
-            if child:IsA("Frame") then
-                height = height + child.Size.Y.Offset + 10
-            end
+        local layout2 = content:FindFirstChildWhichIsA("UIListLayout")
+        if layout2 then
+            content.CanvasSize = UDim2.new(0, 0, 0, layout2.AbsoluteContentSize.Y + 40)
         end
-        content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
     end
     
     tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1481,7 +1470,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V7.4 - MENU BERHASIL DIMUAT!")
+    print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1516,8 +1505,13 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Loading (1)..."
         task.wait(1)
         
-        -- Panggil fungsi utama
-        pcall(loadMainScript)
+        -- Panggil fungsi utama dengan pcall
+        local success, err = pcall(loadMainScript)
+        if not success then
+            warn("Error loading main script: ", err)
+            StatusLabel.Text = "Error loading menu!"
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        end
         
     else
         StatusLabel.Text = message
@@ -1533,4 +1527,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.4 - Ready! Masukkan key untuk memulai.")
+print("DRIP CLIENT V7.5 - Ready! Masukkan key untuk memulai.")
