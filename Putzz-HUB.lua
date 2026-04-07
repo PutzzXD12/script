@@ -1,5 +1,5 @@
--- ================== DRIP CLIENT V7.5 (MENU FIXED - PASTI MUNCUL) ==================
--- Version: 7.5 (Menu Fixed - Pasti Muncul)
+-- ================== DRIP CLIENT V7.4 (NO ONLINE COUNTER) ==================
+-- Version: 7.4 (Tanpa Online Counter - Menu Pasti Muncul)
 -- Developer: Putzz XD
 
 -- ================== KEY SYSTEM CONFIG ==================
@@ -7,8 +7,7 @@ local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedat
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
 local SCRIPT_NAME = "DRIP CLIENT"
 
--- Firebase Online Counter Config
-local ONLINE_DB_URL = "https://putzz-online-stats-default-rtdb.asia-southeast1.firebasedatabase.app/"
+-- File untuk menyimpan data key
 local SAVE_FILE = "drip_key_data.txt"
 local activeKeys = {}
 local currentUserKey = nil
@@ -464,90 +463,6 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI ONLINE COUNTER (FIREBASE) ==================
-local function updateOnlineStatus(isOnline)
-    local userId = LocalPlayer.UserId
-    local playerName = LocalPlayer.Name
-    
-    if isOnline then
-        local addUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
-        local data = {
-            name = playerName,
-            userId = userId,
-            timestamp = os.time()
-        }
-        pcall(function()
-            HttpService:RequestAsync({
-                Url = addUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(data)
-            })
-        end)
-        
-        local counterUrl = ONLINE_DB_URL .. "total_online.json"
-        pcall(function()
-            local response = HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "GET"
-            })
-            local currentTotal = tonumber(response.Body) or 0
-            local newTotal = currentTotal + 1
-            HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = tostring(newTotal)
-            })
-        end)
-    else
-        local removeUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
-        pcall(function()
-            HttpService:RequestAsync({
-                Url = removeUrl,
-                Method = "DELETE"
-            })
-        end)
-        
-        local counterUrl = ONLINE_DB_URL .. "total_online.json"
-        pcall(function()
-            local response = HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "GET"
-            })
-            local currentTotal = tonumber(response.Body) or 0
-            local newTotal = math.max(0, currentTotal - 1)
-            HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = tostring(newTotal)
-            })
-        end)
-    end
-end
-
-local function getTotalOnline()
-    local counterUrl = ONLINE_DB_URL .. "total_online.json"
-    local success, response = pcall(function()
-        return HttpService:RequestAsync({
-            Url = counterUrl,
-            Method = "GET"
-        })
-    end)
-    if success and response and response.Body then
-        return tonumber(response.Body) or 0
-    end
-    return 0
-end
-
-local function setupCleanup()
-    game:BindToClose(function()
-        updateOnlineStatus(false)
-        task.wait(0.5)
-    end)
-end
-
 -- ================== FUNGSI UTILITY ==================
 local function toggleSpin(state)
     spinEnabled = state
@@ -977,16 +892,12 @@ task.spawn(function()
     end
 end)
 
--- ================== FUNGSI UTAMA (MENU) - FIXED ==================
+-- ================== FUNGSI UTAMA (MENU) ==================
 local function loadMainScript()
     -- Hapus GUI key system
     KeyGui:Destroy()
     
     print("✅ DRIP CLIENT - Memuat semua fitur...")
-    
-    -- ================== ONLINE COUNTER ==================
-    updateOnlineStatus(true)
-    setupCleanup()
     
     -- ================== GUI UTAMA ==================
     local ScreenGui = Instance.new("ScreenGui")
@@ -1137,6 +1048,14 @@ local function loadMainScript()
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.BackgroundTransparency = 0.2
             content.Visible = true
+            task.wait(0.05)
+            local height = 0
+            for _, child in pairs(content:GetChildren()) do
+                if child:IsA("Frame") then
+                    height = height + child.Size.Y.Offset + 10
+                end
+            end
+            content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
         end)
         
         return content
@@ -1357,7 +1276,7 @@ local function loadMainScript()
     -- ===== TAB INFORMASI =====
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
-    infoFrame.Size = UDim2.new(0.95, 0, 0, 200)
+    infoFrame.Size = UDim2.new(0.95, 0, 0, 180)
     infoFrame.Position = UDim2.new(0.025, 0, 0, 10)
     infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     infoFrame.BackgroundTransparency = 0.3
@@ -1381,40 +1300,23 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Online counter
-    local onlineLabel = Instance.new("TextLabel")
-    onlineLabel.Parent = infoFrame
-    onlineLabel.Size = UDim2.new(1, 0, 0, 30)
-    onlineLabel.Position = UDim2.new(0, 0, 0, 170)
-    onlineLabel.BackgroundTransparency = 1
-    onlineLabel.Text = "Loading online count..."
-    onlineLabel.TextColor3 = skeletonColor
-    onlineLabel.Font = Enum.Font.GothamBold
-    onlineLabel.TextSize = 16
-    onlineLabel.TextXAlignment = Enum.TextXAlignment.Center
-    
-    task.spawn(function()
-        while true do
-            local total = getTotalOnline()
-            onlineLabel.Text = "👥 ONLINE: " .. total .. " user"
-            task.wait(5)
-        end
-    end)
-    
-    -- Update canvas size setelah semua widget ditambahkan
-    task.wait(0.2)
+    -- Update canvas size
+    task.wait(0.1)
     for _, content in pairs(contents) do
-        local layout2 = content:FindFirstChildWhichIsA("UIListLayout")
-        if layout2 then
-            content.CanvasSize = UDim2.new(0, 0, 0, layout2.AbsoluteContentSize.Y + 40)
+        local height = 0
+        for _, child in pairs(content:GetChildren()) do
+            if child:IsA("Frame") then
+                height = height + child.Size.Y.Offset + 10
+            end
         end
+        content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
     end
     
     tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1470,7 +1372,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
+    print("✅ DRIP CLIENT V7.4 - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1505,19 +1407,13 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Loading (1)..."
         task.wait(1)
         
-        -- Panggil fungsi utama dengan pcall
-        local success, err = pcall(loadMainScript)
-        if not success then
-            warn("Error loading main script: ", err)
-            StatusLabel.Text = "Error loading menu!"
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        end
+        pcall(loadMainScript)
         
     else
         StatusLabel.Text = message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         StatusIcon.Text = "❌"
-        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
+        showNotification("GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
@@ -1527,4 +1423,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.5 - Ready! Masukkan key untuk memulai.")
+print("DRIP CLIENT V7.4 - Ready! Masukkan key untuk memulai.")
