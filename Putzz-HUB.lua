@@ -1,7 +1,7 @@
--- ================== DRIP CLIENT V7.4 (HP EDITION) ==================
--- Version: 7.4 (Khusus HP - Touch Control)
+-- ================== DRIP CLIENT V7.5 (HP EDITION + FLY FIX + CROSSHAIR) ==================
+-- Version: 7.5 (Khusus HP - Touch Control + Crosshair)
 -- Developer: Putzz XD
--- MOD: ESP Line Unlimited + Player Counter + Fly HP Touch
+-- MOD: ESP Line Unlimited + Player Counter + Fly HP Touch + Crosshair
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -35,22 +35,19 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement HP (Analog Stick)
+-- Movement HP
 local flyEnabled = false
-local flySpeed = 60
-local flyConnection = nil
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
+local flyConnection = nil
+local flying = false
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+local flySpeed = 50
+local maxspeed = 50
+local currentFlySpeed = 50
 
--- Analog Stick Variables
-local analogFrame = nil
-local analogKnob = nil
-local analogActive = false
-local analogDirection = Vector2.new(0, 0)
-local analogCenter = Vector2.new(0, 0)
-local analogMaxRadius = 50
-local isDragging = false
-
+-- Noclip
 local noclipEnabled = false
 local noclipConnection = nil
 
@@ -60,6 +57,8 @@ local fastSpeed = 60
 
 -- Combat
 local infinityJumpEnabled = false
+local crosshairEnabled = false
+local crosshairObject = nil
 
 -- Utility
 local antiDamageEnabled = false
@@ -477,189 +476,191 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLY DENGAN ANALOG STICK (MOBILE) ==================
-local function createAnalogStick(parent)
-    -- Frame untuk analog stick
-    analogFrame = Instance.new("Frame")
-    analogFrame.Name = "AnalogFlyControl"
-    analogFrame.Parent = parent
-    analogFrame.Size = UDim2.new(0, 140, 0, 140)
-    analogFrame.Position = UDim2.new(0, 20, 1, -160)
-    analogFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    analogFrame.BackgroundTransparency = 0.4
-    analogFrame.BorderSizePixel = 0
-    analogFrame.Visible = false
-    analogFrame.ZIndex = 20
-    local frameCorner = Instance.new("UICorner")
-    frameCorner.Parent = analogFrame
-    frameCorner.CornerRadius = UDim.new(1, 0)
+-- ================== FUNGSI FLY (DARI GUI FLY) ==================
+local function startFlyMode()
+    local plr = LocalPlayer
+    local char = plr.Character
+    if not char then return end
     
-    -- Lingkaran luar
-    local outerCircle = Instance.new("Frame")
-    outerCircle.Parent = analogFrame
-    outerCircle.Size = UDim2.new(1, 0, 1, 0)
-    outerCircle.Position = UDim2.new(0, 0, 0, 0)
-    outerCircle.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-    outerCircle.BackgroundTransparency = 0.5
-    outerCircle.BorderSizePixel = 0
-    local outerCorner = Instance.new("UICorner")
-    outerCorner.Parent = outerCircle
-    outerCorner.CornerRadius = UDim.new(1, 0)
-    
-    -- Lingkaran dalam (joystick knob)
-    analogKnob = Instance.new("Frame")
-    analogKnob.Parent = analogFrame
-    analogKnob.Size = UDim2.new(0, 50, 0, 50)
-    analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
-    analogKnob.BackgroundColor3 = themeColor
-    analogKnob.BackgroundTransparency = 0.2
-    analogKnob.BorderSizePixel = 0
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.Parent = analogKnob
-    knobCorner.CornerRadius = UDim.new(1, 0)
-    
-    -- Touch events
-    local function updateKnobPosition(inputPos)
-        local framePos = analogFrame.AbsolutePosition
-        local center = Vector2.new(framePos.X + analogFrame.AbsoluteSize.X/2, framePos.Y + analogFrame.AbsoluteSize.Y/2)
-        local delta = inputPos - center
-        local distance = math.min(delta.Magnitude, analogMaxRadius)
-        local direction = delta.Magnitude > 0 and delta.Unit or Vector2.new(0, 0)
-        
-        -- Update posisi knob
-        local offset = direction * distance
-        local newX = (offset.X / analogFrame.AbsoluteSize.X) + 0.5
-        local newY = (offset.Y / analogFrame.AbsoluteSize.Y) + 0.5
-        analogKnob.Position = UDim2.new(newX, -analogKnob.Size.X.Offset/2, newY, -analogKnob.Size.Y.Offset/2)
-        
-        -- Update direction untuk fly (Y dibalik karena screen Y ke bawah)
-        analogDirection = Vector2.new(direction.X, -direction.Y)
-        analogActive = distance > 5
+    local torso
+    if char:FindFirstChild("UpperTorso") then
+        torso = char.UpperTorso
+    elseif char:FindFirstChild("Torso") then
+        torso = char.Torso
+    else
+        torso = char.HumanoidRootPart
     end
     
-    analogKnob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            updateKnobPosition(input.Position)
-        end
-    end)
+    flying = true
+    ctrl = {f = 0, b = 0, l = 0, r = 0}
+    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    maxspeed = flySpeed
+    currentFlySpeed = flySpeed
     
-    analogKnob.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = false
-            analogActive = false
-            analogDirection = Vector2.new(0, 0)
-            analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
-        end
-    end)
+    local bg = torso:FindFirstChild("FlyBG")
+    if not bg then
+        bg = Instance.new("BodyGyro", torso)
+        bg.Name = "FlyBG"
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    end
     
-    analogFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch and not isDragging then
-            isDragging = true
-            updateKnobPosition(input.Position)
-        end
-    end)
+    local bv = torso:FindFirstChild("FlyBV")
+    if not bv then
+        bv = Instance.new("BodyVelocity", torso)
+        bv.Name = "FlyBV"
+        bv.velocity = Vector3.new(0, 0.1, 0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+    end
     
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and input.UserInputType == Enum.UserInputType.Touch then
-            updateKnobPosition(input.Position)
-        end
-    end)
+    plr.Character.Humanoid.PlatformStand = true
+    plr.Character.Animate.Disabled = true
     
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch and isDragging then
-            isDragging = false
-            analogActive = false
-            analogDirection = Vector2.new(0, 0)
-            analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
-        end
-    end)
+    flyBodyVelocity = bv
+    flyBodyGyro = bg
     
-    return analogFrame
-end
-
-local function startFly()
     if flyConnection then flyConnection:Disconnect() end
     
     flyConnection = RunService.RenderStepped:Connect(function()
-        if flyEnabled and LocalPlayer.Character then
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-            
-            if hrp and humanoid then
-                humanoid.PlatformStand = true
-                
-                -- BodyVelocity
-                flyBodyVelocity = hrp:FindFirstChild("FlyBV")
-                if not flyBodyVelocity then
-                    flyBodyVelocity = Instance.new("BodyVelocity")
-                    flyBodyVelocity.Name = "FlyBV"
-                    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                    flyBodyVelocity.Parent = hrp
-                end
-                
-                -- BodyGyro untuk stabilitas
-                flyBodyGyro = hrp:FindFirstChild("FlyBG")
-                if not flyBodyGyro then
-                    flyBodyGyro = Instance.new("BodyGyro")
-                    flyBodyGyro.Name = "FlyBG"
-                    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-                    flyBodyGyro.P = 10000
-                    flyBodyGyro.Parent = hrp
-                end
-                
-                -- Arahkan body ke kamera
-                flyBodyGyro.CFrame = Camera.CFrame
-                
-                -- Hitung arah dari analog stick (menggunakan kontrol mobile)
-                local moveDirection = Vector3.new()
-                
-                if analogActive and analogDirection.Magnitude > 0.1 then
-                    -- Dapatkan arah berdasarkan kamera
-                    local camCF = Camera.CFrame
-                    local forward = camCF.LookVector
-                    local right = camCF.RightVector
-                    
-                    -- Analog Direction: X = kanan/kiri, Y = maju/mundur
-                    moveDirection = (right * analogDirection.X) + (forward * analogDirection.Y)
-                    
-                    -- Normalisasi
-                    if moveDirection.Magnitude > 0 then
-                        moveDirection = moveDirection.Unit
-                    end
-                end
-                
-                flyBodyVelocity.Velocity = moveDirection * flySpeed
-            end
+        if not flyEnabled then return end
+        
+        local currentChar = plr.Character
+        if not currentChar then return end
+        
+        local currentTorso
+        if currentChar:FindFirstChild("UpperTorso") then
+            currentTorso = currentChar.UpperTorso
+        elseif currentChar:FindFirstChild("Torso") then
+            currentTorso = currentChar.Torso
+        else
+            currentTorso = currentChar.HumanoidRootPart
         end
+        
+        if not currentTorso then return end
+        
+        -- Update speed dari slider
+        maxspeed = flySpeed
+        currentFlySpeed = flySpeed
+        
+        -- Handle key inputs
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 else ctrl.f = 0 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 else ctrl.b = 0 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 else ctrl.l = 0 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then ctrl.r = 1 else ctrl.r = 0 end
+        
+        local speed = 0
+        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+            speed = maxspeed
+        end
+        
+        if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+            bv.velocity = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + 
+                ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+        elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+            bv.velocity = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + 
+                ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+        else
+            bv.velocity = Vector3.new(0, 0, 0)
+        end
+        
+        bg.cframe = Camera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
     end)
 end
 
-local function stopFly()
-    if flyConnection then 
-        flyConnection:Disconnect() 
-        flyConnection = nil 
+local function stopFlyMode()
+    flying = false
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
     end
-    if LocalPlayer.Character then
-        local char = LocalPlayer.Character
-        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if humanoid then
-            humanoid.PlatformStand = false
+    
+    local plr = LocalPlayer
+    local char = plr.Character
+    if char then
+        local torso
+        if char:FindFirstChild("UpperTorso") then
+            torso = char.UpperTorso
+        elseif char:FindFirstChild("Torso") then
+            torso = char.Torso
+        else
+            torso = char.HumanoidRootPart
         end
-        if hrp then
-            local bv = hrp:FindFirstChild("FlyBV")
-            if bv then bv:Destroy() end
-            local bg = hrp:FindFirstChild("FlyBG")
+        
+        if torso then
+            local bg = torso:FindFirstChild("FlyBG")
             if bg then bg:Destroy() end
+            local bv = torso:FindFirstChild("FlyBV")
+            if bv then bv:Destroy() end
         end
+        
+        if char:FindFirstChildOfClass("Humanoid") then
+            char.Humanoid.PlatformStand = false
+        end
+        char.Animate.Disabled = false
     end
-    analogDirection = Vector2.new(0, 0)
-    isDragging = false
-    analogActive = false
-    if analogKnob then
-        analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
+    
+    ctrl = {f = 0, b = 0, l = 0, r = 0}
+    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+end
+
+-- ================== FUNGSI CROSSHAIR ==================
+local function createCrosshair()
+    if crosshairObject then
+        pcall(function() crosshairObject:Remove() end)
+        crosshairObject = nil
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "DripCrosshair"
+    screenGui.Parent = game.CoreGui
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.DisplayOrder = 999
+    
+    local centerX = 0.5
+    local centerY = 0.5
+    
+    -- Garis vertikal
+    local lineV = Instance.new("Frame")
+    lineV.Parent = screenGui
+    lineV.Size = UDim2.new(0, 2, 0, 30)
+    lineV.Position = UDim2.new(centerX, -1, centerY, -15)
+    lineV.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    lineV.BackgroundTransparency = 0
+    lineV.BorderSizePixel = 0
+    lineV.ZIndex = 999
+    
+    -- Garis horizontal
+    local lineH = Instance.new("Frame")
+    lineH.Parent = screenGui
+    lineH.Size = UDim2.new(0, 30, 0, 2)
+    lineH.Position = UDim2.new(centerX, -15, centerY, -1)
+    lineH.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    lineH.BackgroundTransparency = 0
+    lineH.BorderSizePixel = 0
+    lineH.ZIndex = 999
+    
+    -- Lingkaran tengah (opsional)
+    local circle = Instance.new("Frame")
+    circle.Parent = screenGui
+    circle.Size = UDim2.new(0, 6, 0, 6)
+    circle.Position = UDim2.new(centerX, -3, centerY, -3)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    circle.BackgroundTransparency = 0
+    circle.BorderSizePixel = 0
+    circle.ZIndex = 999
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.Parent = circle
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    
+    crosshairObject = screenGui
+end
+
+local function removeCrosshair()
+    if crosshairObject then
+        pcall(function() crosshairObject:Destroy() end)
+        crosshairObject = nil
     end
 end
 
@@ -1143,9 +1144,6 @@ local function loadMainScript()
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.DisplayOrder = 100
     
-    -- Buat analog stick untuk fly
-    local analogStick = createAnalogStick(ScreenGui)
-    
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
     mainFrame.Size = UDim2.new(0, 400, 0, 550)
@@ -1413,16 +1411,92 @@ local function loadMainScript()
         return frame
     end
     
+    local function createSlider(parent, text, min, max, default, callback)
+        local frame = Instance.new("Frame")
+        frame.Parent = parent
+        frame.Size = UDim2.new(0.95, 0, 0, 55)
+        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+        frame.BackgroundTransparency = 0.2
+        frame.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = frame
+        corner.CornerRadius = UDim.new(0, 10)
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = frame
+        label.Size = UDim2.new(1, 0, 0.4, 0)
+        label.Position = UDim2.new(0.05, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text .. ": " .. default
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 13
+        
+        local sliderBg = Instance.new("Frame")
+        sliderBg.Parent = frame
+        sliderBg.Size = UDim2.new(0.9, 0, 0.2, 0)
+        sliderBg.Position = UDim2.new(0.05, 0, 0.55, 0)
+        sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+        sliderBg.BorderSizePixel = 0
+        local sliderCorner = Instance.new("UICorner")
+        sliderCorner.Parent = sliderBg
+        sliderCorner.CornerRadius = UDim.new(0, 4)
+        
+        local sliderFill = Instance.new("Frame")
+        sliderFill.Parent = sliderBg
+        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+        sliderFill.BackgroundColor3 = themeColor
+        sliderFill.BorderSizePixel = 0
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.Parent = sliderFill
+        fillCorner.CornerRadius = UDim.new(0, 4)
+        
+        local value = default
+        local dragging = false
+        
+        sliderBg.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                local relativeX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+                value = math.floor(min + (max - min) * relativeX)
+                label.Text = text .. ": " .. value
+                callback(value)
+            end
+        end)
+        
+        sliderBg.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local relativeX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+                value = math.floor(min + (max - min) * relativeX)
+                label.Text = text .. ": " .. value
+                callback(value)
+            end
+        end)
+        
+        return frame
+    end
+    
     -- ===== TAB MAIN =====
     createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then 
-            startFly()
-            if analogStick then analogStick.Visible = true end
+            startFlyMode()
         else 
-            stopFly()
-            if analogStick then analogStick.Visible = false end
+            stopFlyMode()
         end
+    end)
+    
+    createSlider(tabMain, "Fly Speed", 20, 200, 50, function(s)
+        flySpeed = s
+        maxspeed = s
     end)
     
     createToggle(tabMain, "Speed Boost", false, function(s)
@@ -1451,6 +1525,15 @@ local function loadMainScript()
     
     createToggle(tabMain, "Infinity Jump", false, function(s)
         infinityJumpEnabled = s
+    end)
+    
+    createToggle(tabMain, "Crosshair", false, function(s)
+        crosshairEnabled = s
+        if s then
+            createCrosshair()
+        else
+            removeCrosshair()
+        end
     end)
     
     -- ===== TAB ESP =====
@@ -1498,8 +1581,8 @@ local function loadMainScript()
         if invisibleEnabled then toggleInvisible(true) end
         if noclipEnabled then startNoclip() end
         if flyEnabled then 
-            startFly()
-            if analogStick then analogStick.Visible = true end
+            task.wait(0.5)
+            startFlyMode()
         end
     end)
     
@@ -1516,8 +1599,8 @@ local function loadMainScript()
         if enemyCountText then
             enemyCountText.Color = themeColor
         end
-        if analogKnob then
-            analogKnob.BackgroundColor3 = themeColor
+        if flyBodyGyro then
+            flyBodyGyro.Color = themeColor
         end
     end
     
@@ -1573,7 +1656,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT HP EDITION\n\nVERSI 7.4\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT HP EDITION\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
@@ -1643,7 +1726,7 @@ local function loadMainScript()
         openBtn.BackgroundTransparency = 0.2
     end)
     
-    print("✅ DRIP CLIENT V7.4 HP - MENU BERHASIL DIMUAT!")
+    print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1694,4 +1777,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.4")
+print("DRIP CLIENT V7.5")
