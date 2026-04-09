@@ -66,7 +66,7 @@ local antiDamageThread = nil
 local antiDamageHeartbeat = nil
 
 local spinEnabled = false
-local spinSpeed = 10
+local spinSpeed = 200
 local spinConnection = nil
 local spinDirection = 1
 
@@ -1546,7 +1546,7 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT HP EDITION\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
