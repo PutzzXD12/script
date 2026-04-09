@@ -597,7 +597,7 @@ local function stopFlyMode()
     speed = 0
 end
 
--- ================== FUNGSI CROSSHAIR ==================
+-- ================== FUNGSI CROSSHAIR (TITIK MERAH DI TENGAH) ==================
 local function createCrosshair()
     if crosshairObject then
         pcall(function() crosshairObject:Destroy() end)
@@ -611,38 +611,18 @@ local function createCrosshair()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.DisplayOrder = 999
     
-    local centerX = 0.5
-    local centerY = 0.5
-    
-    local lineV = Instance.new("Frame")
-    lineV.Parent = screenGui
-    lineV.Size = UDim2.new(0, 2, 0, 30)
-    lineV.Position = UDim2.new(centerX, -1, centerY, -15)
-    lineV.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    lineV.BackgroundTransparency = 0
-    lineV.BorderSizePixel = 0
-    lineV.ZIndex = 999
-    
-    local lineH = Instance.new("Frame")
-    lineH.Parent = screenGui
-    lineH.Size = UDim2.new(0, 30, 0, 2)
-    lineH.Position = UDim2.new(centerX, -15, centerY, -1)
-    lineH.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    lineH.BackgroundTransparency = 0
-    lineH.BorderSizePixel = 0
-    lineH.ZIndex = 999
-    
-    local circle = Instance.new("Frame")
-    circle.Parent = screenGui
-    circle.Size = UDim2.new(0, 6, 0, 6)
-    circle.Position = UDim2.new(centerX, -3, centerY, -3)
-    circle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    circle.BackgroundTransparency = 0
-    circle.BorderSizePixel = 0
-    circle.ZIndex = 999
-    local circleCorner = Instance.new("UICorner")
-    circleCorner.Parent = circle
-    circleCorner.CornerRadius = UDim.new(1, 0)
+    -- Titik merah di tengah
+    local dot = Instance.new("Frame")
+    dot.Parent = screenGui
+    dot.Size = UDim2.new(0, 4, 0, 4)
+    dot.Position = UDim2.new(0.5, -2, 0.5, -2)
+    dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    dot.BackgroundTransparency = 0
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 999
+    local dotCorner = Instance.new("UICorner")
+    dotCorner.Parent = dot
+    dotCorner.CornerRadius = UDim.new(1, 0)
     
     crosshairObject = screenGui
 end
