@@ -34,13 +34,17 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement HP (Fly)
+-- Movement HP (Fly) - Fix dari FlyGuiV3
 local flyEnabled = false
+local flyConnection = nil
+local flySpeed = 50
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+local speed = 0
+local maxspeed = 50
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
-local flyConnection = nil
-local flying = false
-local flySpeed = 50
+local flyTorso = nil
 
 -- Noclip
 local noclipEnabled = false
@@ -471,48 +475,48 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLY (MIRIP FLY GUI V3) ==================
+-- ================== FUNGSI FLY (DARI FLYGUI V3 - WORKING) ==================
 local function startFlyMode()
     local plr = LocalPlayer
     local char = plr.Character
     if not char then return end
     
-    -- Ambil bagian tubuh (R6/R15 kompatibel)
-    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
-    if not torso then return end
+    -- Ambil torso (R6/R15 kompatibel)
+    flyTorso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    if not flyTorso then return end
     
-    flying = true
+    -- Reset variables
+    ctrl = {f = 0, b = 0, l = 0, r = 0}
+    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    speed = 0
+    maxspeed = 50
     
-    -- Disable animasi
-    plr.Character.Humanoid.PlatformStand = true
+    -- Disable animasi dan platform stand
+    if char:FindFirstChildOfClass("Humanoid") then
+        char.Humanoid.PlatformStand = true
+    end
     if char:FindFirstChild("Animate") then
         char.Animate.Disabled = true
     end
     
     -- Buat BodyGyro
-    flyBodyGyro = torso:FindFirstChild("FlyBG")
+    flyBodyGyro = flyTorso:FindFirstChild("FlyBG")
     if not flyBodyGyro then
         flyBodyGyro = Instance.new("BodyGyro")
         flyBodyGyro.Name = "FlyBG"
         flyBodyGyro.P = 9e4
         flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyGyro.Parent = torso
+        flyBodyGyro.Parent = flyTorso
     end
     
     -- Buat BodyVelocity
-    flyBodyVelocity = torso:FindFirstChild("FlyBV")
+    flyBodyVelocity = flyTorso:FindFirstChild("FlyBV")
     if not flyBodyVelocity then
         flyBodyVelocity = Instance.new("BodyVelocity")
         flyBodyVelocity.Name = "FlyBV"
         flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyVelocity.Parent = torso
+        flyBodyVelocity.Parent = flyTorso
     end
-    
-    -- Variables untuk kontrol
-    local ctrl = {f = 0, b = 0, l = 0, r = 0}
-    local lastctrl = {f = 0, b = 0, l = 0, r = 0}
-    local speed = 0
-    local maxspeed = flySpeed
     
     if flyConnection then flyConnection:Disconnect() end
     
@@ -522,16 +526,14 @@ local function startFlyMode()
         local currentChar = plr.Character
         if not currentChar then return end
         
-        -- Update torso
         local currentTorso = currentChar:FindFirstChild("UpperTorso") or currentChar:FindFirstChild("Torso") or currentChar:FindFirstChild("HumanoidRootPart")
         if not currentTorso then return end
         
-        -- Update BodyVelocity dan BodyGyro jika masih ada
         local bv = currentTorso:FindFirstChild("FlyBV")
         local bg = currentTorso:FindFirstChild("FlyBG")
         if not bv or not bg then return end
         
-        -- Baca input dari keyboard (WASD)
+        -- Update input WASD
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 else ctrl.f = 0 end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 else ctrl.b = 0 end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 else ctrl.l = 0 end
@@ -546,7 +548,7 @@ local function startFlyMode()
             if speed < 0 then speed = 0 end
         end
         
-        -- Terapkan velocity berdasarkan arah kamera
+        -- Terapkan velocity
         if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
             bv.Velocity = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + 
                 ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
@@ -564,7 +566,7 @@ local function startFlyMode()
 end
 
 local function stopFlyMode()
-    flying = false
+    flyEnabled = false
     
     if flyConnection then
         flyConnection:Disconnect()
@@ -589,6 +591,10 @@ local function stopFlyMode()
             if bg then bg:Destroy() end
         end
     end
+    
+    ctrl = {f = 0, b = 0, l = 0, r = 0}
+    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    speed = 0
 end
 
 -- ================== FUNGSI CROSSHAIR ==================
@@ -1346,91 +1352,48 @@ local function loadMainScript()
         return frame
     end
     
-    local function createSlider(parent, text, min, max, default, callback)
+    local function createTextBox(parent, placeholder, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 55)
+        frame.Size = UDim2.new(0.95, 0, 0, 44)
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
         local corner = Instance.new("UICorner")
         corner.Parent = frame
         corner.CornerRadius = UDim.new(0, 10)
-        
-        local label = Instance.new("TextLabel")
-        label.Parent = frame
-        label.Size = UDim2.new(1, 0, 0.4, 0)
-        label.Position = UDim2.new(0.05, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text .. ": " .. default
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 13
-        
-        local sliderBg = Instance.new("Frame")
-        sliderBg.Parent = frame
-        sliderBg.Size = UDim2.new(0.9, 0, 0.2, 0)
-        sliderBg.Position = UDim2.new(0.05, 0, 0.55, 0)
-        sliderBg.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-        sliderBg.BorderSizePixel = 0
-        local sliderCorner = Instance.new("UICorner")
-        sliderCorner.Parent = sliderBg
-        sliderCorner.CornerRadius = UDim.new(0, 4)
-        
-        local sliderFill = Instance.new("Frame")
-        sliderFill.Parent = sliderBg
-        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-        sliderFill.BackgroundColor3 = themeColor
-        sliderFill.BorderSizePixel = 0
-        local fillCorner = Instance.new("UICorner")
-        fillCorner.Parent = sliderFill
-        fillCorner.CornerRadius = UDim.new(0, 4)
-        
-        local value = default
-        local dragging = false
-        
-        sliderBg.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                local relativeX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                value = math.floor(min + (max - min) * relativeX)
-                label.Text = text .. ": " .. value
-                callback(value)
+        local textBox = Instance.new("TextBox")
+        textBox.Parent = frame
+        textBox.Size = UDim2.new(1, -10, 1, -10)
+        textBox.Position = UDim2.new(0, 5, 0, 5)
+        textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textBox.PlaceholderText = placeholder
+        textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+        textBox.Font = Enum.Font.Gotham
+        textBox.TextSize = 14
+        textBox.ClearTextOnFocus = false
+        local boxCorner = Instance.new("UICorner")
+        boxCorner.Parent = textBox
+        boxCorner.CornerRadius = UDim.new(0, 8)
+        textBox.FocusLost:Connect(function(enterPressed)
+            if enterPressed and textBox.Text ~= "" then
+                callback(textBox.Text)
+                textBox.Text = ""
             end
         end)
-        
-        sliderBg.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-        
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local relativeX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                value = math.floor(min + (max - min) * relativeX)
-                label.Text = text .. ": " .. value
-                callback(value)
-            end
-        end)
-        
         return frame
     end
     
     -- ===== TAB MAIN =====
     createToggle(tabMain, "Fly", false, function(s)
-        flyEnabled = s
         if s then 
+            flyEnabled = true
             startFlyMode()
         else 
+            flyEnabled = false
             stopFlyMode()
         end
-    end)
-    
-    createSlider(tabMain, "Fly Speed", 20, 200, 50, function(s)
-        flySpeed = s
     end)
     
     createToggle(tabMain, "Speed Boost", false, function(s)
