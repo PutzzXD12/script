@@ -35,19 +35,21 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement HP
+-- Movement HP (Analog Stick)
 local flyEnabled = false
 local flySpeed = 60
 local flyConnection = nil
 local flyBodyVelocity = nil
+local flyBodyGyro = nil
 
--- Tombol kontrol fly HP
-local moveForward = false
-local moveBack = false
-local moveLeft = false
-local moveRight = false
-local moveUp = false
-local moveDown = false
+-- Analog Stick Variables
+local analogFrame = nil
+local analogKnob = nil
+local analogActive = false
+local analogDirection = Vector2.new(0, 0)
+local analogCenter = Vector2.new(0, 0)
+local analogMaxRadius = 50
+local isDragging = false
 
 local noclipEnabled = false
 local noclipConnection = nil
@@ -475,134 +477,107 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLY KHUSUS HP ==================
-local function createFlyButtons(parent)
-    -- Frame untuk tombol fly
-    local flyButtons = Instance.new("Frame")
-    flyButtons.Name = "FlyControls"
-    flyButtons.Parent = parent
-    flyButtons.Size = UDim2.new(0, 250, 0, 200)
-    flyButtons.Position = UDim2.new(0.5, -125, 1, -220)
-    flyButtons.BackgroundTransparency = 1
-    flyButtons.Visible = false
-    flyButtons.ZIndex = 20
+-- ================== FUNGSI ANALOG STICK (FLY KHUSUS HP) ==================
+local function createAnalogStick(parent)
+    -- Frame utama untuk analog stick
+    analogFrame = Instance.new("Frame")
+    analogFrame.Name = "AnalogFlyControl"
+    analogFrame.Parent = parent
+    analogFrame.Size = UDim2.new(0, 140, 0, 140)
+    analogFrame.Position = UDim2.new(0, 20, 1, -160)
+    analogFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    analogFrame.BackgroundTransparency = 0.4
+    analogFrame.BorderSizePixel = 0
+    analogFrame.Visible = false
+    analogFrame.ZIndex = 20
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.Parent = analogFrame
+    frameCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Tombol Maju (W)
-    local btnForward = Instance.new("TextButton")
-    btnForward.Parent = flyButtons
-    btnForward.Size = UDim2.new(0, 70, 0, 70)
-    btnForward.Position = UDim2.new(0.5, -35, 0, 0)
-    btnForward.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    btnForward.BackgroundTransparency = 0.3
-    btnForward.Text = "⬆️"
-    btnForward.TextSize = 30
-    btnForward.Font = Enum.Font.GothamBold
-    btnForward.ZIndex = 20
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.Parent = btnForward
-    btnCorner.CornerRadius = UDim.new(1, 0)
+    -- Lingkaran luar (background)
+    local outerCircle = Instance.new("Frame")
+    outerCircle.Parent = analogFrame
+    outerCircle.Size = UDim2.new(1, 0, 1, 0)
+    outerCircle.Position = UDim2.new(0, 0, 0, 0)
+    outerCircle.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    outerCircle.BackgroundTransparency = 0.5
+    outerCircle.BorderSizePixel = 0
+    local outerCorner = Instance.new("UICorner")
+    outerCorner.Parent = outerCircle
+    outerCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Tombol Kiri (A)
-    local btnLeft = Instance.new("TextButton")
-    btnLeft.Parent = flyButtons
-    btnLeft.Size = UDim2.new(0, 70, 0, 70)
-    btnLeft.Position = UDim2.new(0, 0, 0.5, -35)
-    btnLeft.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    btnLeft.BackgroundTransparency = 0.3
-    btnLeft.Text = "⬅️"
-    btnLeft.TextSize = 30
-    btnLeft.Font = Enum.Font.GothamBold
-    btnLeft.ZIndex = 20
-    local btnLeftCorner = Instance.new("UICorner")
-    btnLeftCorner.Parent = btnLeft
-    btnLeftCorner.CornerRadius = UDim.new(1, 0)
+    -- Lingkaran dalam (joystick knob)
+    analogKnob = Instance.new("Frame")
+    analogKnob.Parent = analogFrame
+    analogKnob.Size = UDim2.new(0, 50, 0, 50)
+    analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
+    analogKnob.BackgroundColor3 = themeColor
+    analogKnob.BackgroundTransparency = 0.2
+    analogKnob.BorderSizePixel = 0
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.Parent = analogKnob
+    knobCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Tombol Mundur (S)
-    local btnBack = Instance.new("TextButton")
-    btnBack.Parent = flyButtons
-    btnBack.Size = UDim2.new(0, 70, 0, 70)
-    btnBack.Position = UDim2.new(0.5, -35, 1, -70)
-    btnBack.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    btnBack.BackgroundTransparency = 0.3
-    btnBack.Text = "⬇️"
-    btnBack.TextSize = 30
-    btnBack.Font = Enum.Font.GothamBold
-    btnBack.ZIndex = 20
-    local btnBackCorner = Instance.new("UICorner")
-    btnBackCorner.Parent = btnBack
-    btnBackCorner.CornerRadius = UDim.new(1, 0)
+    -- Event touch untuk analog stick
+    local function updateKnobPosition(inputPos)
+        local framePos = analogFrame.AbsolutePosition
+        local center = Vector2.new(framePos.X + analogFrame.AbsoluteSize.X/2, framePos.Y + analogFrame.AbsoluteSize.Y/2)
+        local delta = inputPos - center
+        local distance = math.min(delta.Magnitude, analogMaxRadius)
+        local direction = delta.Magnitude > 0 and delta.Unit or Vector2.new(0, 0)
+        
+        -- Update posisi knob
+        local offset = direction * distance
+        local newX = (offset.X / analogFrame.AbsoluteSize.X) + 0.5
+        local newY = (offset.Y / analogFrame.AbsoluteSize.Y) + 0.5
+        analogKnob.Position = UDim2.new(newX, -analogKnob.Size.X.Offset/2, newY, -analogKnob.Size.Y.Offset/2)
+        
+        -- Update direction untuk fly (Y dibalik karena screen Y ke bawah)
+        analogDirection = Vector2.new(direction.X, -direction.Y)
+    end
     
-    -- Tombol Kanan (D)
-    local btnRight = Instance.new("TextButton")
-    btnRight.Parent = flyButtons
-    btnRight.Size = UDim2.new(0, 70, 0, 70)
-    btnRight.Position = UDim2.new(1, -70, 0.5, -35)
-    btnRight.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    btnRight.BackgroundTransparency = 0.3
-    btnRight.Text = "➡️"
-    btnRight.TextSize = 30
-    btnRight.Font = Enum.Font.GothamBold
-    btnRight.ZIndex = 20
-    local btnRightCorner = Instance.new("UICorner")
-    btnRightCorner.Parent = btnRight
-    btnRightCorner.CornerRadius = UDim.new(1, 0)
+    analogKnob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            analogActive = true
+            updateKnobPosition(input.Position)
+        end
+    end)
     
-    -- Tombol Naik (Space)
-    local btnUp = Instance.new("TextButton")
-    btnUp.Parent = flyButtons
-    btnUp.Size = UDim2.new(0, 60, 0, 60)
-    btnUp.Position = UDim2.new(0, 10, 1, -70)
-    btnUp.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    btnUp.BackgroundTransparency = 0.3
-    btnUp.Text = "⬆️⬆️"
-    btnUp.TextSize = 20
-    btnUp.Font = Enum.Font.GothamBold
-    btnUp.ZIndex = 20
-    local btnUpCorner = Instance.new("UICorner")
-    btnUpCorner.Parent = btnUp
-    btnUpCorner.CornerRadius = UDim.new(1, 0)
+    analogKnob.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+            analogActive = false
+            analogDirection = Vector2.new(0, 0)
+            -- Reset knob ke tengah
+            analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
+        end
+    end)
     
-    -- Tombol Turun (Ctrl)
-    local btnDown = Instance.new("TextButton")
-    btnDown.Parent = flyButtons
-    btnDown.Size = UDim2.new(0, 60, 0, 60)
-    btnDown.Position = UDim2.new(1, -70, 1, -70)
-    btnDown.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-    btnDown.BackgroundTransparency = 0.3
-    btnDown.Text = "⬇️⬇️"
-    btnDown.TextSize = 20
-    btnDown.Font = Enum.Font.GothamBold
-    btnDown.ZIndex = 20
-    local btnDownCorner = Instance.new("UICorner")
-    btnDownCorner.Parent = btnDown
-    btnDownCorner.CornerRadius = UDim.new(1, 0)
+    analogFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch and not isDragging then
+            isDragging = true
+            analogActive = true
+            updateKnobPosition(input.Position)
+        end
+    end)
     
-    -- Event Touch untuk tombol
-    btnForward.MouseButton1Down:Connect(function() moveForward = true end)
-    btnForward.MouseButton1Up:Connect(function() moveForward = false end)
-    btnForward.MouseLeave:Connect(function() moveForward = false end)
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.Touch then
+            updateKnobPosition(input.Position)
+        end
+    end)
     
-    btnBack.MouseButton1Down:Connect(function() moveBack = true end)
-    btnBack.MouseButton1Up:Connect(function() moveBack = false end)
-    btnBack.MouseLeave:Connect(function() moveBack = false end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch and isDragging then
+            isDragging = false
+            analogActive = false
+            analogDirection = Vector2.new(0, 0)
+            analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
+        end
+    end)
     
-    btnLeft.MouseButton1Down:Connect(function() moveLeft = true end)
-    btnLeft.MouseButton1Up:Connect(function() moveLeft = false end)
-    btnLeft.MouseLeave:Connect(function() moveLeft = false end)
-    
-    btnRight.MouseButton1Down:Connect(function() moveRight = true end)
-    btnRight.MouseButton1Up:Connect(function() moveRight = false end)
-    btnRight.MouseLeave:Connect(function() moveRight = false end)
-    
-    btnUp.MouseButton1Down:Connect(function() moveUp = true end)
-    btnUp.MouseButton1Up:Connect(function() moveUp = false end)
-    btnUp.MouseLeave:Connect(function() moveUp = false end)
-    
-    btnDown.MouseButton1Down:Connect(function() moveDown = true end)
-    btnDown.MouseButton1Up:Connect(function() moveDown = false end)
-    btnDown.MouseLeave:Connect(function() moveDown = false end)
-    
-    return flyButtons
+    return analogFrame
 end
 
 local function startFly()
@@ -617,6 +592,7 @@ local function startFly()
             if hrp and humanoid then
                 humanoid.PlatformStand = true
                 
+                -- BodyVelocity
                 flyBodyVelocity = hrp:FindFirstChild("FlyBV")
                 if not flyBodyVelocity then
                     flyBodyVelocity = Instance.new("BodyVelocity")
@@ -625,30 +601,30 @@ local function startFly()
                     flyBodyVelocity.Parent = hrp
                 end
                 
-                local camCF = workspace.CurrentCamera.CFrame
+                -- BodyGyro untuk stabilitas
+                flyBodyGyro = hrp:FindFirstChild("FlyBG")
+                if not flyBodyGyro then
+                    flyBodyGyro = Instance.new("BodyGyro")
+                    flyBodyGyro.Name = "FlyBG"
+                    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                    flyBodyGyro.P = 10000
+                    flyBodyGyro.Parent = hrp
+                end
+                
+                flyBodyGyro.CFrame = Camera.CFrame
+                
+                -- Hitung arah dari analog stick
+                local camCF = Camera.CFrame
                 local moveDirection = Vector3.new()
                 
-                if moveForward then
-                    moveDirection = moveDirection + camCF.LookVector
-                end
-                if moveBack then
-                    moveDirection = moveDirection - camCF.LookVector
-                end
-                if moveRight then
-                    moveDirection = moveDirection + camCF.RightVector
-                end
-                if moveLeft then
-                    moveDirection = moveDirection - camCF.RightVector
-                end
-                if moveUp then
-                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
-                end
-                if moveDown then
-                    moveDirection = moveDirection - Vector3.new(0, 1, 0)
-                end
-                
-                if moveDirection.Magnitude > 0 then
-                    moveDirection = moveDirection.Unit
+                if analogActive and analogDirection.Magnitude > 0.1 then
+                    -- Gerakan berdasarkan analog stick (relatif ke kamera)
+                    moveDirection = (camCF.RightVector * analogDirection.X) + (camCF.UpVector * analogDirection.Y)
+                    
+                    -- Normalisasi agar kecepatan konsisten
+                    if moveDirection.Magnitude > 0 then
+                        moveDirection = moveDirection.Unit
+                    end
                 end
                 
                 flyBodyVelocity.Velocity = moveDirection * flySpeed
@@ -672,14 +648,16 @@ local function stopFly()
         if hrp then
             local bv = hrp:FindFirstChild("FlyBV")
             if bv then bv:Destroy() end
+            local bg = hrp:FindFirstChild("FlyBG")
+            if bg then bg:Destroy() end
         end
     end
-    moveForward = false
-    moveBack = false
-    moveLeft = false
-    moveRight = false
-    moveUp = false
-    moveDown = false
+    analogDirection = Vector2.new(0, 0)
+    isDragging = false
+    analogActive = false
+    if analogKnob then
+        analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
+    end
 end
 
 -- ================== FUNGSI NOCLIP ==================
@@ -1162,8 +1140,8 @@ local function loadMainScript()
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.DisplayOrder = 100
     
-    -- Buat tombol fly HP
-    local flyButtons = createFlyButtons(ScreenGui)
+    -- Buat analog stick untuk fly
+    local analogStick = createAnalogStick(ScreenGui)
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
@@ -1235,7 +1213,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "HP EDITION | GREEN BOX | 115M"
+    subtitle.Text = "Drip VIP"
     subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1433,14 +1411,14 @@ local function loadMainScript()
     end
     
     -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly HP (Tombol layar)", false, function(s)
+    createToggle(tabMain, "Fly (Analog)", false, function(s)
         flyEnabled = s
         if s then 
             startFly()
-            flyButtons.Visible = true
+            analogStick.Visible = true
         else 
             stopFly()
-            flyButtons.Visible = false
+            analogStick.Visible = false
         end
     end)
     
@@ -1518,7 +1496,7 @@ local function loadMainScript()
         if noclipEnabled then startNoclip() end
         if flyEnabled then 
             startFly()
-            flyButtons.Visible = true
+            analogStick.Visible = true
         end
     end)
     
@@ -1535,13 +1513,16 @@ local function loadMainScript()
         if enemyCountText then
             enemyCountText.Color = themeColor
         end
+        if analogKnob then
+            analogKnob.BackgroundColor3 = themeColor
+        end
     end
     
     createButton(tabColor, "Ungu (Default)", function()
         changeTheme(Color3.fromRGB(156, 39, 176))
     end)
-    createButton(tabColor, "Pink", function()
-        changeTheme(Color3.fromRGB(255, 105, 180))
+    createButton(tabColor, "Chan", function()
+        changeTheme(Color3.fromRGB(0, 255, 255))
     end)
     createButton(tabColor, "Merah", function()
         changeTheme(Color3.fromRGB(255, 0, 0))
@@ -1558,8 +1539,8 @@ local function loadMainScript()
     createButton(tabColor, "Orange", function()
         changeTheme(Color3.fromRGB(255, 165, 0))
     end)
-    createButton(tabColor, "Cyan", function()
-        changeTheme(Color3.fromRGB(0, 255, 255))
+    createButton(tabColor, "Pink", function()
+        changeTheme(Color3.fromRGB(255, 105, 180))
     end)
     
     -- ===== TAB INFORMASI =====
@@ -1673,7 +1654,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
     
     showLoading(true)
-    StatusLabel.Text = "Memverifikasi Key (Firebase)..."
+    StatusLabel.Text = "Memverifikasi Key..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
@@ -1710,4 +1691,4 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.4 HP - Ready! Masukkan key untuk memulai.")
+print("DRIP CLIENT V7.4")
