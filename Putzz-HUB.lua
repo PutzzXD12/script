@@ -1,7 +1,6 @@
--- ================== DRIP CLIENT V7.5 (HP EDITION + FLY FIX + CROSSHAIR) ==================
+-- ================== DRIP CLIENT V7.5 (HP EDITION + FLY FIX) ==================
 -- Version: 7.5 (Khusus HP - Touch Control + Crosshair)
 -- Developer: Putzz XD
--- MOD: ESP Line Unlimited + Player Counter + Fly HP Touch + Crosshair
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -35,17 +34,13 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement HP
+-- Movement HP (Fly)
 local flyEnabled = false
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
 local flyConnection = nil
 local flying = false
-local ctrl = {f = 0, b = 0, l = 0, r = 0}
-local lastctrl = {f = 0, b = 0, l = 0, r = 0}
 local flySpeed = 50
-local maxspeed = 50
-local currentFlySpeed = 50
 
 -- Noclip
 local noclipEnabled = false
@@ -476,48 +471,48 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLY (DARI GUI FLY) ==================
+-- ================== FUNGSI FLY (MIRIP FLY GUI V3) ==================
 local function startFlyMode()
     local plr = LocalPlayer
     local char = plr.Character
     if not char then return end
     
-    local torso
-    if char:FindFirstChild("UpperTorso") then
-        torso = char.UpperTorso
-    elseif char:FindFirstChild("Torso") then
-        torso = char.Torso
-    else
-        torso = char.HumanoidRootPart
-    end
+    -- Ambil bagian tubuh (R6/R15 kompatibel)
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    if not torso then return end
     
     flying = true
-    ctrl = {f = 0, b = 0, l = 0, r = 0}
-    lastctrl = {f = 0, b = 0, l = 0, r = 0}
-    maxspeed = flySpeed
-    currentFlySpeed = flySpeed
     
-    local bg = torso:FindFirstChild("FlyBG")
-    if not bg then
-        bg = Instance.new("BodyGyro", torso)
-        bg.Name = "FlyBG"
-        bg.P = 9e4
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    end
-    
-    local bv = torso:FindFirstChild("FlyBV")
-    if not bv then
-        bv = Instance.new("BodyVelocity", torso)
-        bv.Name = "FlyBV"
-        bv.velocity = Vector3.new(0, 0.1, 0)
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    end
-    
+    -- Disable animasi
     plr.Character.Humanoid.PlatformStand = true
-    plr.Character.Animate.Disabled = true
+    if char:FindFirstChild("Animate") then
+        char.Animate.Disabled = true
+    end
     
-    flyBodyVelocity = bv
-    flyBodyGyro = bg
+    -- Buat BodyGyro
+    flyBodyGyro = torso:FindFirstChild("FlyBG")
+    if not flyBodyGyro then
+        flyBodyGyro = Instance.new("BodyGyro")
+        flyBodyGyro.Name = "FlyBG"
+        flyBodyGyro.P = 9e4
+        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyGyro.Parent = torso
+    end
+    
+    -- Buat BodyVelocity
+    flyBodyVelocity = torso:FindFirstChild("FlyBV")
+    if not flyBodyVelocity then
+        flyBodyVelocity = Instance.new("BodyVelocity")
+        flyBodyVelocity.Name = "FlyBV"
+        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyVelocity.Parent = torso
+    end
+    
+    -- Variables untuk kontrol
+    local ctrl = {f = 0, b = 0, l = 0, r = 0}
+    local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    local speed = 0
+    local maxspeed = flySpeed
     
     if flyConnection then flyConnection:Disconnect() end
     
@@ -527,49 +522,50 @@ local function startFlyMode()
         local currentChar = plr.Character
         if not currentChar then return end
         
-        local currentTorso
-        if currentChar:FindFirstChild("UpperTorso") then
-            currentTorso = currentChar.UpperTorso
-        elseif currentChar:FindFirstChild("Torso") then
-            currentTorso = currentChar.Torso
-        else
-            currentTorso = currentChar.HumanoidRootPart
-        end
-        
+        -- Update torso
+        local currentTorso = currentChar:FindFirstChild("UpperTorso") or currentChar:FindFirstChild("Torso") or currentChar:FindFirstChild("HumanoidRootPart")
         if not currentTorso then return end
         
-        -- Update speed dari slider
-        maxspeed = flySpeed
-        currentFlySpeed = flySpeed
+        -- Update BodyVelocity dan BodyGyro jika masih ada
+        local bv = currentTorso:FindFirstChild("FlyBV")
+        local bg = currentTorso:FindFirstChild("FlyBG")
+        if not bv or not bg then return end
         
-        -- Handle key inputs
+        -- Baca input dari keyboard (WASD)
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 else ctrl.f = 0 end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 else ctrl.b = 0 end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 else ctrl.l = 0 end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then ctrl.r = 1 else ctrl.r = 0 end
         
-        local speed = 0
+        -- Hitung speed
         if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-            speed = maxspeed
+            speed = speed + 0.5 + (speed / maxspeed)
+            if speed > maxspeed then speed = maxspeed end
+        elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+            speed = speed - 1
+            if speed < 0 then speed = 0 end
         end
         
+        -- Terapkan velocity berdasarkan arah kamera
         if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-            bv.velocity = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + 
+            bv.Velocity = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + 
                 ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
             lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
         elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-            bv.velocity = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + 
+            bv.Velocity = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + 
                 ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
         else
-            bv.velocity = Vector3.new(0, 0, 0)
+            bv.Velocity = Vector3.new(0, 0, 0)
         end
         
-        bg.cframe = Camera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
+        -- Update gyro
+        bg.CFrame = Camera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
     end)
 end
 
 local function stopFlyMode()
     flying = false
+    
     if flyConnection then
         flyConnection:Disconnect()
         flyConnection = nil
@@ -578,36 +574,27 @@ local function stopFlyMode()
     local plr = LocalPlayer
     local char = plr.Character
     if char then
-        local torso
-        if char:FindFirstChild("UpperTorso") then
-            torso = char.UpperTorso
-        elseif char:FindFirstChild("Torso") then
-            torso = char.Torso
-        else
-            torso = char.HumanoidRootPart
-        end
-        
-        if torso then
-            local bg = torso:FindFirstChild("FlyBG")
-            if bg then bg:Destroy() end
-            local bv = torso:FindFirstChild("FlyBV")
-            if bv then bv:Destroy() end
-        end
-        
         if char:FindFirstChildOfClass("Humanoid") then
             char.Humanoid.PlatformStand = false
         end
-        char.Animate.Disabled = false
+        if char:FindFirstChild("Animate") then
+            char.Animate.Disabled = false
+        end
+        
+        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+        if torso then
+            local bv = torso:FindFirstChild("FlyBV")
+            if bv then bv:Destroy() end
+            local bg = torso:FindFirstChild("FlyBG")
+            if bg then bg:Destroy() end
+        end
     end
-    
-    ctrl = {f = 0, b = 0, l = 0, r = 0}
-    lastctrl = {f = 0, b = 0, l = 0, r = 0}
 end
 
 -- ================== FUNGSI CROSSHAIR ==================
 local function createCrosshair()
     if crosshairObject then
-        pcall(function() crosshairObject:Remove() end)
+        pcall(function() crosshairObject:Destroy() end)
         crosshairObject = nil
     end
     
@@ -621,7 +608,6 @@ local function createCrosshair()
     local centerX = 0.5
     local centerY = 0.5
     
-    -- Garis vertikal
     local lineV = Instance.new("Frame")
     lineV.Parent = screenGui
     lineV.Size = UDim2.new(0, 2, 0, 30)
@@ -631,7 +617,6 @@ local function createCrosshair()
     lineV.BorderSizePixel = 0
     lineV.ZIndex = 999
     
-    -- Garis horizontal
     local lineH = Instance.new("Frame")
     lineH.Parent = screenGui
     lineH.Size = UDim2.new(0, 30, 0, 2)
@@ -641,7 +626,6 @@ local function createCrosshair()
     lineH.BorderSizePixel = 0
     lineH.ZIndex = 999
     
-    -- Lingkaran tengah (opsional)
     local circle = Instance.new("Frame")
     circle.Parent = screenGui
     circle.Size = UDim2.new(0, 6, 0, 6)
@@ -799,22 +783,6 @@ local function onJumpRequest()
     end
 end
 UserInputService.JumpRequest:Connect(onJumpRequest)
-
--- ================== FUNGSI TELEPORT ==================
-local function teleportToPlayer(username)
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():find(username:lower()) or (player.DisplayName and player.DisplayName:lower():find(username:lower())) then
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local myChar = LocalPlayer.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
 
 -- ================== FUNGSI PLAYER COUNTER ==================
 local function createPlayerCounter()
@@ -1378,39 +1346,6 @@ local function loadMainScript()
         return frame
     end
     
-    local function createTextBox(parent, placeholder, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 44)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        local textBox = Instance.new("TextBox")
-        textBox.Parent = frame
-        textBox.Size = UDim2.new(1, -10, 1, -10)
-        textBox.Position = UDim2.new(0, 5, 0, 5)
-        textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        textBox.PlaceholderText = placeholder
-        textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-        textBox.Font = Enum.Font.Gotham
-        textBox.TextSize = 14
-        textBox.ClearTextOnFocus = false
-        local boxCorner = Instance.new("UICorner")
-        boxCorner.Parent = textBox
-        boxCorner.CornerRadius = UDim.new(0, 8)
-        textBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed and textBox.Text ~= "" then
-                callback(textBox.Text)
-                textBox.Text = ""
-            end
-        end)
-        return frame
-    end
-    
     local function createSlider(parent, text, min, max, default, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
@@ -1496,7 +1431,6 @@ local function loadMainScript()
     
     createSlider(tabMain, "Fly Speed", 20, 200, 50, function(s)
         flySpeed = s
-        maxspeed = s
     end)
     
     createToggle(tabMain, "Speed Boost", false, function(s)
@@ -1517,10 +1451,6 @@ local function loadMainScript()
         else 
             stopNoclip() 
         end
-    end)
-    
-    createTextBox(tabMain, "Masukkan username player...", function(username)
-        teleportToPlayer(username)
     end)
     
     createToggle(tabMain, "Infinity Jump", false, function(s)
@@ -1598,9 +1528,6 @@ local function loadMainScript()
         end
         if enemyCountText then
             enemyCountText.Color = themeColor
-        end
-        if flyBodyGyro then
-            flyBodyGyro.Color = themeColor
         end
     end
     
