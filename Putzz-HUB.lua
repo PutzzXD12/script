@@ -477,9 +477,9 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI ANALOG STICK (FLY KHUSUS HP) ==================
+-- ================== FUNGSI FLY DENGAN ANALOG STICK (MOBILE) ==================
 local function createAnalogStick(parent)
-    -- Frame utama untuk analog stick
+    -- Frame untuk analog stick
     analogFrame = Instance.new("Frame")
     analogFrame.Name = "AnalogFlyControl"
     analogFrame.Parent = parent
@@ -494,7 +494,7 @@ local function createAnalogStick(parent)
     frameCorner.Parent = analogFrame
     frameCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Lingkaran luar (background)
+    -- Lingkaran luar
     local outerCircle = Instance.new("Frame")
     outerCircle.Parent = analogFrame
     outerCircle.Size = UDim2.new(1, 0, 1, 0)
@@ -518,7 +518,7 @@ local function createAnalogStick(parent)
     knobCorner.Parent = analogKnob
     knobCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Event touch untuk analog stick
+    -- Touch events
     local function updateKnobPosition(inputPos)
         local framePos = analogFrame.AbsolutePosition
         local center = Vector2.new(framePos.X + analogFrame.AbsoluteSize.X/2, framePos.Y + analogFrame.AbsoluteSize.Y/2)
@@ -534,12 +534,12 @@ local function createAnalogStick(parent)
         
         -- Update direction untuk fly (Y dibalik karena screen Y ke bawah)
         analogDirection = Vector2.new(direction.X, -direction.Y)
+        analogActive = distance > 5
     end
     
     analogKnob.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
             isDragging = true
-            analogActive = true
             updateKnobPosition(input.Position)
         end
     end)
@@ -549,7 +549,6 @@ local function createAnalogStick(parent)
             isDragging = false
             analogActive = false
             analogDirection = Vector2.new(0, 0)
-            -- Reset knob ke tengah
             analogKnob.Position = UDim2.new(0.5, -25, 0.5, -25)
         end
     end)
@@ -557,7 +556,6 @@ local function createAnalogStick(parent)
     analogFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch and not isDragging then
             isDragging = true
-            analogActive = true
             updateKnobPosition(input.Position)
         end
     end)
@@ -611,17 +609,22 @@ local function startFly()
                     flyBodyGyro.Parent = hrp
                 end
                 
+                -- Arahkan body ke kamera
                 flyBodyGyro.CFrame = Camera.CFrame
                 
-                -- Hitung arah dari analog stick
-                local camCF = Camera.CFrame
+                -- Hitung arah dari analog stick (menggunakan kontrol mobile)
                 local moveDirection = Vector3.new()
                 
                 if analogActive and analogDirection.Magnitude > 0.1 then
-                    -- Gerakan berdasarkan analog stick (relatif ke kamera)
-                    moveDirection = (camCF.RightVector * analogDirection.X) + (camCF.UpVector * analogDirection.Y)
+                    -- Dapatkan arah berdasarkan kamera
+                    local camCF = Camera.CFrame
+                    local forward = camCF.LookVector
+                    local right = camCF.RightVector
                     
-                    -- Normalisasi agar kecepatan konsisten
+                    -- Analog Direction: X = kanan/kiri, Y = maju/mundur
+                    moveDirection = (right * analogDirection.X) + (forward * analogDirection.Y)
+                    
+                    -- Normalisasi
                     if moveDirection.Magnitude > 0 then
                         moveDirection = moveDirection.Unit
                     end
@@ -1411,14 +1414,14 @@ local function loadMainScript()
     end
     
     -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly (Analog)", false, function(s)
+    createToggle(tabMain, "Fly", false, function(s)
         flyEnabled = s
         if s then 
             startFly()
-            analogStick.Visible = true
+            if analogStick then analogStick.Visible = true end
         else 
             stopFly()
-            analogStick.Visible = false
+            if analogStick then analogStick.Visible = false end
         end
     end)
     
@@ -1496,7 +1499,7 @@ local function loadMainScript()
         if noclipEnabled then startNoclip() end
         if flyEnabled then 
             startFly()
-            analogStick.Visible = true
+            if analogStick then analogStick.Visible = true end
         end
     end)
     
