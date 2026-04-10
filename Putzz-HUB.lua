@@ -1,8 +1,7 @@
 -- ================== DRIP CLIENT V7.5 (HP SIMPLE FLY + CHAMS HOLOGRAM) ==================
 -- Version: 7.5 (Khusus HP - Simple Fly + Chams Biru-Kuning)
 -- Developer: Putzz XD
--- CARA PAKAI FLY: Aktifin toggle Fly -> langsung jalan maju otomatis
--- Geser layar ke atas = naik, ke bawah = turun, ke kiri/kanan = belok
+-- SISTEM KEY: 1 JAM, 1 HARI, 2 HARI, 3 HARI, 7 HARI, 30 HARI, PERMANEN
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -36,7 +35,7 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- FLY SIMPLE (Auto maju + geser layar)
+-- FLY SIMPLE
 local flyEnabled = false
 local flyConnection = nil
 local flySpeed = 50
@@ -73,7 +72,7 @@ local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
--- ================== CHAMS HOLOGRAM ==================
+-- CHAMS HOLOGRAM
 local chamsEnabled = false
 local chamsTransparency = 0.35
 local chamsMaterial = Enum.Material.Neon
@@ -90,50 +89,80 @@ local MAX_ESP_DISTANCE = 115
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
-    if isfile and isfile(SAVE_FILE) then
-        local success, content = pcall(function()
-            return readfile(SAVE_FILE)
-        end)
-        if success and content and content ~= "" then
-            local success2, data = pcall(function()
-                return HttpService:JSONDecode(content)
-            end)
-            if success2 then
-                activeKeys = data
+    pcall(function()
+        if isfile and isfile(SAVE_FILE) then
+            local content = readfile(SAVE_FILE)
+            if content and content ~= "" then
+                local data = HttpService:JSONDecode(content)
+                if data then activeKeys = data end
             end
         end
-    end
+    end)
 end
 
 local function saveKeyData()
-    if writefile then
-        local success, json = pcall(function()
-            return HttpService:JSONEncode(activeKeys)
-        end)
-        if success then
+    pcall(function()
+        if writefile then
+            local json = HttpService:JSONEncode(activeKeys)
             writefile(SAVE_FILE, json)
         end
-    end
+    end)
 end
 
+-- AMBIL KEY DARI FIREBASE
 local function getKeysFromFirebase()
     local success, data = pcall(function()
         return game:HttpGet(FIREBASE_URL)
     end)
     
-    if success and data then
+    if success and data and data ~= "" then
         local success2, jsonData = pcall(function()
             return HttpService:JSONDecode(data)
         end)
         if success2 and jsonData then
             local keysArray = {}
-            for _, keyData in pairs(jsonData) do
-                table.insert(keysArray, keyData)
+            for keyId, keyData in pairs(jsonData) do
+                if type(keyData) == "table" then
+                    local keyValue = keyData.key
+                    local keyJenis = keyData.jenis or "PERMANEN"
+                    if keyValue then
+                        table.insert(keysArray, {
+                            key = keyValue,
+                            jenis = keyJenis
+                        })
+                    end
+                elseif type(keyData) == "string" then
+                    table.insert(keysArray, {
+                        key = keyData,
+                        jenis = "PERMANEN"
+                    })
+                end
             end
             return keysArray
         end
     end
     return nil
+end
+
+-- KONVERSI JENIS KEY KE HARI
+local function getExpiryDays(jenis)
+    if jenis == "1 JAM" then
+        return 1/24
+    elseif jenis == "1 HARI" then
+        return 1
+    elseif jenis == "2 HARI" then
+        return 2
+    elseif jenis == "3 HARI" then
+        return 3
+    elseif jenis == "7 HARI" then
+        return 7
+    elseif jenis == "30 HARI" then
+        return 30
+    elseif jenis == "PERMANEN" then
+        return 9999999
+    else
+        return 1
+    end
 end
 
 local function getTimeRemaining(expiryTimestamp)
@@ -158,62 +187,52 @@ end
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
+    -- AMBIL KEY DARI FIREBASE
     local keysData = getKeysFromFirebase()
     if not keysData then
-        return false, "Gagal mengambil data key dari server"
+        return false, "GAGAL AMBIL DATA KEY DARI SERVER! CEK KONEKSI"
     end
     
+    -- CARI KEY YANG DIMASUKKAN
     local foundKey = nil
     local expiryDays = nil
+    local keyJenis = nil
     
     for _, keyData in ipairs(keysData) do
         if keyData.key == inputKey then
             foundKey = keyData.key
-            
-            if keyData.jenis == "1 JAM" then
-                expiryDays = 1/24
-            elseif keyData.jenis == "1 HARI" then
-                expiryDays = 1
-            elseif keyData.jenis == "2 HARI" then
-                expiryDays = 2
-            elseif keyData.jenis == "3 HARI" then
-                expiryDays = 3
-            elseif keyData.jenis == "7 HARI" then
-                expiryDays = 7
-            elseif keyData.jenis == "30 HARI" then
-                expiryDays = 30
-            elseif keyData.jenis == "PERMANEN" then
-                expiryDays = 9999999
-            else
-                expiryDays = 1
-            end
+            keyJenis = keyData.jenis or "PERMANEN"
+            expiryDays = getExpiryDays(keyJenis)
             break
         end
     end
     
     if not foundKey then
-        return false, "KEY TIDAK TERDAFTAR!"
+        return false, "KEY TIDAK TERDAFTAR DI DATABASE!"
     end
     
+    -- CEK APAKAH KEY PERNAH DIGUNAKAN
     if activeKeys[inputKey] then
         local firstUsed = activeKeys[inputKey].firstUsed
         local currentTime = os.time()
         local expiryTime = firstUsed + (expiryDays * 86400)
         
         if currentTime > expiryTime then
-            return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
+            return false, "KEY SUDAH EXPIRED! (" .. keyJenis .. ")"
         else
             local days, hours, minutes, seconds, timeStr = getTimeRemaining(expiryTime)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
-            return true, "KEY VALID! Sisa " .. timeStr
+            return true, "✅ KEY VALID! (" .. keyJenis .. ") SISA " .. timeStr
         end
     else
+        -- KEY BARU, SIMPAN
         local currentTime = os.time()
         activeKeys[inputKey] = {
             firstUsed = currentTime,
             key = inputKey,
-            expiryDays = expiryDays
+            expiryDays = expiryDays,
+            jenis = keyJenis
         }
         saveKeyData()
         
@@ -221,49 +240,55 @@ local function checkKeyExpiry(inputKey)
         keyExpiryTime = expiryTime
         currentUserKey = inputKey
         
-        return true, "KEY VALID! Berlaku " .. expiryDays .. " hari"
+        if expiryDays >= 9999999 then
+            return true, "✅ KEY VALID! (PERMANEN) SELAMANYA!"
+        else
+            return true, "✅ KEY VALID! (" .. keyJenis .. ") BERLAKU " .. expiryDays .. " HARI"
+        end
     end
 end
 
 local function showNotification(title, text, duration, color)
-    local notif = Instance.new("Frame")
-    notif.Parent = KeyGui
-    notif.Size = UDim2.new(0, 300, 0, 70)
-    notif.Position = UDim2.new(0.5, -150, 0, -80)
-    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-    notif.BackgroundTransparency = 0.1
-    notif.BorderSizePixel = 0
-    notif.ZIndex = 999
+    pcall(function()
+        local notif = Instance.new("Frame")
+        notif.Parent = KeyGui
+        notif.Size = UDim2.new(0, 300, 0, 70)
+        notif.Position = UDim2.new(0.5, -150, 0, -80)
+        notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
+        notif.BackgroundTransparency = 0.1
+        notif.BorderSizePixel = 0
+        notif.ZIndex = 999
 
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.Parent = notif
-    notifCorner.CornerRadius = UDim.new(0, 12)
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notif
+        notifCorner.CornerRadius = UDim.new(0, 12)
 
-    local notifTitle = Instance.new("TextLabel")
-    notifTitle.Parent = notif
-    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
-    notifTitle.Position = UDim2.new(0, 0, 0, 5)
-    notifTitle.BackgroundTransparency = 1
-    notifTitle.Text = title
-    notifTitle.TextColor3 = Color3.new(1, 1, 1)
-    notifTitle.Font = Enum.Font.GothamBold
-    notifTitle.TextSize = 18
+        local notifTitle = Instance.new("TextLabel")
+        notifTitle.Parent = notif
+        notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
+        notifTitle.Position = UDim2.new(0, 0, 0, 5)
+        notifTitle.BackgroundTransparency = 1
+        notifTitle.Text = title
+        notifTitle.TextColor3 = Color3.new(1, 1, 1)
+        notifTitle.Font = Enum.Font.GothamBold
+        notifTitle.TextSize = 18
 
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notif
-    notifText.Size = UDim2.new(1, 0, 0.5, 0)
-    notifText.Position = UDim2.new(0, 0, 0, 35)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = text
-    notifText.TextColor3 = Color3.new(1, 1, 1)
-    notifText.Font = Enum.Font.Gotham
-    notifText.TextSize = 14
+        local notifText = Instance.new("TextLabel")
+        notifText.Parent = notif
+        notifText.Size = UDim2.new(1, 0, 0.5, 0)
+        notifText.Position = UDim2.new(0, 0, 0, 35)
+        notifText.BackgroundTransparency = 1
+        notifText.Text = text
+        notifText.TextColor3 = Color3.new(1, 1, 1)
+        notifText.Font = Enum.Font.Gotham
+        notifText.TextSize = 14
 
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
-    task.wait(duration or 3)
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
-    task.wait(0.5)
-    notif:Destroy()
+        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+        task.wait(duration or 3)
+        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
+        task.wait(0.5)
+        notif:Destroy()
+    end)
 end
 
 -- ================== GUI KEY SYSTEM ==================
@@ -275,8 +300,8 @@ KeyGui.DisplayOrder = 999
 
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 380)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
+KeyFrame.Size = UDim2.new(0, 400, 0, 420)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
 KeyFrame.BackgroundColor3 = darkPurple
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
@@ -322,12 +347,10 @@ KeyTitle.Text = "DRIP CLIENT AUTH"
 KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 KeyTitle.Font = Enum.Font.GothamBold
 KeyTitle.TextSize = 16
-KeyTitle.TextStrokeTransparency = 0.3
-KeyTitle.TextStrokeColor3 = themeColor
 
 local InfoFrame = Instance.new("Frame")
 InfoFrame.Parent = KeyFrame
-InfoFrame.Size = UDim2.new(0.9, 0, 0, 70)
+InfoFrame.Size = UDim2.new(0.9, 0, 0, 90)
 InfoFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
 InfoFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 InfoFrame.BackgroundTransparency = 0.3
@@ -342,27 +365,27 @@ InfoText.Parent = InfoFrame
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "Masukkan Key Anda untuk mengakses script premium"
+InfoText.Text = "Masukkan Key Anda untuk mengakses script premium\n\nTIPE KEY: 1 JAM | 1 HARI | 2 HARI | 3 HARI | 7 HARI | 30 HARI | PERMANEN"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoText.Font = Enum.Font.Gotham
-InfoText.TextSize = 13
+InfoText.TextSize = 12
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
+InfoText.TextWrapped = true
 
 local KeyLabel = Instance.new("TextLabel")
 KeyLabel.Parent = KeyFrame
 KeyLabel.Size = UDim2.new(0.8, 0, 0, 20)
-KeyLabel.Position = UDim2.new(0.1, 0, 0.38, 0)
+KeyLabel.Position = UDim2.new(0.1, 0, 0.40, 0)
 KeyLabel.BackgroundTransparency = 1
 KeyLabel.Text = "MASUKAN KEY ANDA"
 KeyLabel.TextColor3 = themeColor
 KeyLabel.Font = Enum.Font.GothamBold
 KeyLabel.TextSize = 12
-KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
-KeyTextBox.Position = UDim2.new(0.1, 0, 0.42, 0)
+KeyTextBox.Position = UDim2.new(0.1, 0, 0.44, 0)
 KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 KeyTextBox.BackgroundTransparency = 0.1
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
@@ -379,7 +402,7 @@ KeyBoxCorner.CornerRadius = UDim.new(0, 10)
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+VerifyBtn.Position = UDim2.new(0.1, 0, 0.57, 0)
 VerifyBtn.BackgroundColor3 = themeColor
 VerifyBtn.BackgroundTransparency = 0.2
 VerifyBtn.Text = "VERIFIKASI KEY"
@@ -394,7 +417,7 @@ VerifyCorner.CornerRadius = UDim.new(0, 10)
 local WebsiteBtn = Instance.new("TextButton")
 WebsiteBtn.Parent = KeyFrame
 WebsiteBtn.Size = UDim2.new(0.5, 0, 0, 35)
-WebsiteBtn.Position = UDim2.new(0.25, 0, 0.67, 0)
+WebsiteBtn.Position = UDim2.new(0.25, 0, 0.69, 0)
 WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 WebsiteBtn.BackgroundTransparency = 0.2
 WebsiteBtn.Text = "GET KEY"
@@ -408,8 +431,8 @@ WebsiteCorner.CornerRadius = UDim.new(0, 8)
 
 local StatusFrame = Instance.new("Frame")
 StatusFrame.Parent = KeyFrame
-StatusFrame.Size = UDim2.new(0.9, 0, 0, 40)
-StatusFrame.Position = UDim2.new(0.05, 0, 0.78, 0)
+StatusFrame.Size = UDim2.new(0.9, 0, 0, 50)
+StatusFrame.Position = UDim2.new(0.05, 0, 0.80, 0)
 StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 StatusFrame.BackgroundTransparency = 0.3
 StatusFrame.BorderSizePixel = 0
@@ -436,13 +459,14 @@ StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Menunggu Key..."
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 13
+StatusLabel.TextSize = 12
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.TextWrapped = true
 
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.9, -15)
+LoadingCircle.Position = UDim2.new(0.5, -15, 0.93, -15)
 LoadingCircle.BackgroundColor3 = themeColor
 LoadingCircle.BackgroundTransparency = 1
 LoadingCircle.Visible = false
@@ -466,7 +490,7 @@ local function showLoading(show)
 end
 
 WebsiteBtn.MouseButton1Click:Connect(function()
-    local success = pcall(function()
+    pcall(function()
         if setclipboard then
             setclipboard(WEBSITE_URL)
             StatusLabel.Text = "✓ Link disalin! Buka browser"
@@ -480,7 +504,7 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FLY SIMPLE (AUTO MAJU + GESER LAYAR) ==================
+-- ================== FLY SIMPLE ==================
 local verticalControl = 0
 local horizontalControl = 0
 local touching = false
@@ -1815,7 +1839,7 @@ local function loadMainScript()
     
     -- Fungsi copy teks
     copyTiktokBtn.MouseButton1Click:Connect(function()
-        local success = pcall(function()
+        pcall(function()
             if setclipboard then
                 setclipboard("Putzz_mvpp")
                 showNotification("✅ BERHASIL!", "Teks TikTok berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
@@ -1827,7 +1851,7 @@ local function loadMainScript()
     end)
     
     copyWaBtn.MouseButton1Click:Connect(function()
-        local success = pcall(function()
+        pcall(function()
             if setclipboard then
                 setclipboard("088976255131")
                 showNotification("✅ BERHASIL!", "Nomor WA berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
@@ -1902,7 +1926,7 @@ local function loadMainScript()
     end)
     
     print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
-    print("✅ ")
+    print("✅ FLY SIMPLE: Aktifkan lalu geser layar untuk kontrol!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1954,4 +1978,5 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
 end)
 
 print("DRIP CLIENT V7.5 - READY!")
-print("")
+print("SISTEM KEY: 1 JAM | 1 HARI | 2 HARI | 3 HARI | 7 HARI | 30 HARI | PERMANEN")
+print("CARA PAKAI FLY: Aktifkan toggle FLY -> langsung jalan maju, geser layar buat naik/turun/belok")
