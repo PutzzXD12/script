@@ -1,6 +1,7 @@
--- ================== DRIP CLIENT V8 - FINAL ==================
+-- ================== DRIP CLIENT V8 - COMPLETE ==================
 -- Developer: Putzzdev
 -- Database: key-database-701af
+-- Website: https://putzzdevxit.github.io/KEY-GENERATOR-/
 
 local DATABASE_URL = "https://key-database-701af-default-rtdb.asia-southeast1.firebasedatabase.app/keys.json"
 local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
@@ -131,8 +132,8 @@ KeyGui.Parent = game.CoreGui
 
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 400)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
+KeyFrame.Size = UDim2.new(0, 400, 0, 450)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -225)
 KeyFrame.BackgroundColor3 = darkPurple
 KeyFrame.BackgroundTransparency = 0.1
 KeyFrame.BorderSizePixel = 0
@@ -143,6 +144,7 @@ local KeyCorner = Instance.new("UICorner")
 KeyCorner.Parent = KeyFrame
 KeyCorner.CornerRadius = UDim.new(0, 20)
 
+-- Header
 local KeyIcon = Instance.new("TextLabel")
 KeyIcon.Parent = KeyFrame
 KeyIcon.Size = UDim2.new(1, 0, 0, 80)
@@ -163,10 +165,11 @@ KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 KeyTitle.Font = Enum.Font.GothamBold
 KeyTitle.TextSize = 20
 
+-- Input Key
 local KeyTextBox = Instance.new("TextBox")
 KeyTextBox.Parent = KeyFrame
 KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
-KeyTextBox.Position = UDim2.new(0.1, 0, 0.4, 0)
+KeyTextBox.Position = UDim2.new(0.1, 0, 0.35, 0)
 KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 KeyTextBox.BackgroundTransparency = 0.1
 KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
@@ -180,10 +183,11 @@ local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
 KeyBoxCorner.CornerRadius = UDim.new(0, 10)
 
+-- Tombol Verifikasi
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+VerifyBtn.Position = UDim2.new(0.1, 0, 0.48, 0)
 VerifyBtn.BackgroundColor3 = themeColor
 VerifyBtn.BackgroundTransparency = 0.2
 VerifyBtn.Text = "VERIFIKASI"
@@ -195,6 +199,23 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.Parent = VerifyBtn
 VerifyCorner.CornerRadius = UDim.new(0, 10)
 
+-- Tombol GET KEY (copy link website)
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Parent = KeyFrame
+GetKeyBtn.Size = UDim2.new(0.8, 0, 0, 40)
+GetKeyBtn.Position = UDim2.new(0.1, 0, 0.6, 0)
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+GetKeyBtn.BackgroundTransparency = 0.2
+GetKeyBtn.Text = "🌐 GET KEY"
+GetKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+GetKeyBtn.Font = Enum.Font.GothamBold
+GetKeyBtn.TextSize = 14
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.Parent = GetKeyBtn
+GetKeyCorner.CornerRadius = UDim.new(0, 10)
+
+-- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Parent = KeyFrame
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 40)
@@ -205,6 +226,7 @@ StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 12
 
+-- Loading
 local LoadingCircle = Instance.new("Frame")
 LoadingCircle.Parent = KeyFrame
 LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
@@ -231,6 +253,23 @@ local function showLoading(show)
     end
 end
 
+-- Tombol GET KEY (copy link)
+GetKeyBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard(WEBSITE_URL)
+            StatusLabel.Text = "✅ Link website disalin!"
+            StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            task.wait(2)
+            StatusLabel.Text = "🔑 Masukkan key"
+            StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        else
+            StatusLabel.Text = "🌐 " .. WEBSITE_URL
+            StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        end
+    end)
+end)
+
 -- ================== VERIFIKASI ==================
 VerifyBtn.MouseButton1Click:Connect(function()
     local inputKey = KeyTextBox.Text:gsub("%s+", "")
@@ -255,7 +294,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "✅ KEY VALID!"
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         TweenService:Create(KeyFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 100, 0)}):Play()
-        task.wait(0.3)
+        task.wait(0.5)
         KeyGui:Destroy()
         showNotif("✅ AKTIVASI BERHASIL!", false)
         task.wait(0.5)
@@ -343,6 +382,7 @@ local function stopFlyMode()
     horizontalControl = 0
 end
 
+-- Touch control untuk fly (HP)
 UserInputService.TouchBegan:Connect(function(input, gp)
     if gp then return end
     if input.UserInputType == Enum.UserInputType.Touch then
@@ -806,13 +846,14 @@ local function loadMainMenu()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 500)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    mainFrame.Size = UDim2.new(0, 380, 0, 480)
+    mainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
     mainFrame.BackgroundColor3 = darkPurple
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
+    mainFrame.Visible = true
     
     local mainCorner = Instance.new("UICorner")
     mainCorner.Parent = mainFrame
@@ -820,7 +861,7 @@ local function loadMainMenu()
     
     local header = Instance.new("Frame")
     header.Parent = mainFrame
-    header.Size = UDim2.new(1, 0, 0, 60)
+    header.Size = UDim2.new(1, 0, 0, 50)
     header.BackgroundColor3 = themeColor
     header.BackgroundTransparency = 0.15
     header.BorderSizePixel = 0
@@ -835,12 +876,13 @@ local function loadMainMenu()
     title.Text = "DRIP CLIENT V8"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 22
+    title.TextSize = 20
     
+    -- Tab Bar
     local tabBar = Instance.new("Frame")
     tabBar.Parent = mainFrame
-    tabBar.Size = UDim2.new(0.95, 0, 0, 40)
-    tabBar.Position = UDim2.new(0.025, 0, 0.14, 0)
+    tabBar.Size = UDim2.new(0.96, 0, 0, 35)
+    tabBar.Position = UDim2.new(0.02, 0, 0.12, 0)
     tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     tabBar.BackgroundTransparency = 0.3
     tabBar.BorderSizePixel = 0
@@ -854,26 +896,26 @@ local function loadMainMenu()
     local function createTab(name, idx)
         local btn = Instance.new("TextButton")
         btn.Parent = tabBar
-        btn.Size = UDim2.new(0.25, -2, 1, -6)
-        btn.Position = UDim2.new((idx-1)*0.25, 2, 0, 3)
+        btn.Size = UDim2.new(0.25, -2, 1, -4)
+        btn.Position = UDim2.new((idx-1)*0.25, 2, 0, 2)
         btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
         btn.BackgroundTransparency = 0.5
         btn.Text = name
         btn.TextColor3 = Color3.fromRGB(200, 200, 200)
         btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 12
+        btn.TextSize = 11
         local btnCorner = Instance.new("UICorner")
         btnCorner.Parent = btn
         btnCorner.CornerRadius = UDim.new(0, 8)
         
         local content = Instance.new("ScrollingFrame")
         content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 0.78, 0)
-        content.Position = UDim2.new(0.03, 0, 0.22, 0)
+        content.Size = UDim2.new(0.94, 0, 0.76, 0)
+        content.Position = UDim2.new(0.03, 0, 0.2, 0)
         content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         content.BackgroundTransparency = 0.4
         content.BorderSizePixel = 0
-        content.ScrollBarThickness = 6
+        content.ScrollBarThickness = 5
         content.CanvasSize = UDim2.new(0, 0, 0, 0)
         content.Visible = false
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -883,7 +925,7 @@ local function loadMainMenu()
         contentCorner.CornerRadius = UDim.new(0, 12)
         local layout = Instance.new("UIListLayout")
         layout.Parent = content
-        layout.Padding = UDim.new(0, 8)
+        layout.Padding = UDim.new(0, 6)
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         
         table.insert(tabs, btn)
@@ -901,7 +943,7 @@ local function loadMainMenu()
             task.wait()
             local h = 0
             for _, child in pairs(content:GetChildren()) do
-                if child:IsA("Frame") then h = h + child.Size.Y.Offset + 8 end
+                if child:IsA("Frame") then h = h + child.Size.Y.Offset + 6 end
             end
             content.CanvasSize = UDim2.new(0, 0, 0, h + 20)
         end)
@@ -910,19 +952,19 @@ local function loadMainMenu()
     
     local tabMain = createTab("MAIN", 1)
     local tabESP = createTab("ESP", 2)
-    local tabUtil = createTab("UTILITY", 3)
+    local tabUtil = createTab("UTIL", 3)
     local tabInfo = createTab("INFO", 4)
     
     local function createToggle(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 40)
+        frame.Size = UDim2.new(0.95, 0, 0, 38)
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
         local corner = Instance.new("UICorner")
         corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
+        corner.CornerRadius = UDim.new(0, 8)
         local label = Instance.new("TextLabel")
         label.Parent = frame
         label.Size = UDim2.new(0.7, 0, 1, 0)
@@ -931,21 +973,21 @@ local function loadMainMenu()
         label.Text = text
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.Font = Enum.Font.Gotham
-        label.TextSize = 13
+        label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
         local switch = Instance.new("Frame")
         switch.Parent = frame
-        switch.Size = UDim2.new(0, 40, 0, 20)
-        switch.Position = UDim2.new(0.85, 0, 0.5, -10)
+        switch.Size = UDim2.new(0, 38, 0, 18)
+        switch.Position = UDim2.new(0.85, 0, 0.5, -9)
         switch.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
         switch.BorderSizePixel = 0
         local switchCorner = Instance.new("UICorner")
         switchCorner.Parent = switch
-        switchCorner.CornerRadius = UDim.new(0, 10)
+        switchCorner.CornerRadius = UDim.new(0, 9)
         local circle = Instance.new("Frame")
         circle.Parent = switch
-        circle.Size = UDim2.new(0, 16, 0, 16)
-        circle.Position = UDim2.new(0.05, 0, 0.5, -8)
+        circle.Size = UDim2.new(0, 14, 0, 14)
+        circle.Position = UDim2.new(0.05, 0, 0.5, -7)
         circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         circle.BorderSizePixel = 0
         local circleCorner = Instance.new("UICorner")
@@ -960,7 +1002,7 @@ local function loadMainMenu()
         btn.MouseButton1Click:Connect(function()
             state = not state
             TweenService:Create(switch, TweenInfo.new(0.15), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
-            TweenService:Create(circle, TweenInfo.new(0.15), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0.05, 0, 0.5, -8)}):Play()
+            TweenService:Create(circle, TweenInfo.new(0.15), {Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0.05, 0, 0.5, -7)}):Play()
             callback(state)
         end)
         return frame
@@ -969,13 +1011,13 @@ local function loadMainMenu()
     local function createButton(parent, text, callback)
         local frame = Instance.new("Frame")
         frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 40)
+        frame.Size = UDim2.new(0.95, 0, 0, 38)
         frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         frame.BackgroundTransparency = 0.2
         frame.BorderSizePixel = 0
         local corner = Instance.new("UICorner")
         corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
+        corner.CornerRadius = UDim.new(0, 8)
         local btn = Instance.new("TextButton")
         btn.Parent = frame
         btn.Size = UDim2.new(1, 0, 1, 0)
@@ -983,7 +1025,7 @@ local function loadMainMenu()
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 13
+        btn.TextSize = 12
         btn.MouseButton1Click:Connect(callback)
         return frame
     end
@@ -991,29 +1033,29 @@ local function loadMainMenu()
     -- Slider Fly Speed
     local flyFrame = Instance.new("Frame")
     flyFrame.Parent = tabMain
-    flyFrame.Size = UDim2.new(0.95, 0, 0, 50)
+    flyFrame.Size = UDim2.new(0.95, 0, 0, 45)
     flyFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     flyFrame.BackgroundTransparency = 0.2
     flyFrame.BorderSizePixel = 0
     local flyCorner = Instance.new("UICorner")
     flyCorner.Parent = flyFrame
-    flyCorner.CornerRadius = UDim.new(0, 10)
+    flyCorner.CornerRadius = UDim.new(0, 8)
     
     local flyLabel = Instance.new("TextLabel")
     flyLabel.Parent = flyFrame
-    flyLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    flyLabel.Size = UDim2.new(0.45, 0, 1, 0)
     flyLabel.Position = UDim2.new(0.05, 0, 0, 0)
     flyLabel.BackgroundTransparency = 1
-    flyLabel.Text = "Fly Speed: 50"
+    flyLabel.Text = "🚀 Fly: 50"
     flyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     flyLabel.Font = Enum.Font.Gotham
-    flyLabel.TextSize = 12
+    flyLabel.TextSize = 11
     flyLabel.TextXAlignment = Enum.TextXAlignment.Left
     
     local sliderBar = Instance.new("Frame")
     sliderBar.Parent = flyFrame
-    sliderBar.Size = UDim2.new(0.35, 0, 0, 5)
-    sliderBar.Position = UDim2.new(0.55, 0, 0.5, -2.5)
+    sliderBar.Size = UDim2.new(0.35, 0, 0, 4)
+    sliderBar.Position = UDim2.new(0.55, 0, 0.5, -2)
     sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
     sliderBar.BorderSizePixel = 0
     local barCorner = Instance.new("UICorner")
@@ -1031,8 +1073,8 @@ local function loadMainMenu()
     
     local sliderBtn = Instance.new("TextButton")
     sliderBtn.Parent = sliderBar
-    sliderBtn.Size = UDim2.new(0, 16, 0, 16)
-    sliderBtn.Position = UDim2.new(0.5, -8, 0.5, -8)
+    sliderBtn.Size = UDim2.new(0, 14, 0, 14)
+    sliderBtn.Position = UDim2.new(0.5, -7, 0.5, -7)
     sliderBtn.BackgroundColor3 = themeColor
     sliderBtn.BorderSizePixel = 0
     sliderBtn.Text = ""
@@ -1051,15 +1093,15 @@ local function loadMainMenu()
             local barW = sliderBar.AbsoluteSize.X
             local percent = math.clamp((input.Position.X - barPos) / barW, 0, 1)
             sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-            sliderBtn.Position = UDim2.new(percent, -8, 0.5, -8)
+            sliderBtn.Position = UDim2.new(percent, -7, 0.5, -7)
             flySpeed = math.floor(percent * 80 + 20)
-            flyLabel.Text = "Fly Speed: " .. flySpeed
+            flyLabel.Text = "🚀 Fly: " .. flySpeed
         end
     end)
     
     -- MAIN TAB
-    createToggle(tabMain, "FLY MODE", function(s) flyEnabled = s; if s then startFlyMode() else stopFlyMode() end end)
-    createToggle(tabMain, "SPEED BOOST", function(s)
+    createToggle(tabMain, "✈️ FLY MODE", function(s) flyEnabled = s; if s then startFlyMode() else stopFlyMode() end end)
+    createToggle(tabMain, "⚡ SPEED BOOST", function(s)
         speedEnabled = s
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = s and fastSpeed or normalSpeed end
@@ -1069,20 +1111,20 @@ local function loadMainMenu()
             if hum and speedEnabled then hum.WalkSpeed = fastSpeed end
         end)
     end)
-    createToggle(tabMain, "NOCLIP", function(s) noclipEnabled = s; if s then startNoclip() else stopNoclip() end end)
-    createToggle(tabMain, "INFINITY JUMP", function(s) infinityJumpEnabled = s end)
-    createToggle(tabMain, "CROSSHAIR", function(s) if s then createCrosshair() else removeCrosshair() end end)
+    createToggle(tabMain, "🌀 NOCLIP", function(s) noclipEnabled = s; if s then startNoclip() else stopNoclip() end end)
+    createToggle(tabMain, "🦘 INFINITY JUMP", function(s) infinityJumpEnabled = s end)
+    createToggle(tabMain, "🎯 CROSSHAIR", function(s) if s then createCrosshair() else removeCrosshair() end end)
     
     -- ESP TAB
-    createToggle(tabESP, "ESP BOX", function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP LINE", function(s) lineEnabled = s end)
-    createToggle(tabESP, "HEALTH BAR", function(s) healthEnabled = s end)
-    createToggle(tabESP, "SKELETON", function(s) skeletonEnabled = s end)
-    createToggle(tabESP, "PLAYER COUNTER", function(s)
+    createToggle(tabESP, "📦 ESP BOX", function(s) espEnabled = s end)
+    createToggle(tabESP, "📏 ESP LINE", function(s) lineEnabled = s end)
+    createToggle(tabESP, "❤️ HEALTH BAR", function(s) healthEnabled = s end)
+    createToggle(tabESP, "🦴 SKELETON", function(s) skeletonEnabled = s end)
+    createToggle(tabESP, "👥 PLAYER COUNTER", function(s)
         playerCounterEnabled = s
         if s then createPlayerCounter() updatePlayerCounter() elseif enemyCountText then enemyCountText.Visible = false end
     end)
-    createToggle(tabESP, "HOLOGRAM", function(s)
+    createToggle(tabESP, "✨ HOLOGRAM", function(s)
         chamsEnabled = s
         if s then
             for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then applyChams(p) end end
@@ -1092,15 +1134,15 @@ local function loadMainMenu()
     end)
     
     -- UTILITY TAB
-    createToggle(tabUtil, "GOD MODE", function(s) antiDamageEnabled = s; if s then setupAntiDamage() elseif antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end end)
-    createToggle(tabUtil, "SPIN", function(s) toggleSpin(s) end)
-    createButton(tabUtil, "↺ GANTI ARAH SPIN", function() toggleSpinDirection() end)
-    createToggle(tabUtil, "INVISIBLE", function(s) toggleInvisible(s) end)
+    createToggle(tabUtil, "💀 GOD MODE", function(s) antiDamageEnabled = s; if s then setupAntiDamage() elseif antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end end)
+    createToggle(tabUtil, "🌀 SPIN", function(s) toggleSpin(s) end)
+    createButton(tabUtil, "🔄 GANTI ARAH SPIN", function() toggleSpinDirection() end)
+    createToggle(tabUtil, "👻 INVISIBLE", function(s) toggleInvisible(s) end)
     
     -- INFO TAB
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
-    infoFrame.Size = UDim2.new(0.95, 0, 0, 200)
+    infoFrame.Size = UDim2.new(0.95, 0, 0, 160)
     infoFrame.Position = UDim2.new(0.025, 0, 0, 10)
     infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     infoFrame.BackgroundTransparency = 0.3
@@ -1116,7 +1158,7 @@ local function loadMainMenu()
     infoText.Text = "DRIP CLIENT V8\n\nDEVELOPER: Putzzdev\n\n© 2024"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 14
+    infoText.TextSize = 13
     infoText.TextWrapped = true
     
     -- Show first tab
@@ -1124,37 +1166,37 @@ local function loadMainMenu()
     tabs[1].BackgroundTransparency = 0.2
     contents[1].Visible = true
     
-    -- Toggle menu button
+    -- Tombol Toggle Menu (DRIP) di pojok kiri
     local menuBtn = Instance.new("TextButton")
     menuBtn.Parent = ScreenGui
-    menuBtn.Size = UDim2.new(0, 100, 0, 40)
-    menuBtn.Position = UDim2.new(0, 10, 0.5, -20)
+    menuBtn.Size = UDim2.new(0, 80, 0, 35)
+    menuBtn.Position = UDim2.new(0, 10, 0.5, -17)
     menuBtn.BackgroundColor3 = themeColor
     menuBtn.BackgroundTransparency = 0.2
-    menuBtn.Text = "DRIP"
+    menuBtn.Text = "🔓 DRIP"
     menuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     menuBtn.Font = Enum.Font.GothamBlack
-    menuBtn.TextSize = 14
+    menuBtn.TextSize = 12
     menuBtn.ZIndex = 10
     menuBtn.Draggable = true
     local menuCorner = Instance.new("UICorner")
     menuCorner.Parent = menuBtn
-    menuCorner.CornerRadius = UDim.new(0, 12)
+    menuCorner.CornerRadius = UDim.new(0, 10)
     
     local menuVisible = true
     menuBtn.MouseButton1Click:Connect(function()
         menuVisible = not menuVisible
         mainFrame.Visible = menuVisible
         if menuVisible then
-            TweenService:Create(mainFrame, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -200, 0.5, -250)}):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -190, 0.5, -240)}):Play()
         else
-            TweenService:Create(mainFrame, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -200, 1, 0)}):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -190, 1, 0)}):Play()
             task.wait(0.2)
         end
     end)
     
+    showNotif("✅ DRIP CLIENT V8 ACTIVATED! Klik DRIP di pojok kiri", false)
     print("✅ DRIP CLIENT V8 LOADED!")
-    showNotif("✅ DRIP CLIENT V8 ACTIVATED!", false)
 end
 
 print("🔐 DRIP CLIENT V8 - READY!")
