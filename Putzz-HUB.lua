@@ -494,28 +494,23 @@ local function startFlyMode()
     local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
     if not torso then return end
     
-    -- Reset kontrol
     verticalControl = 0
     horizontalControl = 0
     
-    -- Hapus komponen lama
     if torso:FindFirstChild("FlyBV") then torso.FlyBV:Destroy() end
     if torso:FindFirstChild("FlyBG") then torso.FlyBG:Destroy() end
     
-    -- BodyVelocity buat gerak
     flyBodyVelocity = Instance.new("BodyVelocity")
     flyBodyVelocity.Name = "FlyBV"
     flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     flyBodyVelocity.Parent = torso
     
-    -- BodyGyro buat rotasi
     flyBodyGyro = Instance.new("BodyGyro")
     flyBodyGyro.Name = "FlyBG"
     flyBodyGyro.P = 9e4
     flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
     flyBodyGyro.Parent = torso
     
-    -- Disable animasi dan platform stand
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then
         humanoid.PlatformStand = true
@@ -539,31 +534,23 @@ local function startFlyMode()
         local bg = currentTorso:FindFirstChild("FlyBG")
         if not bv or not bg then return end
         
-        -- Dapatkan arah kamera
         local camCF = Camera.CFrame
         local forward = camCF.LookVector
         local right = camCF.RightVector
         local up = camCF.UpVector
         
-        -- MAJU OTOMATIS (lurus ke depan)
         local moveDirection = forward
         
-        -- Belok kiri/kanan dari geser
         if horizontalControl ~= 0 then
             local turnAngle = horizontalControl * 0.5
             local rotatedForward = (forward * math.cos(turnAngle) + right * math.sin(turnAngle)).Unit
             moveDirection = rotatedForward
         end
         
-        -- Naik/turun dari geser vertikal
         local verticalMove = verticalControl
-        
-        -- Hitung velocity
         local currentSpeed = flySpeed
         local velocity = (moveDirection * currentSpeed) + (up * verticalMove * currentSpeed * 0.7)
         bv.Velocity = velocity
-        
-        -- Rotasi badan mengikuti kamera
         bg.CFrame = camCF
     end)
 end
@@ -600,7 +587,6 @@ local function stopFlyMode()
     horizontalControl = 0
 end
 
--- Event touch untuk kontrol fly
 local function setupTouchControls()
     UserInputService.TouchBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
@@ -616,23 +602,21 @@ local function setupTouchControls()
         if touching and touchStartPos then
             local delta = input.Position - touchStartPos
             
-            -- Geser vertikal (atas/bawah) = naik/turun
             if math.abs(delta.Y) > 15 then
                 if delta.Y < 0 then
-                    verticalControl = 1  -- Geser ke atas = naik
+                    verticalControl = 1
                 else
-                    verticalControl = -1 -- Geser ke bawah = turun
+                    verticalControl = -1
                 end
             else
                 verticalControl = 0
             end
             
-            -- Geser horizontal (kiri/kanan) = belok
             if math.abs(delta.X) > 15 then
                 if delta.X < 0 then
-                    horizontalControl = -1 -- Geser kiri = belok kiri
+                    horizontalControl = -1
                 else
-                    horizontalControl = 1  -- Geser kanan = belok kanan
+                    horizontalControl = 1
                 end
             else
                 horizontalControl = 0
@@ -1362,7 +1346,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "DRIP CLENT"
+    subtitle.Text = "DRIP CLIENT V7.5"
     subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1743,7 +1727,7 @@ local function loadMainScript()
         changeTheme(Color3.fromRGB(255, 105, 180))
     end)
     
-        -- ===== TAB INFORMASI =====
+    -- ===== TAB INFORMASI =====
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
     infoFrame.Size = UDim2.new(0.95, 0, 0, 320)
@@ -1767,10 +1751,10 @@ local function loadMainScript()
     
     local infoText = Instance.new("TextLabel")
     infoText.Parent = infoFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 120)
+    infoText.Size = UDim2.new(0.95, 0, 0, 100)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nDEVELOPER: Putzzdev\nTIKTOK: Putzz_mvpp\nKONTAK WA: 088976255131"
+    infoText.Text = "DRIP CLIENT V7.5\n\nDEVELOPER: Putzzdev\nTIKTOK: Putzz_mvpp\nKONTAK WA: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
@@ -1781,7 +1765,7 @@ local function loadMainScript()
     local copyTiktokBtn = Instance.new("TextButton")
     copyTiktokBtn.Parent = infoFrame
     copyTiktokBtn.Size = UDim2.new(0.8, 0, 0, 35)
-    copyTiktokBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+    copyTiktokBtn.Position = UDim2.new(0.1, 0, 0.52, 0)
     copyTiktokBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     copyTiktokBtn.BackgroundTransparency = 0.3
     copyTiktokBtn.Text = "📋 SALIN TIKTOK: Putzz_mvpp"
@@ -1796,7 +1780,7 @@ local function loadMainScript()
     local copyWaBtn = Instance.new("TextButton")
     copyWaBtn.Parent = infoFrame
     copyWaBtn.Size = UDim2.new(0.8, 0, 0, 35)
-    copyWaBtn.Position = UDim2.new(0.1, 0, 0.63, 0)
+    copyWaBtn.Position = UDim2.new(0.1, 0, 0.60, 0)
     copyWaBtn.BackgroundColor3 = Color3.fromRGB(37, 211, 102)
     copyWaBtn.BackgroundTransparency = 0.3
     copyWaBtn.Text = "📋 SALIN WA: 088976255131"
@@ -1811,7 +1795,7 @@ local function loadMainScript()
     local warningFrame = Instance.new("Frame")
     warningFrame.Parent = infoFrame
     warningFrame.Size = UDim2.new(0.95, 0, 0, 50)
-    warningFrame.Position = UDim2.new(0.025, 0, 0.73, 0)
+    warningFrame.Position = UDim2.new(0.025, 0, 0.70, 0)
     warningFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     warningFrame.BackgroundTransparency = 0.2
     warningFrame.BorderSizePixel = 0
@@ -1853,6 +1837,8 @@ local function loadMainScript()
             end
         end)
     end)
+    
+    task.wait(0.1)
     for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
@@ -1916,7 +1902,7 @@ local function loadMainScript()
     end)
     
     print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
-    print("✅ FLY SIMPLE: Aktifkan lalu geser layar untuk kontrol!")
+    print("✅ ")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1967,5 +1953,5 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.5 - SIMPLE FLY + CHAMS HOLOGRAM READY!")
-print("CARA PAKAI FLY: Aktifkan toggle FLY -> langsung jalan maju, geser layar buat naik/turun/belok")
+print("DRIP CLIENT V7.5 - READY!")
+print("")
