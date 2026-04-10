@@ -1,7 +1,7 @@
--- ================== DRIP CLIENT V7.5 (HP SIMPLE FLY + CHAMS HOLOGRAM) ==================
--- Version: 7.5 (Khusus HP - Simple Fly + Chams Biru-Kuning)
+-- ================== DRIP CLIENT V7.5 (FIXED - AUTO LOGIN) ==================
+-- Version: 7.5 (Khusus HP - Simple Fly + Chams Hologram)
 -- Developer: Putzz XD
--- SISTEM KEY: 1 JAM, 1 HARI, 2 HARI, 3 HARI, 7 HARI, 30 HARI, PERMANEN
+-- FIX: Auto login dengan key PutzzVIP
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -22,15 +22,7 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 
--- ================== BUAT GUI KEY SYSTEM TERLEBIH DAHULU ==================
-local KeyGui = Instance.new("ScreenGui")
-KeyGui.Name = "DripKeySystem"
-KeyGui.Parent = game.CoreGui
-KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-KeyGui.DisplayOrder = 999
-
 -- ================== VARIABEL FITUR ==================
--- ESP
 local espEnabled = false
 local lineEnabled = false
 local healthEnabled = false
@@ -38,18 +30,15 @@ local skeletonEnabled = false
 local ESPTable = {}
 local SkeletonESP = {}
 
--- Player Counter
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- FLY SIMPLE
 local flyEnabled = false
 local flyConnection = nil
 local flySpeed = 50
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
 
--- Noclip
 local noclipEnabled = false
 local noclipConnection = nil
 
@@ -57,12 +46,10 @@ local speedEnabled = false
 local normalSpeed = 16
 local fastSpeed = 70
 
--- Combat
 local infinityJumpEnabled = false
 local crosshairEnabled = false
 local crosshairObject = nil
 
--- Utility
 local antiDamageEnabled = false
 local antiDamageConnection = nil
 local antiDamageThread = nil
@@ -79,7 +66,6 @@ local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
 
--- CHAMS HOLOGRAM
 local chamsEnabled = false
 local chamsTransparency = 0.35
 local chamsMaterial = Enum.Material.Neon
@@ -87,19 +73,22 @@ local colorSpeed = 2
 local originalDataChams = {}
 local chamsConnections = {}
 
--- Warna Tema
 local themeColor = Color3.fromRGB(156, 39, 176)
 local darkPurple = Color3.fromRGB(74, 20, 90)
 local boxColor = Color3.fromRGB(0, 255, 0)
 local skeletonColor = Color3.fromRGB(0, 255, 0)
 local MAX_ESP_DISTANCE = 115
 
--- ================== FUNGSI SHOW NOTIFICATION (FIXED) ==================
+-- ================== BUAT GUI KEY SYSTEM ==================
+local KeyGui = Instance.new("ScreenGui")
+KeyGui.Name = "DripKeySystem"
+KeyGui.Parent = game.CoreGui
+KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+KeyGui.DisplayOrder = 999
+
 local function showNotification(title, text, duration, color)
-    -- Cek apakah KeyGui masih ada
-    if not KeyGui or not KeyGui.Parent then return end
-    
-    local success, notif = pcall(function()
+    pcall(function()
+        if not KeyGui or not KeyGui.Parent then return end
         local notifFrame = Instance.new("Frame")
         notifFrame.Parent = KeyGui
         notifFrame.Size = UDim2.new(0, 300, 0, 70)
@@ -138,41 +127,11 @@ local function showNotification(title, text, duration, color)
         TweenService:Create(notifFrame, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
         task.wait(0.5)
         notifFrame:Destroy()
-        
-        return notifFrame
-    end)
-    
-    if not success then
-        -- Fallback jika gagal
-        warn("Notification failed to show: " .. text)
-    end
-end
-
--- ================== FUNGSI KEY SYSTEM ==================
-local function loadKeyData()
-    pcall(function()
-        if isfile and isfile(SAVE_FILE) then
-            local content = readfile(SAVE_FILE)
-            if content and content ~= "" then
-                local data = HttpService:JSONDecode(content)
-                if data then
-                    activeKeys = data
-                end
-            end
-        end
     end)
 end
 
-local function saveKeyData()
-    pcall(function()
-        if writefile then
-            local json = HttpService:JSONEncode(activeKeys)
-            writefile(SAVE_FILE, json)
-        end
-    end)
-end
-
-local function getKeysFromFirebase()
+-- ================== KEY VALIDATION ==================
+local function checkKeyExpiry(inputKey)
     local success, data = pcall(function()
         return game:HttpGet(FIREBASE_URL, true)
     end)
@@ -181,119 +140,20 @@ local function getKeysFromFirebase()
         local success2, jsonData = pcall(function()
             return HttpService:JSONDecode(data)
         end)
+        
         if success2 and jsonData then
-            local keysArray = {}
             for _, keyData in pairs(jsonData) do
-                table.insert(keysArray, keyData)
+                local dbKey = keyData.key or ""
+                if string.upper(dbKey) == string.upper(inputKey) then
+                    return true, "KEY VALID! (" .. (keyData.jenis or "PERMANEN") .. ")"
+                end
             end
-            return keysArray
         end
     end
-    return nil
+    return false, "KEY TIDAK TERDAFTAR!"
 end
 
-local function getTimeRemaining(expiryTimestamp)
-    local currentTime = os.time()
-    local remaining = expiryTimestamp - currentTime
-    
-    if remaining <= 0 then
-        return 0, 0, 0, 0, "EXPIRED"
-    end
-    
-    local days = math.floor(remaining / 86400)
-    local hours = math.floor((remaining % 86400) / 3600)
-    local minutes = math.floor((remaining % 3600) / 60)
-    local seconds = remaining % 60
-    
-    local timeStr = string.format("%d Hari : %02d Jam : %02d Menit : %02d Detik", 
-        days, hours, minutes, seconds)
-    
-    return days, hours, minutes, seconds, timeStr
-end
-
-local function checkKeyExpiry(inputKey)
-    loadKeyData()
-    
-    local keysData = getKeysFromFirebase()
-    if not keysData then
-        return false, "Gagal mengambil data key dari server"
-    end
-    
-    local foundKey = nil
-    local expiryDays = nil
-    
-    for _, keyData in ipairs(keysData) do
-        if keyData.key == inputKey then
-            foundKey = keyData.key
-            
-            if keyData.jenis == "1 JAM" then
-                expiryDays = 1/24
-            elseif keyData.jenis == "1 HARI" then
-                expiryDays = 1
-            elseif keyData.jenis == "2 HARI" then
-                expiryDays = 2
-            elseif keyData.jenis == "3 HARI" then
-                expiryDays = 3
-            elseif keyData.jenis == "7 HARI" then
-                expiryDays = 7
-            elseif keyData.jenis == "30 HARI" then
-                expiryDays = 30
-            elseif keyData.jenis == "PERMANEN" then
-                expiryDays = 9999999
-            else
-                expiryDays = 1
-            end
-            break
-        end
-    end
-    
-    if not foundKey then
-        return false, "KEY TIDAK TERDAFTAR!"
-    end
-    
-    if activeKeys[inputKey] then
-        local firstUsed = activeKeys[inputKey].firstUsed
-        local currentTime = os.time()
-        local expiryTime = firstUsed + (expiryDays * 86400)
-        
-        if currentTime > expiryTime then
-            return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
-        else
-            local days, hours, minutes, seconds, timeStr = getTimeRemaining(expiryTime)
-            keyExpiryTime = expiryTime
-            currentUserKey = inputKey
-            return true, "KEY VALID! Sisa " .. timeStr
-        end
-    else
-        local currentTime = os.time()
-        activeKeys[inputKey] = {
-            firstUsed = currentTime,
-            key = inputKey,
-            expiryDays = expiryDays
-        }
-        saveKeyData()
-        
-        local expiryTime = currentTime + (expiryDays * 86400)
-        keyExpiryTime = expiryTime
-        currentUserKey = inputKey
-        
-        return true, "KEY VALID! Berlaku " .. expiryDays .. " hari"
-    end
-end
-
--- ================== GUI KEY SYSTEM ==================
--- Hapus KeyGui lama jika ada
-pcall(function()
-    if KeyGui then KeyGui:Destroy() end
-end)
-
--- Buat ulang KeyGui
-KeyGui = Instance.new("ScreenGui")
-KeyGui.Name = "DripKeySystem"
-KeyGui.Parent = game.CoreGui
-KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-KeyGui.DisplayOrder = 999
-
+-- ================== BUAT GUI KEY ==================
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = KeyGui
 KeyFrame.Size = UDim2.new(0, 400, 0, 420)
@@ -390,6 +250,7 @@ KeyTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 KeyTextBox.Font = Enum.Font.Gotham
 KeyTextBox.TextSize = 14
 KeyTextBox.ClearTextOnFocus = true
+KeyTextBox.Text = "PutzzVIP"
 
 local KeyBoxCorner = Instance.new("UICorner")
 KeyBoxCorner.Parent = KeyTextBox
@@ -478,9 +339,7 @@ local function showLoading(show)
             local rotation = 0
             while LoadingCircle and LoadingCircle.Visible do
                 rotation = (rotation + 5) % 360
-                if LoadingCircle then
-                    LoadingCircle.Rotation = rotation
-                end
+                if LoadingCircle then LoadingCircle.Rotation = rotation end
                 task.wait(0.01)
             end
         end)
@@ -494,10 +353,6 @@ WebsiteBtn.MouseButton1Click:Connect(function()
             StatusLabel.Text = "✓ Link disalin! Buka browser"
             StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             StatusIcon.Text = "✅"
-            showNotification("✅ LINK DISALIN!", "Buka browser dan paste linknya", 2, Color3.fromRGB(0, 150, 0))
-        else
-            StatusLabel.Text = "🌐 " .. WEBSITE_URL
-            StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
         end
     end)
 end)
@@ -534,41 +389,30 @@ local function startFlyMode()
     flyBodyGyro.Parent = torso
     
     local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.PlatformStand = true
-    end
-    if char:FindFirstChild("Animate") then
-        char.Animate.Disabled = true
-    end
+    if humanoid then humanoid.PlatformStand = true end
+    if char:FindFirstChild("Animate") then char.Animate.Disabled = true end
     
     if flyConnection then flyConnection:Disconnect() end
     
     flyConnection = RunService.RenderStepped:Connect(function()
         if not flyEnabled then return end
-        
         local currentChar = plr.Character
         if not currentChar then return end
-        
         local currentTorso = currentChar:FindFirstChild("UpperTorso") or currentChar:FindFirstChild("Torso") or currentChar:FindFirstChild("HumanoidRootPart")
         if not currentTorso then return end
-        
         local bv = currentTorso:FindFirstChild("FlyBV")
         local bg = currentTorso:FindFirstChild("FlyBG")
         if not bv or not bg then return end
-        
         local camCF = Camera.CFrame
         local forward = camCF.LookVector
         local right = camCF.RightVector
         local up = camCF.UpVector
-        
         local moveDirection = forward
-        
         if horizontalControl ~= 0 then
             local turnAngle = horizontalControl * 0.5
             local rotatedForward = (forward * math.cos(turnAngle) + right * math.sin(turnAngle)).Unit
             moveDirection = rotatedForward
         end
-        
         local verticalMove = verticalControl
         local currentSpeed = flySpeed
         local velocity = (moveDirection * currentSpeed) + (up * verticalMove * currentSpeed * 0.7)
@@ -579,32 +423,19 @@ end
 
 local function stopFlyMode()
     flyEnabled = false
-    
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-    
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     local plr = LocalPlayer
     local char = plr.Character
     if char then
         local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-        if char:FindFirstChild("Animate") then
-            char.Animate.Disabled = false
-        end
-        
+        if humanoid then humanoid.PlatformStand = false end
+        if char:FindFirstChild("Animate") then char.Animate.Disabled = false end
         local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
         if torso then
-            local bv = torso:FindFirstChild("FlyBV")
-            if bv then bv:Destroy() end
-            local bg = torso:FindFirstChild("FlyBG")
-            if bg then bg:Destroy() end
+            if torso:FindFirstChild("FlyBV") then torso.FlyBV:Destroy() end
+            if torso:FindFirstChild("FlyBG") then torso.FlyBG:Destroy() end
         end
     end
-    
     verticalControl = 0
     horizontalControl = 0
 end
@@ -617,37 +448,24 @@ local function setupTouchControls()
             touchStartPos = input.Position
         end
     end)
-    
     UserInputService.TouchMoved:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         if not flyEnabled then return end
         if touching and touchStartPos then
             local delta = input.Position - touchStartPos
-            
             if math.abs(delta.Y) > 15 then
-                if delta.Y < 0 then
-                    verticalControl = 1
-                else
-                    verticalControl = -1
-                end
+                verticalControl = delta.Y < 0 and 1 or -1
             else
                 verticalControl = 0
             end
-            
             if math.abs(delta.X) > 15 then
-                if delta.X < 0 then
-                    horizontalControl = -1
-                else
-                    horizontalControl = 1
-                end
+                horizontalControl = delta.X < 0 and -1 or 1
             else
                 horizontalControl = 0
             end
-            
             touchStartPos = input.Position
         end
     end)
-    
     UserInputService.TouchEnded:Connect(function()
         touching = false
         touchStartPos = nil
@@ -655,54 +473,32 @@ local function setupTouchControls()
         horizontalControl = 0
     end)
 end
-
 setupTouchControls()
 
--- ================== FUNGSI CHAMS HOLOGRAM ==================
+-- ================== FUNGSI CHAMS ==================
 local function getBlueYellowColor()
     local t = (tick() * colorSpeed) % (math.pi * 2)
-    local r = math.abs(math.sin(t))
-    local g = math.abs(math.sin(t + 0.5))
-    local b = math.abs(math.cos(t))
-    return Color3.new(r, g, b)
+    return Color3.new(math.abs(math.sin(t)), math.abs(math.sin(t + 0.5)), math.abs(math.cos(t)))
 end
 
 local function applyChamsToPlayer(player)
     if player == LocalPlayer then return end
-    
     local character = player.Character
     if not character then return end
-    
-    if chamsConnections[player] then
-        chamsConnections[player]:Disconnect()
-        chamsConnections[player] = nil
-    end
-    
-    if not originalDataChams[player] then
-        originalDataChams[player] = {}
-    end
-    
+    if chamsConnections[player] then chamsConnections[player]:Disconnect() end
+    if not originalDataChams[player] then originalDataChams[player] = {} end
     for _, part in pairs(character:GetDescendants()) do
         if part:IsA("BasePart") then
             if not originalDataChams[player][part] then
-                originalDataChams[player][part] = {
-                    Material = part.Material,
-                    Transparency = part.Transparency,
-                    Color = part.Color
-                }
+                originalDataChams[player][part] = {Material = part.Material, Transparency = part.Transparency, Color = part.Color}
             end
             part.Material = chamsMaterial
             part.Transparency = chamsTransparency
         end
     end
-    
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
+    local connection = RunService.RenderStepped:Connect(function()
         if not chamsEnabled then return end
-        if not player or not player.Parent then
-            connection:Disconnect()
-            return
-        end
+        if not player or not player.Parent then connection:Disconnect() return end
         local char = player.Character
         if not char then return end
         local currentColor = getBlueYellowColor()
@@ -716,67 +512,39 @@ local function applyChamsToPlayer(player)
             end
         end
     end)
-    
     chamsConnections[player] = connection
 end
 
 local function removeChamsFromPlayer(player)
-    if chamsConnections[player] then
-        chamsConnections[player]:Disconnect()
-        chamsConnections[player] = nil
-    end
-    
+    if chamsConnections[player] then chamsConnections[player]:Disconnect() chamsConnections[player] = nil end
     if originalDataChams[player] then
         for part, data in pairs(originalDataChams[player]) do
-            if part and part.Parent then
-                pcall(function()
-                    part.Material = data.Material
-                    part.Transparency = data.Transparency
-                    part.Color = data.Color
-                end)
-            end
+            if part and part.Parent then pcall(function() part.Material = data.Material part.Transparency = data.Transparency part.Color = data.Color end) end
         end
         originalDataChams[player] = nil
     end
 end
 
 local function applyChamsToAllPlayers()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            applyChamsToPlayer(player)
-        end
-    end
+    for _, player in pairs(Players:GetPlayers()) do if player ~= LocalPlayer then applyChamsToPlayer(player) end end
 end
 
 local function removeChamsFromAllPlayers()
-    for player, _ in pairs(chamsConnections) do
-        removeChamsFromPlayer(player)
-    end
+    for player, _ in pairs(chamsConnections) do removeChamsFromPlayer(player) end
 end
 
 local function toggleChams(state)
     chamsEnabled = state
-    if state then
-        applyChamsToAllPlayers()
-    else
-        removeChamsFromAllPlayers()
-    end
+    if state then applyChamsToAllPlayers() else removeChamsFromAllPlayers() end
 end
 
 -- ================== FUNGSI CROSSHAIR ==================
 local function createCrosshair()
-    if crosshairObject then
-        pcall(function() crosshairObject:Destroy() end)
-        crosshairObject = nil
-    end
-    
+    if crosshairObject then pcall(function() crosshairObject:Destroy() end) crosshairObject = nil end
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DripCrosshair"
     screenGui.Parent = game.CoreGui
     screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.DisplayOrder = 999
-    
     local outer = Instance.new("Frame")
     outer.Parent = screenGui
     outer.Size = UDim2.new(0, 20, 0, 20)
@@ -787,27 +555,20 @@ local function createCrosshair()
     local outerCorner = Instance.new("UICorner")
     outerCorner.Parent = outer
     outerCorner.CornerRadius = UDim.new(1, 0)
-    
     local dot = Instance.new("Frame")
     dot.Parent = screenGui
     dot.Size = UDim2.new(0, 4, 0, 4)
     dot.Position = UDim2.new(0.5, -2, 0.5, -2)
     dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    dot.BackgroundTransparency = 0
     dot.BorderSizePixel = 0
-    dot.ZIndex = 999
     local dotCorner = Instance.new("UICorner")
     dotCorner.Parent = dot
     dotCorner.CornerRadius = UDim.new(1, 0)
-    
     crosshairObject = screenGui
 end
 
 local function removeCrosshair()
-    if crosshairObject then
-        pcall(function() crosshairObject:Destroy() end)
-        crosshairObject = nil
-    end
+    if crosshairObject then pcall(function() crosshairObject:Destroy() end) crosshairObject = nil end
 end
 
 -- ================== FUNGSI NOCLIP ==================
@@ -816,24 +577,17 @@ local function startNoclip()
     noclipConnection = RunService.Stepped:Connect(function()
         if noclipEnabled and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+                if part:IsA("BasePart") then part.CanCollide = false end
             end
         end
     end)
 end
 
 local function stopNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
     if LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
+            if part:IsA("BasePart") then part.CanCollide = true end
         end
     end
 end
@@ -845,16 +599,13 @@ local function toggleSpin(state)
     if state then
         spinConnection = RunService.Heartbeat:Connect(function()
             if spinEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = LocalPlayer.Character.HumanoidRootPart
-                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
+                LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
             end
         end)
     end
 end
 
-local function toggleSpinDirection()
-    spinDirection = spinDirection * -1
-end
+local function toggleSpinDirection() spinDirection = spinDirection * -1 end
 
 local function updateInvisibleData()
     if LocalPlayer.Character then
@@ -862,9 +613,7 @@ local function updateInvisibleData()
         invisibleHumanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         invisibleParts = {}
         for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.Transparency == 0 then
-                table.insert(invisibleParts, v)
-            end
+            if v:IsA("BasePart") and v.Transparency == 0 then table.insert(invisibleParts, v) end
         end
     end
 end
@@ -896,17 +645,12 @@ local function setupAntiDamage()
     if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
     if antiDamageConnection then antiDamageConnection:Disconnect() end
     if antiDamageThread then antiDamageThread = nil end
-    
     antiDamageHeartbeat = RunService.Heartbeat:Connect(function()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if humanoid.Health < humanoid.MaxHealth then humanoid.Health = humanoid.MaxHealth end
-                if humanoid.Health <= 0 then humanoid.Health = humanoid.MaxHealth end
-            end
+            if humanoid and humanoid.Health < humanoid.MaxHealth then humanoid.Health = humanoid.MaxHealth end
         end
     end)
-    
     antiDamageThread = task.spawn(function()
         while antiDamageEnabled do
             task.wait(0.001)
@@ -918,7 +662,6 @@ local function setupAntiDamage()
             end)
         end
     end)
-    
     local function onHealthChanged()
         if antiDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -929,13 +672,12 @@ local function setupAntiDamage()
             end
         end
     end
-    
     if LocalPlayer.Character then onHealthChanged() end
     LocalPlayer.CharacterAdded:Connect(function() task.wait(0.5); if antiDamageEnabled then onHealthChanged() end end)
 end
 
--- ================== FUNGSI INFINITY JUMP ==================
-local function onJumpRequest()
+-- ================== INFINITY JUMP ==================
+UserInputService.JumpRequest:Connect(function()
     if infinityJumpEnabled then
         local char = LocalPlayer.Character
         if char then
@@ -943,16 +685,11 @@ local function onJumpRequest()
             if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
         end
     end
-end
-UserInputService.JumpRequest:Connect(onJumpRequest)
+end)
 
--- ================== FUNGSI PLAYER COUNTER ==================
+-- ================== PLAYER COUNTER ==================
 local function createPlayerCounter()
-    if enemyCountText then
-        pcall(function() enemyCountText:Remove() end)
-        enemyCountText = nil
-    end
-    
+    if enemyCountText then pcall(function() enemyCountText:Remove() end) enemyCountText = nil end
     enemyCountText = Drawing.new("Text")
     enemyCountText.Size = 24
     enemyCountText.Color = themeColor
@@ -966,19 +703,15 @@ end
 
 local function updatePlayerCounter()
     if not playerCounterEnabled or not enemyCountText then return end
-    
     local count = 0
     for player, esp in pairs(ESPTable) do
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
             local hrp = char.HumanoidRootPart
             local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-            if visible then
-                count = count + 1
-            end
+            if visible then count = count + 1 end
         end
     end
-    
     enemyCountText.Text = "👥 PLAYER: " .. count
     enemyCountText.Color = themeColor
     enemyCountText.Visible = playerCounterEnabled
@@ -988,13 +721,11 @@ end
 -- ================== FUNGSI ESP ==================
 local function createESP(player)
     if player == LocalPlayer then return end
-    
     local box = Drawing.new("Square")
     box.Thickness = 2.5
     box.Color = boxColor
     box.Filled = false
     box.Visible = false
-    
     local name = Drawing.new("Text")
     name.Size = 16
     name.Color = Color3.fromRGB(255, 255, 255)
@@ -1002,7 +733,6 @@ local function createESP(player)
     name.Outline = true
     name.OutlineColor = Color3.fromRGB(0, 0, 0)
     name.Visible = false
-    
     local dist = Drawing.new("Text")
     dist.Size = 13
     dist.Color = Color3.fromRGB(200, 200, 200)
@@ -1010,24 +740,20 @@ local function createESP(player)
     dist.Outline = true
     dist.OutlineColor = Color3.fromRGB(0, 0, 0)
     dist.Visible = false
-    
     local line = Drawing.new("Line")
     line.Thickness = 2.5
     line.Color = themeColor
     line.Visible = false
-    
     local healthBg = Drawing.new("Square")
     healthBg.Thickness = 1
     healthBg.Color = Color3.fromRGB(30, 30, 30)
     healthBg.Filled = true
     healthBg.Visible = false
-    
     local healthFg = Drawing.new("Square")
     healthFg.Thickness = 0
     healthFg.Color = Color3.fromRGB(0, 255, 0)
     healthFg.Filled = true
     healthFg.Visible = false
-    
     ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
 end
 
@@ -1068,7 +794,6 @@ local function updateSkeleton(player, lines)
     end
     for _, lineData in pairs(lines) do
         local line, part1Name, part2Name = unpack(lineData)
-        
         local function findPart(partName)
             if partName == "UpperTorso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") end
             if partName == "LowerTorso" then return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart") end
@@ -1086,10 +811,8 @@ local function updateSkeleton(player, lines)
             if partName == "RightFoot" then return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg") end
             return char:FindFirstChild(partName)
         end
-        
         local part1 = findPart(part1Name)
         local part2 = findPart(part2Name)
-        
         if part1 and part2 then
             local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
             local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
@@ -1111,7 +834,6 @@ end
 RunService.RenderStepped:Connect(function()
     local myChar = LocalPlayer.Character
     local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
-    
     for player, esp in pairs(ESPTable) do
         local box, name, distText, line, healthBg, healthFg = unpack(esp)
         local char = player.Character
@@ -1122,19 +844,15 @@ RunService.RenderStepped:Connect(function()
             local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
             local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
             local withinRange = distance <= MAX_ESP_DISTANCE
-            
             if visible and withinRange then
                 local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                 local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
                 local height = math.abs(top.Y - bottom.Y)
                 local width = height / 2
-                
                 if espEnabled then
                     box.Size = Vector2.new(width, height)
                     box.Position = Vector2.new(pos.X - width/2, top.Y)
                     box.Visible = true
-                    box.Color = boxColor
-                    
                     name.Position = Vector2.new(pos.X, top.Y - 18)
                     name.Text = player.Name
                     name.Visible = true
@@ -1146,7 +864,6 @@ RunService.RenderStepped:Connect(function()
                     name.Visible = false
                     distText.Visible = false
                 end
-                
                 if healthEnabled and humanoid then
                     local healthPercent = humanoid.Health / humanoid.MaxHealth
                     local barWidth = width * 0.8
@@ -1171,7 +888,6 @@ RunService.RenderStepped:Connect(function()
                 healthBg.Visible = false
                 healthFg.Visible = false
             end
-            
             if lineEnabled then
                 line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
                 line.To = Vector2.new(pos.X, pos.Y)
@@ -1182,7 +898,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    
     if skeletonEnabled then
         for player, lines in pairs(SkeletonESP) do
             local char = player.Character
@@ -1203,35 +918,18 @@ RunService.RenderStepped:Connect(function()
             for _, lineData in pairs(lines) do lineData[1].Visible = false end
         end
     end
-    
-    if playerCounterEnabled then
-        updatePlayerCounter()
-    elseif enemyCountText then
-        enemyCountText.Visible = false
-    end
+    if playerCounterEnabled then updatePlayerCounter() elseif enemyCountText then enemyCountText.Visible = false end
 end)
 
-for _, p in pairs(Players:GetPlayers()) do
-    createESP(p)
-    createSkeleton(p)
-end
-
-Players.PlayerAdded:Connect(function(p)
-    createESP(p)
-    createSkeleton(p)
-end)
-
+for _, p in pairs(Players:GetPlayers()) do createESP(p) createSkeleton(p) end
+Players.PlayerAdded:Connect(function(p) createESP(p) createSkeleton(p) end)
 Players.PlayerRemoving:Connect(function(player)
     if ESPTable[player] then
-        for _, drawing in pairs(ESPTable[player]) do
-            pcall(function() if drawing and drawing.Remove then drawing:Remove() end end)
-        end
+        for _, drawing in pairs(ESPTable[player]) do pcall(function() if drawing and drawing.Remove then drawing:Remove() end end) end
         ESPTable[player] = nil
     end
     if SkeletonESP[player] then
-        for _, lineData in pairs(SkeletonESP[player]) do
-            pcall(function() if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end end)
-        end
+        for _, lineData in pairs(SkeletonESP[player]) do pcall(function() if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end end) end
         SkeletonESP[player] = nil
     end
 end)
@@ -1241,17 +939,13 @@ task.spawn(function()
         pcall(function()
             for player, drawings in pairs(ESPTable) do
                 if not player or not player.Parent then
-                    for _, drawing in pairs(drawings) do
-                        if drawing and drawing.Remove then drawing:Remove() end
-                    end
+                    for _, drawing in pairs(drawings) do if drawing and drawing.Remove then drawing:Remove() end end
                     ESPTable[player] = nil
                 end
             end
             for player, lines in pairs(SkeletonESP) do
                 if not player or not player.Parent then
-                    for _, lineData in pairs(lines) do
-                        if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end
-                    end
+                    for _, lineData in pairs(lines) do if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end end
                     SkeletonESP[player] = nil
                 end
             end
@@ -1259,45 +953,28 @@ task.spawn(function()
     end
 end)
 
--- ================== EVENT UNTUK CHAMS ==================
+-- ================== EVENT CHAMS ==================
 local function setupChamsEvents()
     Players.PlayerAdded:Connect(function(player)
         if chamsEnabled and player ~= LocalPlayer then
-            player.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                if chamsEnabled then
-                    applyChamsToPlayer(player)
-                end
-            end)
-            if player.Character then
-                task.wait(0.5)
-                applyChamsToPlayer(player)
-            end
+            player.CharacterAdded:Connect(function() task.wait(0.5); if chamsEnabled then applyChamsToPlayer(player) end end)
+            if player.Character then task.wait(0.5); applyChamsToPlayer(player) end
         end
     end)
-    
-    Players.PlayerRemoving:Connect(function(player)
-        removeChamsFromPlayer(player)
-    end)
+    Players.PlayerRemoving:Connect(function(player) removeChamsFromPlayer(player) end)
 end
-
 setupChamsEvents()
 
 -- ================== FUNGSI UTAMA (MENU) ==================
 local function loadMainScript()
-    -- Hapus GUI key system
     pcall(function() if KeyGui then KeyGui:Destroy() end end)
-    
     print("✅ DRIP CLIENT - Memuat semua fitur...")
-    
     createPlayerCounter()
     
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "DripClient"
     ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.DisplayOrder = 100
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Parent = ScreenGui
@@ -1312,18 +989,6 @@ local function loadMainScript()
     local mainCorner = Instance.new("UICorner")
     mainCorner.Parent = mainFrame
     mainCorner.CornerRadius = UDim.new(0, 24)
-    
-    local glowBg = Instance.new("ImageLabel")
-    glowBg.Parent = mainFrame
-    glowBg.Size = UDim2.new(1.1, 0, 1.1, 0)
-    glowBg.Position = UDim2.new(-0.05, 0, -0.05, 0)
-    glowBg.BackgroundTransparency = 1
-    glowBg.Image = "rbxassetid://6014261993"
-    glowBg.ImageColor3 = themeColor
-    glowBg.ImageTransparency = 0.7
-    glowBg.ScaleType = Enum.ScaleType.Slice
-    glowBg.SliceCenter = Rect.new(10, 10, 118, 118)
-    glowBg.ZIndex = 0
     
     local premiumBorder = Instance.new("Frame")
     premiumBorder.Parent = mainFrame
@@ -1345,13 +1010,6 @@ local function loadMainScript()
     local headerCorner = Instance.new("UICorner")
     headerCorner.Parent = header
     headerCorner.CornerRadius = UDim.new(0, 24)
-    local headerGradient = Instance.new("UIGradient")
-    headerGradient.Parent = header
-    headerGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, themeColor),
-        ColorSequenceKeypoint.new(1, darkPurple)
-    })
-    headerGradient.Rotation = 90
     
     local title = Instance.new("TextLabel")
     title.Parent = header
@@ -1418,7 +1076,6 @@ local function loadMainScript()
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
         content.ScrollingDirection = Enum.ScrollingDirection.Y
         content.ElasticBehavior = Enum.ElasticBehavior.Never
-        content.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
         local contentCorner = Instance.new("UICorner")
         contentCorner.Parent = content
         contentCorner.CornerRadius = UDim.new(0, 12)
@@ -1442,13 +1099,10 @@ local function loadMainScript()
             task.wait(0.05)
             local height = 0
             for _, child in pairs(content:GetChildren()) do
-                if child:IsA("Frame") then
-                    height = height + child.Size.Y.Offset + 10
-                end
+                if child:IsA("Frame") then height = height + child.Size.Y.Offset + 10 end
             end
             content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
         end)
-        
         return content
     end
     
@@ -1533,7 +1187,7 @@ local function loadMainScript()
         return frame
     end
     
-    -- Slider kecepatan Fly
+    -- Slider Fly Speed
     local flySliderFrame = Instance.new("Frame")
     flySliderFrame.Parent = tabMain
     flySliderFrame.Size = UDim2.new(0.95, 0, 0, 44)
@@ -1586,13 +1240,9 @@ local function loadMainScript()
     sliderButtonCorner.CornerRadius = UDim.new(1, 0)
     
     local dragging = false
-    sliderButton.MouseButton1Down:Connect(function()
-        dragging = true
-    end)
+    sliderButton.MouseButton1Down:Connect(function() dragging = true end)
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -1607,17 +1257,8 @@ local function loadMainScript()
         end
     end)
     
-    -- ===== TAB MAIN =====
-    createToggle(tabMain, "FLY", false, function(s)
-        if s then 
-            flyEnabled = true
-            startFlyMode()
-        else 
-            flyEnabled = false
-            stopFlyMode()
-        end
-    end)
-    
+    -- TAB MAIN
+    createToggle(tabMain, "FLY", false, function(s) if s then flyEnabled = true startFlyMode() else flyEnabled = false stopFlyMode() end end)
     createToggle(tabMain, "Speed Boost", false, function(s)
         speedEnabled = s
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -1628,129 +1269,63 @@ local function loadMainScript()
             if hum and speedEnabled then hum.WalkSpeed = fastSpeed end
         end)
     end)
+    createToggle(tabMain, "NoClip", false, function(s) noclipEnabled = s; if s then startNoclip() else stopNoclip() end end)
+    createToggle(tabMain, "Infinity Jump", false, function(s) infinityJumpEnabled = s end)
+    createToggle(tabMain, "Crosshair", false, function(s) if s then createCrosshair() else removeCrosshair() end end)
     
-    createToggle(tabMain, "NoClip", false, function(s)
-        noclipEnabled = s
-        if s then 
-            startNoclip() 
-        else 
-            stopNoclip() 
-        end
-    end)
-    
-    createToggle(tabMain, "Infinity Jump", false, function(s)
-        infinityJumpEnabled = s
-    end)
-    
-    createToggle(tabMain, "Crosshair", false, function(s)
-        crosshairEnabled = s
-        if s then
-            createCrosshair()
-        else
-            removeCrosshair()
-        end
-    end)
-    
-    -- ===== TAB ESP =====
+    -- TAB ESP
     createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
     createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
     createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
     createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
     createToggle(tabESP, "Player Counter", false, function(s) 
         playerCounterEnabled = s
-        if s then
-            createPlayerCounter()
-            updatePlayerCounter()
-        elseif enemyCountText then
-            enemyCountText.Visible = false
-        end
+        if s then createPlayerCounter() updatePlayerCounter() elseif enemyCountText then enemyCountText.Visible = false end
     end)
-    createToggle(tabESP, "Hologram", false, function(s)
-        toggleChams(s)
-    end)
+    createToggle(tabESP, "Hologram", false, function(s) toggleChams(s) end)
     
-    -- ===== TAB UTILITY =====
+    -- TAB UTILITY
     createToggle(tabUtility, "God Mode", false, function(s)
         antiDamageEnabled = s
-        if s then
-            setupAntiDamage()
-        else
+        if s then setupAntiDamage() else
             if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
             if antiDamageConnection then antiDamageConnection:Disconnect() end
             antiDamageThread = nil
         end
     end)
-    
-    createToggle(tabUtility, "Spin", false, function(s)
-        toggleSpin(s)
-    end)
-    
-    createButton(tabUtility, "Ganti Arah Spin", function()
-        toggleSpinDirection()
-    end)
-    
-    createToggle(tabUtility, "Invisible", false, function(s)
-        toggleInvisible(s)
-    end)
+    createToggle(tabUtility, "Spin", false, function(s) toggleSpin(s) end)
+    createButton(tabUtility, "Ganti Arah Spin", function() toggleSpinDirection() end)
+    createToggle(tabUtility, "Invisible", false, function(s) toggleInvisible(s) end)
     
     LocalPlayer.CharacterAdded:Connect(function()
         task.wait(1)
         updateInvisibleData()
         if invisibleEnabled then toggleInvisible(true) end
         if noclipEnabled then startNoclip() end
-        if flyEnabled then 
-            task.wait(0.5)
-            startFlyMode()
-        end
-        if chamsEnabled then
-            task.wait(0.5)
-            applyChamsToAllPlayers()
-        end
+        if flyEnabled then task.wait(0.5); startFlyMode() end
+        if chamsEnabled then task.wait(0.5); applyChamsToAllPlayers() end
     end)
     
-    -- ===== TAB COLOR =====
+    -- TAB COLOR
     local function changeTheme(newColor)
         themeColor = newColor
         premiumBorder.BorderColor3 = themeColor
-        for _, content in pairs(contents) do
-            content.ScrollBarImageColor3 = themeColor
-        end
-        for player, esp in pairs(ESPTable) do
-            if esp and esp[4] then esp[4].Color = themeColor end
-        end
-        if enemyCountText then
-            enemyCountText.Color = themeColor
-        end
+        for _, content in pairs(contents) do content.ScrollBarImageColor3 = themeColor end
+        for player, esp in pairs(ESPTable) do if esp and esp[4] then esp[4].Color = themeColor end end
+        if enemyCountText then enemyCountText.Color = themeColor end
         sliderFill.BackgroundColor3 = themeColor
         sliderButton.BackgroundColor3 = themeColor
     end
+    createButton(tabColor, "Ungu (Default)", function() changeTheme(Color3.fromRGB(156, 39, 176)) end)
+    createButton(tabColor, "Cyan", function() changeTheme(Color3.fromRGB(0, 255, 255)) end)
+    createButton(tabColor, "Merah", function() changeTheme(Color3.fromRGB(255, 0, 0)) end)
+    createButton(tabColor, "Hijau", function() changeTheme(Color3.fromRGB(0, 255, 0)) end)
+    createButton(tabColor, "Biru", function() changeTheme(Color3.fromRGB(0, 0, 255)) end)
+    createButton(tabColor, "Kuning", function() changeTheme(Color3.fromRGB(255, 255, 0)) end)
+    createButton(tabColor, "Orange", function() changeTheme(Color3.fromRGB(255, 165, 0)) end)
+    createButton(tabColor, "Pink", function() changeTheme(Color3.fromRGB(255, 105, 180)) end)
     
-    createButton(tabColor, "Ungu (Default)", function()
-        changeTheme(Color3.fromRGB(156, 39, 176))
-    end)
-    createButton(tabColor, "Cyan", function()
-        changeTheme(Color3.fromRGB(0, 255, 255))
-    end)
-    createButton(tabColor, "Merah", function()
-        changeTheme(Color3.fromRGB(255, 0, 0))
-    end)
-    createButton(tabColor, "Hijau", function()
-        changeTheme(Color3.fromRGB(0, 255, 0))
-    end)
-    createButton(tabColor, "Biru", function()
-        changeTheme(Color3.fromRGB(0, 0, 255))
-    end)
-    createButton(tabColor, "Kuning", function()
-        changeTheme(Color3.fromRGB(255, 255, 0))
-    end)
-    createButton(tabColor, "Orange", function()
-        changeTheme(Color3.fromRGB(255, 165, 0))
-    end)
-    createButton(tabColor, "Pink", function()
-        changeTheme(Color3.fromRGB(255, 105, 180))
-    end)
-    
-    -- ===== TAB INFORMASI =====
+    -- TAB INFO
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
     infoFrame.Size = UDim2.new(0.95, 0, 0, 320)
@@ -1784,7 +1359,6 @@ local function loadMainScript()
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    -- Tombol Copy TikTok
     local copyTiktokBtn = Instance.new("TextButton")
     copyTiktokBtn.Parent = infoFrame
     copyTiktokBtn.Size = UDim2.new(0.8, 0, 0, 35)
@@ -1799,7 +1373,6 @@ local function loadMainScript()
     tiktokCorner.Parent = copyTiktokBtn
     tiktokCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Tombol Copy WhatsApp
     local copyWaBtn = Instance.new("TextButton")
     copyWaBtn.Parent = infoFrame
     copyWaBtn.Size = UDim2.new(0.8, 0, 0, 35)
@@ -1814,7 +1387,6 @@ local function loadMainScript()
     waCorner.Parent = copyWaBtn
     waCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Peringatan
     local warningFrame = Instance.new("Frame")
     warningFrame.Parent = infoFrame
     warningFrame.Size = UDim2.new(0.95, 0, 0, 50)
@@ -1836,28 +1408,14 @@ local function loadMainScript()
     warningText.TextSize = 13
     warningText.TextScaled = true
     
-    -- Fungsi copy teks
     copyTiktokBtn.MouseButton1Click:Connect(function()
         pcall(function()
-            if setclipboard then
-                setclipboard("Putzz_mvpp")
-                showNotification("✅ BERHASIL!", "Teks TikTok berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
-                copyTiktokBtn.Text = "✅ TERSALIN! ✅"
-                task.wait(1)
-                copyTiktokBtn.Text = "📋 SALIN TIKTOK: Putzz_mvpp"
-            end
+            if setclipboard then setclipboard("Putzz_mvpp") end
         end)
     end)
-    
     copyWaBtn.MouseButton1Click:Connect(function()
         pcall(function()
-            if setclipboard then
-                setclipboard("088976255131")
-                showNotification("✅ BERHASIL!", "Nomor WA berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
-                copyWaBtn.Text = "✅ TERSALIN! ✅"
-                task.wait(1)
-                copyWaBtn.Text = "📋 SALIN WA: 088976255131"
-            end
+            if setclipboard then setclipboard("088976255131") end
         end)
     end)
     
@@ -1865,9 +1423,7 @@ local function loadMainScript()
     for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
-            if child:IsA("Frame") then
-                height = height + child.Size.Y.Offset + 10
-            end
+            if child:IsA("Frame") then height = height + child.Size.Y.Offset + 10 end
         end
         content.CanvasSize = UDim2.new(0, 0, 0, height + 40)
     end
@@ -1903,13 +1459,9 @@ local function loadMainScript()
         menuOpen = not menuOpen
         if menuOpen then
             mainFrame.Visible = true
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -275)
-            }):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.25), {Position = UDim2.new(0.5, -200, 0.5, -275)}):Play()
         else
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 1, 0)
-            }):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.25), {Position = UDim2.new(0.5, -200, 1, 0)}):Play()
             task.wait(0.25)
             mainFrame.Visible = false
         end
@@ -1925,10 +1477,9 @@ local function loadMainScript()
     end)
     
     print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
-    print("✅ FLY SIMPLE: Aktifkan lalu geser layar untuk kontrol!")
 end
 
--- ================== EVENT VERIFY BUTTON ==================
+-- ================== VERIFIKASI KEY (AUTO LOGIN) ==================
 VerifyBtn.MouseButton1Click:Connect(function()
     local inputKey = KeyTextBox.Text:gsub("%s+", "")
     if inputKey == "" then
@@ -1943,39 +1494,41 @@ VerifyBtn.MouseButton1Click:Connect(function()
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
     StatusIcon.Text = "⏳"
     
+    -- Cek key (case insensitive)
     local isValid, message = checkKeyExpiry(inputKey)
     
     showLoading(false)
     
     if isValid then
-        StatusLabel.Text = message
+        StatusLabel.Text = "✅ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         StatusIcon.Text = "✅"
         
-        task.wait(1)
-        StatusLabel.Text = "Loading (3)..."
-        task.wait(1)
-        StatusLabel.Text = "Loading (2)..."
-        task.wait(1)
-        StatusLabel.Text = "Loading (1)..."
-        task.wait(1)
+        TweenService:Create(KeyFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 100, 0)}):Play()
+        task.wait(0.2)
+        TweenService:Create(KeyFrame, TweenInfo.new(0.2), {BackgroundColor3 = darkPurple}):Play()
+        
+        for i = 3, 1, -1 do
+            StatusLabel.Text = "Loading " .. i .. "..."
+            task.wait(1)
+        end
         
         pcall(loadMainScript)
-        
     else
-        StatusLabel.Text = message
+        StatusLabel.Text = "❌ " .. message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         StatusIcon.Text = "❌"
         showNotification("GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
     end
 end)
 
-KeyTextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        VerifyBtn.MouseButton1Click:Fire()
-    end
-end)
+-- ================== AUTO LOGIN DENGAN KEY PutzzVIP ==================
+task.wait(1)
+if KeyTextBox then
+    KeyTextBox.Text = "PutzzVIP"
+    task.wait(0.5)
+    VerifyBtn.MouseButton1Click:Fire()
+end
 
 print("DRIP CLIENT V7.5 - READY!")
-print("SISTEM KEY: 1 JAM | 1 HARI | 2 HARI | 3 HARI | 7 HARI | 30 HARI | PERMANEN")
-print("CARA PAKAI FLY: Aktifkan toggle FLY -> langsung jalan maju, geser layar buat naik/turun/belok")
+print("Auto login dengan key: PutzzVIP")
