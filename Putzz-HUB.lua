@@ -22,6 +22,13 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 
+-- ================== BUAT GUI KEY SYSTEM TERLEBIH DAHULU ==================
+local KeyGui = Instance.new("ScreenGui")
+KeyGui.Name = "DripKeySystem"
+KeyGui.Parent = game.CoreGui
+KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+KeyGui.DisplayOrder = 999
+
 -- ================== VARIABEL FITUR ==================
 -- ESP
 local espEnabled = false
@@ -87,37 +94,87 @@ local boxColor = Color3.fromRGB(0, 255, 0)
 local skeletonColor = Color3.fromRGB(0, 255, 0)
 local MAX_ESP_DISTANCE = 115
 
--- ================== FUNGSI KEY SYSTEM ==================
-local function loadKeyData()
-    if isfile and isfile(SAVE_FILE) then
-        local success, content = pcall(function()
-            return readfile(SAVE_FILE)
-        end)
-        if success and content and content ~= "" then
-            local success2, data = pcall(function()
-                return HttpService:JSONDecode(content)
-            end)
-            if success2 then
-                activeKeys = data
-            end
-        end
+-- ================== FUNGSI SHOW NOTIFICATION (FIXED) ==================
+local function showNotification(title, text, duration, color)
+    -- Cek apakah KeyGui masih ada
+    if not KeyGui or not KeyGui.Parent then return end
+    
+    local success, notif = pcall(function()
+        local notifFrame = Instance.new("Frame")
+        notifFrame.Parent = KeyGui
+        notifFrame.Size = UDim2.new(0, 300, 0, 70)
+        notifFrame.Position = UDim2.new(0.5, -150, 0, -80)
+        notifFrame.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
+        notifFrame.BackgroundTransparency = 0.1
+        notifFrame.BorderSizePixel = 0
+        notifFrame.ZIndex = 999
+
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.Parent = notifFrame
+        notifCorner.CornerRadius = UDim.new(0, 12)
+
+        local notifTitle = Instance.new("TextLabel")
+        notifTitle.Parent = notifFrame
+        notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
+        notifTitle.Position = UDim2.new(0, 0, 0, 5)
+        notifTitle.BackgroundTransparency = 1
+        notifTitle.Text = title
+        notifTitle.TextColor3 = Color3.new(1, 1, 1)
+        notifTitle.Font = Enum.Font.GothamBold
+        notifTitle.TextSize = 18
+
+        local notifText = Instance.new("TextLabel")
+        notifText.Parent = notifFrame
+        notifText.Size = UDim2.new(1, 0, 0.5, 0)
+        notifText.Position = UDim2.new(0, 0, 0, 35)
+        notifText.BackgroundTransparency = 1
+        notifText.Text = text
+        notifText.TextColor3 = Color3.new(1, 1, 1)
+        notifText.Font = Enum.Font.Gotham
+        notifText.TextSize = 14
+
+        TweenService:Create(notifFrame, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+        task.wait(duration or 3)
+        TweenService:Create(notifFrame, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
+        task.wait(0.5)
+        notifFrame:Destroy()
+        
+        return notifFrame
+    end)
+    
+    if not success then
+        -- Fallback jika gagal
+        warn("Notification failed to show: " .. text)
     end
 end
 
+-- ================== FUNGSI KEY SYSTEM ==================
+local function loadKeyData()
+    pcall(function()
+        if isfile and isfile(SAVE_FILE) then
+            local content = readfile(SAVE_FILE)
+            if content and content ~= "" then
+                local data = HttpService:JSONDecode(content)
+                if data then
+                    activeKeys = data
+                end
+            end
+        end
+    end)
+end
+
 local function saveKeyData()
-    if writefile then
-        local success, json = pcall(function()
-            return HttpService:JSONEncode(activeKeys)
-        end)
-        if success then
+    pcall(function()
+        if writefile then
+            local json = HttpService:JSONEncode(activeKeys)
             writefile(SAVE_FILE, json)
         end
-    end
+    end)
 end
 
 local function getKeysFromFirebase()
     local success, data = pcall(function()
-        return game:HttpGet(FIREBASE_URL)
+        return game:HttpGet(FIREBASE_URL, true)
     end)
     
     if success and data then
@@ -224,50 +281,14 @@ local function checkKeyExpiry(inputKey)
     end
 end
 
-local function showNotification(title, text, duration, color)
-    local notif = Instance.new("Frame")
-    notif.Parent = KeyGui
-    notif.Size = UDim2.new(0, 300, 0, 70)
-    notif.Position = UDim2.new(0.5, -150, 0, -80)
-    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-    notif.BackgroundTransparency = 0.1
-    notif.BorderSizePixel = 0
-    notif.ZIndex = 999
-
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.Parent = notif
-    notifCorner.CornerRadius = UDim.new(0, 12)
-
-    local notifTitle = Instance.new("TextLabel")
-    notifTitle.Parent = notif
-    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
-    notifTitle.Position = UDim2.new(0, 0, 0, 5)
-    notifTitle.BackgroundTransparency = 1
-    notifTitle.Text = title
-    notifTitle.TextColor3 = Color3.new(1, 1, 1)
-    notifTitle.Font = Enum.Font.GothamBold
-    notifTitle.TextSize = 18
-
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notif
-    notifText.Size = UDim2.new(1, 0, 0.5, 0)
-    notifText.Position = UDim2.new(0, 0, 0, 35)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = text
-    notifText.TextColor3 = Color3.new(1, 1, 1)
-    notifText.Font = Enum.Font.Gotham
-    notifText.TextSize = 14
-
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
-    task.wait(duration or 3)
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
-    task.wait(0.5)
-    notif:Destroy()
-end
-
-
 -- ================== GUI KEY SYSTEM ==================
-local KeyGui = Instance.new("ScreenGui")
+-- Hapus KeyGui lama jika ada
+pcall(function()
+    if KeyGui then KeyGui:Destroy() end
+end)
+
+-- Buat ulang KeyGui
+KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "DripKeySystem"
 KeyGui.Parent = game.CoreGui
 KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -453,11 +474,13 @@ CircleCorner.CornerRadius = UDim.new(1, 0)
 local function showLoading(show)
     LoadingCircle.Visible = show
     if show then
-        spawn(function()
+        task.spawn(function()
             local rotation = 0
-            while LoadingCircle.Visible do
+            while LoadingCircle and LoadingCircle.Visible do
                 rotation = (rotation + 5) % 360
-                LoadingCircle.Rotation = rotation
+                if LoadingCircle then
+                    LoadingCircle.Rotation = rotation
+                end
                 task.wait(0.01)
             end
         end)
@@ -1262,7 +1285,8 @@ setupChamsEvents()
 
 -- ================== FUNGSI UTAMA (MENU) ==================
 local function loadMainScript()
-    KeyGui:Destroy()
+    -- Hapus GUI key system
+    pcall(function() if KeyGui then KeyGui:Destroy() end end)
     
     print("✅ DRIP CLIENT - Memuat semua fitur...")
     
