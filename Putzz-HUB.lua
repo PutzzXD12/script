@@ -89,80 +89,50 @@ local MAX_ESP_DISTANCE = 115
 
 -- ================== FUNGSI KEY SYSTEM ==================
 local function loadKeyData()
-    pcall(function()
-        if isfile and isfile(SAVE_FILE) then
-            local content = readfile(SAVE_FILE)
-            if content and content ~= "" then
-                local data = HttpService:JSONDecode(content)
-                if data then activeKeys = data end
+    if isfile and isfile(SAVE_FILE) then
+        local success, content = pcall(function()
+            return readfile(SAVE_FILE)
+        end)
+        if success and content and content ~= "" then
+            local success2, data = pcall(function()
+                return HttpService:JSONDecode(content)
+            end)
+            if success2 then
+                activeKeys = data
             end
         end
-    end)
+    end
 end
 
 local function saveKeyData()
-    pcall(function()
-        if writefile then
-            local json = HttpService:JSONEncode(activeKeys)
+    if writefile then
+        local success, json = pcall(function()
+            return HttpService:JSONEncode(activeKeys)
+        end)
+        if success then
             writefile(SAVE_FILE, json)
         end
-    end)
+    end
 end
 
--- AMBIL KEY DARI FIREBASE
 local function getKeysFromFirebase()
     local success, data = pcall(function()
         return game:HttpGet(FIREBASE_URL)
     end)
     
-    if success and data and data ~= "" then
+    if success and data then
         local success2, jsonData = pcall(function()
             return HttpService:JSONDecode(data)
         end)
         if success2 and jsonData then
             local keysArray = {}
-            for keyId, keyData in pairs(jsonData) do
-                if type(keyData) == "table" then
-                    local keyValue = keyData.key
-                    local keyJenis = keyData.jenis or "PERMANEN"
-                    if keyValue then
-                        table.insert(keysArray, {
-                            key = keyValue,
-                            jenis = keyJenis
-                        })
-                    end
-                elseif type(keyData) == "string" then
-                    table.insert(keysArray, {
-                        key = keyData,
-                        jenis = "PERMANEN"
-                    })
-                end
+            for _, keyData in pairs(jsonData) do
+                table.insert(keysArray, keyData)
             end
             return keysArray
         end
     end
     return nil
-end
-
--- KONVERSI JENIS KEY KE HARI
-local function getExpiryDays(jenis)
-    if jenis == "1 JAM" then
-        return 1/24
-    elseif jenis == "1 HARI" then
-        return 1
-    elseif jenis == "2 HARI" then
-        return 2
-    elseif jenis == "3 HARI" then
-        return 3
-    elseif jenis == "7 HARI" then
-        return 7
-    elseif jenis == "30 HARI" then
-        return 30
-    elseif jenis == "PERMANEN" then
-        return 9999999
-    else
-        return 1
-    end
 end
 
 local function getTimeRemaining(expiryTimestamp)
@@ -187,52 +157,62 @@ end
 local function checkKeyExpiry(inputKey)
     loadKeyData()
     
-    -- AMBIL KEY DARI FIREBASE
     local keysData = getKeysFromFirebase()
     if not keysData then
-        return false, "GAGAL AMBIL DATA KEY DARI SERVER! CEK KONEKSI"
+        return false, "Gagal mengambil data key dari server"
     end
     
-    -- CARI KEY YANG DIMASUKKAN
     local foundKey = nil
     local expiryDays = nil
-    local keyJenis = nil
     
     for _, keyData in ipairs(keysData) do
         if keyData.key == inputKey then
             foundKey = keyData.key
-            keyJenis = keyData.jenis or "PERMANEN"
-            expiryDays = getExpiryDays(keyJenis)
+            
+            if keyData.jenis == "1 JAM" then
+                expiryDays = 1/24
+            elseif keyData.jenis == "1 HARI" then
+                expiryDays = 1
+            elseif keyData.jenis == "2 HARI" then
+                expiryDays = 2
+            elseif keyData.jenis == "3 HARI" then
+                expiryDays = 3
+            elseif keyData.jenis == "7 HARI" then
+                expiryDays = 7
+            elseif keyData.jenis == "30 HARI" then
+                expiryDays = 30
+            elseif keyData.jenis == "PERMANEN" then
+                expiryDays = 9999999
+            else
+                expiryDays = 1
+            end
             break
         end
     end
     
     if not foundKey then
-        return false, "KEY TIDAK TERDAFTAR DI DATABASE!"
+        return false, "KEY TIDAK TERDAFTAR!"
     end
     
-    -- CEK APAKAH KEY PERNAH DIGUNAKAN
     if activeKeys[inputKey] then
         local firstUsed = activeKeys[inputKey].firstUsed
         local currentTime = os.time()
         local expiryTime = firstUsed + (expiryDays * 86400)
         
         if currentTime > expiryTime then
-            return false, "KEY SUDAH EXPIRED! (" .. keyJenis .. ")"
+            return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
         else
             local days, hours, minutes, seconds, timeStr = getTimeRemaining(expiryTime)
             keyExpiryTime = expiryTime
             currentUserKey = inputKey
-            return true, "✅ KEY VALID! (" .. keyJenis .. ") SISA " .. timeStr
+            return true, "KEY VALID! Sisa " .. timeStr
         end
     else
-        -- KEY BARU, SIMPAN
         local currentTime = os.time()
         activeKeys[inputKey] = {
             firstUsed = currentTime,
             key = inputKey,
-            expiryDays = expiryDays,
-            jenis = keyJenis
+            expiryDays = expiryDays
         }
         saveKeyData()
         
@@ -240,56 +220,51 @@ local function checkKeyExpiry(inputKey)
         keyExpiryTime = expiryTime
         currentUserKey = inputKey
         
-        if expiryDays >= 9999999 then
-            return true, "✅ KEY VALID! (PERMANEN) SELAMANYA!"
-        else
-            return true, "✅ KEY VALID! (" .. keyJenis .. ") BERLAKU " .. expiryDays .. " HARI"
-        end
+        return true, "KEY VALID! Berlaku " .. expiryDays .. " hari"
     end
 end
 
 local function showNotification(title, text, duration, color)
-    pcall(function()
-        local notif = Instance.new("Frame")
-        notif.Parent = KeyGui
-        notif.Size = UDim2.new(0, 300, 0, 70)
-        notif.Position = UDim2.new(0.5, -150, 0, -80)
-        notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-        notif.BackgroundTransparency = 0.1
-        notif.BorderSizePixel = 0
-        notif.ZIndex = 999
+    local notif = Instance.new("Frame")
+    notif.Parent = KeyGui
+    notif.Size = UDim2.new(0, 300, 0, 70)
+    notif.Position = UDim2.new(0.5, -150, 0, -80)
+    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
+    notif.BackgroundTransparency = 0.1
+    notif.BorderSizePixel = 0
+    notif.ZIndex = 999
 
-        local notifCorner = Instance.new("UICorner")
-        notifCorner.Parent = notif
-        notifCorner.CornerRadius = UDim.new(0, 12)
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.Parent = notif
+    notifCorner.CornerRadius = UDim.new(0, 12)
 
-        local notifTitle = Instance.new("TextLabel")
-        notifTitle.Parent = notif
-        notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
-        notifTitle.Position = UDim2.new(0, 0, 0, 5)
-        notifTitle.BackgroundTransparency = 1
-        notifTitle.Text = title
-        notifTitle.TextColor3 = Color3.new(1, 1, 1)
-        notifTitle.Font = Enum.Font.GothamBold
-        notifTitle.TextSize = 18
+    local notifTitle = Instance.new("TextLabel")
+    notifTitle.Parent = notif
+    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
+    notifTitle.Position = UDim2.new(0, 0, 0, 5)
+    notifTitle.BackgroundTransparency = 1
+    notifTitle.Text = title
+    notifTitle.TextColor3 = Color3.new(1, 1, 1)
+    notifTitle.Font = Enum.Font.GothamBold
+    notifTitle.TextSize = 18
 
-        local notifText = Instance.new("TextLabel")
-        notifText.Parent = notif
-        notifText.Size = UDim2.new(1, 0, 0.5, 0)
-        notifText.Position = UDim2.new(0, 0, 0, 35)
-        notifText.BackgroundTransparency = 1
-        notifText.Text = text
-        notifText.TextColor3 = Color3.new(1, 1, 1)
-        notifText.Font = Enum.Font.Gotham
-        notifText.TextSize = 14
+    local notifText = Instance.new("TextLabel")
+    notifText.Parent = notif
+    notifText.Size = UDim2.new(1, 0, 0.5, 0)
+    notifText.Position = UDim2.new(0, 0, 0, 35)
+    notifText.BackgroundTransparency = 1
+    notifText.Text = text
+    notifText.TextColor3 = Color3.new(1, 1, 1)
+    notifText.Font = Enum.Font.Gotham
+    notifText.TextSize = 14
 
-        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
-        task.wait(duration or 3)
-        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
-        task.wait(0.5)
-        notif:Destroy()
-    end)
+    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+    task.wait(duration or 3)
+    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
+    task.wait(0.5)
+    notif:Destroy()
 end
+
 
 -- ================== GUI KEY SYSTEM ==================
 local KeyGui = Instance.new("ScreenGui")
