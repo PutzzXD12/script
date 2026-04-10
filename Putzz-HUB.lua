@@ -1,6 +1,8 @@
--- ================== DRIP CLIENT V7.5 (HP EDITION + FLY FIX) ==================
--- Version: 7.5 (Khusus HP - Touch Control + Crosshair)
+-- ================== DRIP CLIENT V7.5 (HP SIMPLE FLY + CHAMS HOLOGRAM) ==================
+-- Version: 7.5 (Khusus HP - Simple Fly + Chams Biru-Kuning)
 -- Developer: Putzz XD
+-- CARA PAKAI FLY: Aktifin toggle Fly -> langsung jalan maju otomatis
+-- Geser layar ke atas = naik, ke bawah = turun, ke kiri/kanan = belok
 
 -- ================== KEY SYSTEM CONFIG ==================
 local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
@@ -34,17 +36,12 @@ local SkeletonESP = {}
 local playerCounterEnabled = false
 local enemyCountText = nil
 
--- Movement HP (Fly) - Fix dari FlyGuiV3
+-- FLY SIMPLE (Auto maju + geser layar)
 local flyEnabled = false
 local flyConnection = nil
 local flySpeed = 50
-local ctrl = {f = 0, b = 0, l = 0, r = 0}
-local lastctrl = {f = 0, b = 0, l = 0, r = 0}
-local speed = 0
-local maxspeed = 50
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
-local flyTorso = nil
 
 -- Noclip
 local noclipEnabled = false
@@ -52,7 +49,7 @@ local noclipConnection = nil
 
 local speedEnabled = false
 local normalSpeed = 16
-local fastSpeed = 60
+local fastSpeed = 70
 
 -- Combat
 local infinityJumpEnabled = false
@@ -75,6 +72,14 @@ local invisibleConnection = nil
 local invisibleParts = {}
 local invisibleRootPart = nil
 local invisibleHumanoid = nil
+
+-- ================== CHAMS HOLOGRAM ==================
+local chamsEnabled = false
+local chamsTransparency = 0.35
+local chamsMaterial = Enum.Material.Neon
+local colorSpeed = 2
+local originalDataChams = {}
+local chamsConnections = {}
 
 -- Warna Tema
 local themeColor = Color3.fromRGB(156, 39, 176)
@@ -475,47 +480,48 @@ WebsiteBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ================== FUNGSI FLY (DARI FLYGUI V3 - WORKING) ==================
+-- ================== FLY SIMPLE (AUTO MAJU + GESER LAYAR) ==================
+local verticalControl = 0
+local horizontalControl = 0
+local touching = false
+local touchStartPos = nil
+
 local function startFlyMode()
     local plr = LocalPlayer
     local char = plr.Character
     if not char then return end
     
-    -- Ambil torso (R6/R15 kompatibel)
-    flyTorso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
-    if not flyTorso then return end
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    if not torso then return end
     
-    -- Reset variables
-    ctrl = {f = 0, b = 0, l = 0, r = 0}
-    lastctrl = {f = 0, b = 0, l = 0, r = 0}
-    speed = 0
-    maxspeed = 50
+    -- Reset kontrol
+    verticalControl = 0
+    horizontalControl = 0
+    
+    -- Hapus komponen lama
+    if torso:FindFirstChild("FlyBV") then torso.FlyBV:Destroy() end
+    if torso:FindFirstChild("FlyBG") then torso.FlyBG:Destroy() end
+    
+    -- BodyVelocity buat gerak
+    flyBodyVelocity = Instance.new("BodyVelocity")
+    flyBodyVelocity.Name = "FlyBV"
+    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    flyBodyVelocity.Parent = torso
+    
+    -- BodyGyro buat rotasi
+    flyBodyGyro = Instance.new("BodyGyro")
+    flyBodyGyro.Name = "FlyBG"
+    flyBodyGyro.P = 9e4
+    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    flyBodyGyro.Parent = torso
     
     -- Disable animasi dan platform stand
-    if char:FindFirstChildOfClass("Humanoid") then
-        char.Humanoid.PlatformStand = true
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = true
     end
     if char:FindFirstChild("Animate") then
         char.Animate.Disabled = true
-    end
-    
-    -- Buat BodyGyro
-    flyBodyGyro = flyTorso:FindFirstChild("FlyBG")
-    if not flyBodyGyro then
-        flyBodyGyro = Instance.new("BodyGyro")
-        flyBodyGyro.Name = "FlyBG"
-        flyBodyGyro.P = 9e4
-        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyGyro.Parent = flyTorso
-    end
-    
-    -- Buat BodyVelocity
-    flyBodyVelocity = flyTorso:FindFirstChild("FlyBV")
-    if not flyBodyVelocity then
-        flyBodyVelocity = Instance.new("BodyVelocity")
-        flyBodyVelocity.Name = "FlyBV"
-        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyVelocity.Parent = flyTorso
     end
     
     if flyConnection then flyConnection:Disconnect() end
@@ -533,35 +539,32 @@ local function startFlyMode()
         local bg = currentTorso:FindFirstChild("FlyBG")
         if not bv or not bg then return end
         
-        -- Update input WASD
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 else ctrl.f = 0 end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 else ctrl.b = 0 end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 else ctrl.l = 0 end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then ctrl.r = 1 else ctrl.r = 0 end
+        -- Dapatkan arah kamera
+        local camCF = Camera.CFrame
+        local forward = camCF.LookVector
+        local right = camCF.RightVector
+        local up = camCF.UpVector
         
-        -- Hitung speed
-        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-            speed = speed + 0.5 + (speed / maxspeed)
-            if speed > maxspeed then speed = maxspeed end
-        elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
-            speed = speed - 1
-            if speed < 0 then speed = 0 end
+        -- MAJU OTOMATIS (lurus ke depan)
+        local moveDirection = forward
+        
+        -- Belok kiri/kanan dari geser
+        if horizontalControl ~= 0 then
+            local turnAngle = horizontalControl * 0.5
+            local rotatedForward = (forward * math.cos(turnAngle) + right * math.sin(turnAngle)).Unit
+            moveDirection = rotatedForward
         end
         
-        -- Terapkan velocity
-        if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-            bv.Velocity = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + 
-                ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
-            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
-        elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-            bv.Velocity = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + 
-                ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
-        else
-            bv.Velocity = Vector3.new(0, 0, 0)
-        end
+        -- Naik/turun dari geser vertikal
+        local verticalMove = verticalControl
         
-        -- Update gyro
-        bg.CFrame = Camera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
+        -- Hitung velocity
+        local currentSpeed = flySpeed
+        local velocity = (moveDirection * currentSpeed) + (up * verticalMove * currentSpeed * 0.7)
+        bv.Velocity = velocity
+        
+        -- Rotasi badan mengikuti kamera
+        bg.CFrame = camCF
     end)
 end
 
@@ -576,8 +579,9 @@ local function stopFlyMode()
     local plr = LocalPlayer
     local char = plr.Character
     if char then
-        if char:FindFirstChildOfClass("Humanoid") then
-            char.Humanoid.PlatformStand = false
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
         end
         if char:FindFirstChild("Animate") then
             char.Animate.Disabled = false
@@ -592,12 +596,168 @@ local function stopFlyMode()
         end
     end
     
-    ctrl = {f = 0, b = 0, l = 0, r = 0}
-    lastctrl = {f = 0, b = 0, l = 0, r = 0}
-    speed = 0
+    verticalControl = 0
+    horizontalControl = 0
 end
 
--- ================== FUNGSI CROSSHAIR (TITIK MERAH DI TENGAH) ==================
+-- Event touch untuk kontrol fly
+local function setupTouchControls()
+    UserInputService.TouchBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            touching = true
+            touchStartPos = input.Position
+        end
+    end)
+    
+    UserInputService.TouchMoved:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if not flyEnabled then return end
+        if touching and touchStartPos then
+            local delta = input.Position - touchStartPos
+            
+            -- Geser vertikal (atas/bawah) = naik/turun
+            if math.abs(delta.Y) > 15 then
+                if delta.Y < 0 then
+                    verticalControl = 1  -- Geser ke atas = naik
+                else
+                    verticalControl = -1 -- Geser ke bawah = turun
+                end
+            else
+                verticalControl = 0
+            end
+            
+            -- Geser horizontal (kiri/kanan) = belok
+            if math.abs(delta.X) > 15 then
+                if delta.X < 0 then
+                    horizontalControl = -1 -- Geser kiri = belok kiri
+                else
+                    horizontalControl = 1  -- Geser kanan = belok kanan
+                end
+            else
+                horizontalControl = 0
+            end
+            
+            touchStartPos = input.Position
+        end
+    end)
+    
+    UserInputService.TouchEnded:Connect(function()
+        touching = false
+        touchStartPos = nil
+        verticalControl = 0
+        horizontalControl = 0
+    end)
+end
+
+setupTouchControls()
+
+-- ================== FUNGSI CHAMS HOLOGRAM ==================
+local function getBlueYellowColor()
+    local t = (tick() * colorSpeed) % (math.pi * 2)
+    local r = math.abs(math.sin(t))
+    local g = math.abs(math.sin(t + 0.5))
+    local b = math.abs(math.cos(t))
+    return Color3.new(r, g, b)
+end
+
+local function applyChamsToPlayer(player)
+    if player == LocalPlayer then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    if chamsConnections[player] then
+        chamsConnections[player]:Disconnect()
+        chamsConnections[player] = nil
+    end
+    
+    if not originalDataChams[player] then
+        originalDataChams[player] = {}
+    end
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if not originalDataChams[player][part] then
+                originalDataChams[player][part] = {
+                    Material = part.Material,
+                    Transparency = part.Transparency,
+                    Color = part.Color
+                }
+            end
+            part.Material = chamsMaterial
+            part.Transparency = chamsTransparency
+        end
+    end
+    
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not chamsEnabled then return end
+        if not player or not player.Parent then
+            connection:Disconnect()
+            return
+        end
+        local char = player.Character
+        if not char then return end
+        local currentColor = getBlueYellowColor()
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                pcall(function()
+                    part.Color = currentColor
+                    part.Material = chamsMaterial
+                    part.Transparency = chamsTransparency
+                end)
+            end
+        end
+    end)
+    
+    chamsConnections[player] = connection
+end
+
+local function removeChamsFromPlayer(player)
+    if chamsConnections[player] then
+        chamsConnections[player]:Disconnect()
+        chamsConnections[player] = nil
+    end
+    
+    if originalDataChams[player] then
+        for part, data in pairs(originalDataChams[player]) do
+            if part and part.Parent then
+                pcall(function()
+                    part.Material = data.Material
+                    part.Transparency = data.Transparency
+                    part.Color = data.Color
+                end)
+            end
+        end
+        originalDataChams[player] = nil
+    end
+end
+
+local function applyChamsToAllPlayers()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            applyChamsToPlayer(player)
+        end
+    end
+end
+
+local function removeChamsFromAllPlayers()
+    for player, _ in pairs(chamsConnections) do
+        removeChamsFromPlayer(player)
+    end
+end
+
+local function toggleChams(state)
+    chamsEnabled = state
+    if state then
+        applyChamsToAllPlayers()
+    else
+        removeChamsFromAllPlayers()
+    end
+end
+
+-- ================== FUNGSI CROSSHAIR ==================
 local function createCrosshair()
     if crosshairObject then
         pcall(function() crosshairObject:Destroy() end)
@@ -611,7 +771,17 @@ local function createCrosshair()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.DisplayOrder = 999
     
-    -- Titik merah di tengah
+    local outer = Instance.new("Frame")
+    outer.Parent = screenGui
+    outer.Size = UDim2.new(0, 20, 0, 20)
+    outer.Position = UDim2.new(0.5, -10, 0.5, -10)
+    outer.BackgroundTransparency = 1
+    outer.BorderSizePixel = 2
+    outer.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    local outerCorner = Instance.new("UICorner")
+    outerCorner.Parent = outer
+    outerCorner.CornerRadius = UDim.new(1, 0)
+    
     local dot = Instance.new("Frame")
     dot.Parent = screenGui
     dot.Size = UDim2.new(0, 4, 0, 4)
@@ -785,7 +955,7 @@ local function createPlayerCounter()
     enemyCountText.OutlineColor = Color3.fromRGB(0, 0, 0)
     enemyCountText.Position = Vector2.new(Camera.ViewportSize.X / 2, 50)
     enemyCountText.Visible = false
-    enemyCountText.Text = "👥 ENEMIES: 0"
+    enemyCountText.Text = "👥 PLAYER: 0"
 end
 
 local function updatePlayerCounter()
@@ -803,7 +973,7 @@ local function updatePlayerCounter()
         end
     end
     
-    enemyCountText.Text = "👥 ENEMIES: " .. count
+    enemyCountText.Text = "👥 PLAYER: " .. count
     enemyCountText.Color = themeColor
     enemyCountText.Visible = playerCounterEnabled
     enemyCountText.Position = Vector2.new(Camera.ViewportSize.X / 2, 50)
@@ -1083,6 +1253,30 @@ task.spawn(function()
     end
 end)
 
+-- ================== EVENT UNTUK CHAMS ==================
+local function setupChamsEvents()
+    Players.PlayerAdded:Connect(function(player)
+        if chamsEnabled and player ~= LocalPlayer then
+            player.CharacterAdded:Connect(function()
+                task.wait(0.5)
+                if chamsEnabled then
+                    applyChamsToPlayer(player)
+                end
+            end)
+            if player.Character then
+                task.wait(0.5)
+                applyChamsToPlayer(player)
+            end
+        end
+    end)
+    
+    Players.PlayerRemoving:Connect(function(player)
+        removeChamsFromPlayer(player)
+    end)
+end
+
+setupChamsEvents()
+
 -- ================== FUNGSI UTAMA (MENU) ==================
 local function loadMainScript()
     KeyGui:Destroy()
@@ -1168,7 +1362,7 @@ local function loadMainScript()
     subtitle.Size = UDim2.new(1, 0, 0.3, 0)
     subtitle.Position = UDim2.new(0, 0, 0, 48)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "Drip VIP"
+    subtitle.Text = "DRIP CLENT"
     subtitle.TextColor3 = boxColor
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 11
@@ -1332,41 +1526,82 @@ local function loadMainScript()
         return frame
     end
     
-    local function createTextBox(parent, placeholder, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 44)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        local textBox = Instance.new("TextBox")
-        textBox.Parent = frame
-        textBox.Size = UDim2.new(1, -10, 1, -10)
-        textBox.Position = UDim2.new(0, 5, 0, 5)
-        textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        textBox.PlaceholderText = placeholder
-        textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-        textBox.Font = Enum.Font.Gotham
-        textBox.TextSize = 14
-        textBox.ClearTextOnFocus = false
-        local boxCorner = Instance.new("UICorner")
-        boxCorner.Parent = textBox
-        boxCorner.CornerRadius = UDim.new(0, 8)
-        textBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed and textBox.Text ~= "" then
-                callback(textBox.Text)
-                textBox.Text = ""
-            end
-        end)
-        return frame
-    end
+    -- Slider kecepatan Fly
+    local flySliderFrame = Instance.new("Frame")
+    flySliderFrame.Parent = tabMain
+    flySliderFrame.Size = UDim2.new(0.95, 0, 0, 44)
+    flySliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    flySliderFrame.BackgroundTransparency = 0.2
+    flySliderFrame.BorderSizePixel = 0
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.Parent = flySliderFrame
+    sliderCorner.CornerRadius = UDim.new(0, 10)
+    
+    local flySpeedLabel = Instance.new("TextLabel")
+    flySpeedLabel.Parent = flySliderFrame
+    flySpeedLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    flySpeedLabel.Position = UDim2.new(0.05, 0, 0, 0)
+    flySpeedLabel.BackgroundTransparency = 1
+    flySpeedLabel.Text = "Fly Speed: 50"
+    flySpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flySpeedLabel.Font = Enum.Font.Gotham
+    flySpeedLabel.TextSize = 13
+    flySpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local sliderBar = Instance.new("Frame")
+    sliderBar.Parent = flySliderFrame
+    sliderBar.Size = UDim2.new(0.35, 0, 0, 6)
+    sliderBar.Position = UDim2.new(0.55, 0, 0.5, -3)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+    sliderBar.BorderSizePixel = 0
+    local sliderBarCorner = Instance.new("UICorner")
+    sliderBarCorner.Parent = sliderBar
+    sliderBarCorner.CornerRadius = UDim.new(1, 0)
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Parent = sliderBar
+    sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+    sliderFill.BackgroundColor3 = themeColor
+    sliderFill.BorderSizePixel = 0
+    local sliderFillCorner = Instance.new("UICorner")
+    sliderFillCorner.Parent = sliderFill
+    sliderFillCorner.CornerRadius = UDim.new(1, 0)
+    
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Parent = sliderBar
+    sliderButton.Size = UDim2.new(0, 18, 0, 18)
+    sliderButton.Position = UDim2.new(0.5, -9, 0.5, -9)
+    sliderButton.BackgroundColor3 = themeColor
+    sliderButton.BorderSizePixel = 0
+    sliderButton.Text = ""
+    local sliderButtonCorner = Instance.new("UICorner")
+    sliderButtonCorner.Parent = sliderButton
+    sliderButtonCorner.CornerRadius = UDim.new(1, 0)
+    
+    local dragging = false
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local barPos = sliderBar.AbsolutePosition.X
+            local barWidth = sliderBar.AbsoluteSize.X
+            local mouseX = input.Position.X
+            local percent = math.clamp((mouseX - barPos) / barWidth, 0, 1)
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            sliderButton.Position = UDim2.new(percent, -9, 0.5, -9)
+            flySpeed = math.floor(percent * 100 + 20)
+            flySpeedLabel.Text = "Fly Speed: " .. flySpeed
+        end
+    end)
     
     -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly", false, function(s)
+    createToggle(tabMain, "FLY", false, function(s)
         if s then 
             flyEnabled = true
             startFlyMode()
@@ -1423,6 +1658,9 @@ local function loadMainScript()
             enemyCountText.Visible = false
         end
     end)
+    createToggle(tabESP, "Hologram", false, function(s)
+        toggleChams(s)
+    end)
     
     -- ===== TAB UTILITY =====
     createToggle(tabUtility, "God Mode", false, function(s)
@@ -1436,7 +1674,7 @@ local function loadMainScript()
         end
     end)
     
-    createToggle(tabUtility, "Spin Muter", false, function(s)
+    createToggle(tabUtility, "Spin", false, function(s)
         toggleSpin(s)
     end)
     
@@ -1444,7 +1682,7 @@ local function loadMainScript()
         toggleSpinDirection()
     end)
     
-    createToggle(tabUtility, "Invisible Mode", false, function(s)
+    createToggle(tabUtility, "Invisible", false, function(s)
         toggleInvisible(s)
     end)
     
@@ -1456,6 +1694,10 @@ local function loadMainScript()
         if flyEnabled then 
             task.wait(0.5)
             startFlyMode()
+        end
+        if chamsEnabled then
+            task.wait(0.5)
+            applyChamsToAllPlayers()
         end
     end)
     
@@ -1472,12 +1714,14 @@ local function loadMainScript()
         if enemyCountText then
             enemyCountText.Color = themeColor
         end
+        sliderFill.BackgroundColor3 = themeColor
+        sliderButton.BackgroundColor3 = themeColor
     end
     
     createButton(tabColor, "Ungu (Default)", function()
         changeTheme(Color3.fromRGB(156, 39, 176))
     end)
-    createButton(tabColor, "Chan", function()
+    createButton(tabColor, "Cyan", function()
         changeTheme(Color3.fromRGB(0, 255, 255))
     end)
     createButton(tabColor, "Merah", function()
@@ -1499,10 +1743,10 @@ local function loadMainScript()
         changeTheme(Color3.fromRGB(255, 105, 180))
     end)
     
-    -- ===== TAB INFORMASI =====
+        -- ===== TAB INFORMASI =====
     local infoFrame = Instance.new("Frame")
     infoFrame.Parent = tabInfo
-    infoFrame.Size = UDim2.new(0.95, 0, 0, 180)
+    infoFrame.Size = UDim2.new(0.95, 0, 0, 320)
     infoFrame.Position = UDim2.new(0.025, 0, 0, 10)
     infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     infoFrame.BackgroundTransparency = 0.3
@@ -1526,14 +1770,89 @@ local function loadMainScript()
     infoText.Size = UDim2.new(0.95, 0, 0, 120)
     infoText.Position = UDim2.new(0.025, 0, 0, 50)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
+    infoText.Text = "DRIP CLIENT\n\nDEVELOPER: Putzzdev\nTIKTOK: Putzz_mvpp\nKONTAK WA: 088976255131"
     infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 14
     infoText.TextWrapped = true
     infoText.TextXAlignment = Enum.TextXAlignment.Center
     
-    task.wait(0.1)
+    -- Tombol Copy TikTok
+    local copyTiktokBtn = Instance.new("TextButton")
+    copyTiktokBtn.Parent = infoFrame
+    copyTiktokBtn.Size = UDim2.new(0.8, 0, 0, 35)
+    copyTiktokBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+    copyTiktokBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    copyTiktokBtn.BackgroundTransparency = 0.3
+    copyTiktokBtn.Text = "📋 SALIN TIKTOK: Putzz_mvpp"
+    copyTiktokBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    copyTiktokBtn.Font = Enum.Font.GothamBold
+    copyTiktokBtn.TextSize = 12
+    local tiktokCorner = Instance.new("UICorner")
+    tiktokCorner.Parent = copyTiktokBtn
+    tiktokCorner.CornerRadius = UDim.new(0, 8)
+    
+    -- Tombol Copy WhatsApp
+    local copyWaBtn = Instance.new("TextButton")
+    copyWaBtn.Parent = infoFrame
+    copyWaBtn.Size = UDim2.new(0.8, 0, 0, 35)
+    copyWaBtn.Position = UDim2.new(0.1, 0, 0.63, 0)
+    copyWaBtn.BackgroundColor3 = Color3.fromRGB(37, 211, 102)
+    copyWaBtn.BackgroundTransparency = 0.3
+    copyWaBtn.Text = "📋 SALIN WA: 088976255131"
+    copyWaBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    copyWaBtn.Font = Enum.Font.GothamBold
+    copyWaBtn.TextSize = 12
+    local waCorner = Instance.new("UICorner")
+    waCorner.Parent = copyWaBtn
+    waCorner.CornerRadius = UDim.new(0, 8)
+    
+    -- Peringatan
+    local warningFrame = Instance.new("Frame")
+    warningFrame.Parent = infoFrame
+    warningFrame.Size = UDim2.new(0.95, 0, 0, 50)
+    warningFrame.Position = UDim2.new(0.025, 0, 0.73, 0)
+    warningFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    warningFrame.BackgroundTransparency = 0.2
+    warningFrame.BorderSizePixel = 0
+    local warningCorner = Instance.new("UICorner")
+    warningCorner.Parent = warningFrame
+    warningCorner.CornerRadius = UDim.new(0, 8)
+    
+    local warningText = Instance.new("TextLabel")
+    warningText.Parent = warningFrame
+    warningText.Size = UDim2.new(1, 0, 1, 0)
+    warningText.BackgroundTransparency = 1
+    warningText.Text = "⚠️ JIKA ADA MASALAH LAPOR DEVELOPER ⚠️"
+    warningText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    warningText.Font = Enum.Font.GothamBold
+    warningText.TextSize = 13
+    warningText.TextScaled = true
+    
+    -- Fungsi copy teks
+    copyTiktokBtn.MouseButton1Click:Connect(function()
+        local success = pcall(function()
+            if setclipboard then
+                setclipboard("Putzz_mvpp")
+                showNotification("✅ BERHASIL!", "Teks TikTok berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
+                copyTiktokBtn.Text = "✅ TERSALIN! ✅"
+                task.wait(1)
+                copyTiktokBtn.Text = "📋 SALIN TIKTOK: Putzz_mvpp"
+            end
+        end)
+    end)
+    
+    copyWaBtn.MouseButton1Click:Connect(function()
+        local success = pcall(function()
+            if setclipboard then
+                setclipboard("088976255131")
+                showNotification("✅ BERHASIL!", "Nomor WA berhasil disalin!", 1.5, Color3.fromRGB(0, 150, 0))
+                copyWaBtn.Text = "✅ TERSALIN! ✅"
+                task.wait(1)
+                copyWaBtn.Text = "📋 SALIN WA: 088976255131"
+            end
+        end)
+    end)
     for _, content in pairs(contents) do
         local height = 0
         for _, child in pairs(content:GetChildren()) do
@@ -1597,6 +1916,7 @@ local function loadMainScript()
     end)
     
     print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
+    print("✅ FLY SIMPLE: Aktifkan lalu geser layar untuk kontrol!")
 end
 
 -- ================== EVENT VERIFY BUTTON ==================
@@ -1647,4 +1967,5 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-print("DRIP CLIENT V7.5")
+print("DRIP CLIENT V7.5 - SIMPLE FLY + CHAMS HOLOGRAM READY!")
+print("CARA PAKAI FLY: Aktifkan toggle FLY -> langsung jalan maju, geser layar buat naik/turun/belok")
