@@ -1,1530 +1,894 @@
--- ================== DRIP CLIENT V7.5 (MENU FIXED - PASTI MUNCUL) ==================
--- Version: 7.5 (Menu Fixed - Pasti Muncul)
--- Developer: Putzz XD
-
--- ================== KEY SYSTEM CONFIG ==================
-local FIREBASE_URL = "https://keyweb-f8e96-default-rtdb.europe-west1.firebasedatabase.app/keys.json"
-local WEBSITE_URL = "https://putzzdevxit.github.io/KEY-GENERATOR-/"
-local SCRIPT_NAME = "DRIP CLIENT"
-
--- Firebase Online Counter Config
-local ONLINE_DB_URL = "https://putzz-online-stats-default-rtdb.asia-southeast1.firebasedatabase.app/"
-local SAVE_FILE = "drip_key_data.txt"
-local activeKeys = {}
-local currentUserKey = nil
-local keyExpiryTime = 0
-
--- ================== LOAD SERVICES ==================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
-
--- ================== VARIABEL FITUR ==================
--- ESP
-local espEnabled = false
-local lineEnabled = false
-local healthEnabled = false
-local skeletonEnabled = false
-local ESPTable = {}
-local SkeletonESP = {}
-
--- Movement
-local flyEnabled = false
-local flySpeed = 60
-local bv = nil
-local bg = nil
-
-local speedEnabled = false
-local normalSpeed = 16
-local fastSpeed = 60
-
-local noclipEnabled = false
-
--- Combat
-local infinityJumpEnabled = false
-local jumpCount = 0
-
--- Utility
-local antiDamageEnabled = false
-local antiDamageConnection = nil
-local antiDamageThread = nil
-local antiDamageHeartbeat = nil
-
-local spinEnabled = false
-local spinSpeed = 10
-local spinConnection = nil
-local spinDirection = 1
-
-local invisibleEnabled = false
-local invisibleConnection = nil
-local invisibleParts = {}
-local invisibleRootPart = nil
-local invisibleHumanoid = nil
-
--- Warna Tema
-local themeColor = Color3.fromRGB(156, 39, 176)
-local darkPurple = Color3.fromRGB(74, 20, 90)
-local boxColor = Color3.fromRGB(0, 255, 0)
-local skeletonColor = Color3.fromRGB(0, 255, 0)
-local MAX_ESP_DISTANCE = 115
-
--- ================== FUNGSI KEY SYSTEM ==================
-local function loadKeyData()
-    if isfile and isfile(SAVE_FILE) then
-        local success, content = pcall(function()
-            return readfile(SAVE_FILE)
-        end)
-        if success and content and content ~= "" then
-            local success2, data = pcall(function()
-                return HttpService:JSONDecode(content)
-            end)
-            if success2 then
-                activeKeys = data
-            end
-        end
-    end
-end
-
-local function saveKeyData()
-    if writefile then
-        local success, json = pcall(function()
-            return HttpService:JSONEncode(activeKeys)
-        end)
-        if success then
-            writefile(SAVE_FILE, json)
-        end
-    end
-end
-
-local function getKeysFromFirebase()
-    local success, data = pcall(function()
-        return game:HttpGet(FIREBASE_URL)
-    end)
-    
-    if success and data then
-        local success2, jsonData = pcall(function()
-            return HttpService:JSONDecode(data)
-        end)
-        if success2 and jsonData then
-            local keysArray = {}
-            for _, keyData in pairs(jsonData) do
-                table.insert(keysArray, keyData)
-            end
-            return keysArray
-        end
-    end
-    return nil
-end
-
-local function getTimeRemaining(expiryTimestamp)
-    local currentTime = os.time()
-    local remaining = expiryTimestamp - currentTime
-    
-    if remaining <= 0 then
-        return 0, 0, 0, 0, "EXPIRED"
-    end
-    
-    local days = math.floor(remaining / 86400)
-    local hours = math.floor((remaining % 86400) / 3600)
-    local minutes = math.floor((remaining % 3600) / 60)
-    local seconds = remaining % 60
-    
-    local timeStr = string.format("%d Hari : %02d Jam : %02d Menit : %02d Detik", 
-        days, hours, minutes, seconds)
-    
-    return days, hours, minutes, seconds, timeStr
-end
-
-local function checkKeyExpiry(inputKey)
-    loadKeyData()
-    
-    local keysData = getKeysFromFirebase()
-    if not keysData then
-        return false, "Gagal mengambil data key dari server"
-    end
-    
-    local foundKey = nil
-    local expiryDays = nil
-    
-    for _, keyData in ipairs(keysData) do
-        if keyData.key == inputKey then
-            foundKey = keyData.key
-            
-            if keyData.jenis == "1 JAM" then
-                expiryDays = 1/24
-            elseif keyData.jenis == "1 HARI" then
-                expiryDays = 1
-            elseif keyData.jenis == "2 HARI" then
-                expiryDays = 2
-            elseif keyData.jenis == "3 HARI" then
-                expiryDays = 3
-            elseif keyData.jenis == "7 HARI" then
-                expiryDays = 7
-            elseif keyData.jenis == "30 HARI" then
-                expiryDays = 30
-            elseif keyData.jenis == "PERMANEN" then
-                expiryDays = 9999999
-            else
-                expiryDays = 1
-            end
-            break
-        end
-    end
-    
-    if not foundKey then
-        return false, "KEY TIDAK TERDAFTAR!"
-    end
-    
-    if activeKeys[inputKey] then
-        local firstUsed = activeKeys[inputKey].firstUsed
-        local currentTime = os.time()
-        local expiryTime = firstUsed + (expiryDays * 86400)
-        
-        if currentTime > expiryTime then
-            return false, "KEY SUDAH EXPIRED! (" .. expiryDays .. " hari)"
-        else
-            local days, hours, minutes, seconds, timeStr = getTimeRemaining(expiryTime)
-            keyExpiryTime = expiryTime
-            currentUserKey = inputKey
-            return true, "KEY VALID! Sisa " .. timeStr
-        end
-    else
-        local currentTime = os.time()
-        activeKeys[inputKey] = {
-            firstUsed = currentTime,
-            key = inputKey,
-            expiryDays = expiryDays
-        }
-        saveKeyData()
-        
-        local expiryTime = currentTime + (expiryDays * 86400)
-        keyExpiryTime = expiryTime
-        currentUserKey = inputKey
-        
-        return true, "KEY VALID! Berlaku " .. expiryDays .. " hari"
-    end
-end
-
-local function showNotification(title, text, duration, color)
-    local notif = Instance.new("Frame")
-    notif.Parent = KeyGui
-    notif.Size = UDim2.new(0, 300, 0, 70)
-    notif.Position = UDim2.new(0.5, -150, 0, -80)
-    notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-    notif.BackgroundTransparency = 0.1
-    notif.BorderSizePixel = 0
-    notif.ZIndex = 999
-
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.Parent = notif
-    notifCorner.CornerRadius = UDim.new(0, 12)
-
-    local notifTitle = Instance.new("TextLabel")
-    notifTitle.Parent = notif
-    notifTitle.Size = UDim2.new(1, 0, 0.5, 0)
-    notifTitle.Position = UDim2.new(0, 0, 0, 5)
-    notifTitle.BackgroundTransparency = 1
-    notifTitle.Text = title
-    notifTitle.TextColor3 = Color3.new(1, 1, 1)
-    notifTitle.Font = Enum.Font.GothamBold
-    notifTitle.TextSize = 18
-
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notif
-    notifText.Size = UDim2.new(1, 0, 0.5, 0)
-    notifText.Position = UDim2.new(0, 0, 0, 35)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = text
-    notifText.TextColor3 = Color3.new(1, 1, 1)
-    notifText.Font = Enum.Font.Gotham
-    notifText.TextSize = 14
-
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
-    task.wait(duration or 3)
-    TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -80)}):Play()
-    task.wait(0.5)
-    notif:Destroy()
-end
-
--- ================== GUI KEY SYSTEM ==================
-local KeyGui = Instance.new("ScreenGui")
-KeyGui.Name = "DripKeySystem"
-KeyGui.Parent = game.CoreGui
-KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-KeyGui.DisplayOrder = 999
-
-local KeyFrame = Instance.new("Frame")
-KeyFrame.Parent = KeyGui
-KeyFrame.Size = UDim2.new(0, 400, 0, 380)
-KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -190)
-KeyFrame.BackgroundColor3 = darkPurple
-KeyFrame.BackgroundTransparency = 0.1
-KeyFrame.BorderSizePixel = 0
-KeyFrame.Active = true
-KeyFrame.Draggable = true
-
-local KeyCorner = Instance.new("UICorner")
-KeyCorner.Parent = KeyFrame
-KeyCorner.CornerRadius = UDim.new(0, 20)
-
-local KeyBorder = Instance.new("Frame")
-KeyBorder.Parent = KeyFrame
-KeyBorder.Size = UDim2.new(1, 0, 1, 0)
-KeyBorder.BackgroundTransparency = 1
-KeyBorder.BorderSizePixel = 2
-KeyBorder.BorderColor3 = themeColor
-
-local KeyBorderCorner = Instance.new("UICorner")
-KeyBorderCorner.Parent = KeyBorder
-KeyBorderCorner.CornerRadius = UDim.new(0, 20)
-
-local KeyHeader = Instance.new("Frame")
-KeyHeader.Parent = KeyFrame
-KeyHeader.Size = UDim2.new(1, 0, 0, 80)
-KeyHeader.BackgroundTransparency = 1
-
-local KeyIcon = Instance.new("TextLabel")
-KeyIcon.Parent = KeyHeader
-KeyIcon.Size = UDim2.new(1, 0, 0.5, 0)
-KeyIcon.Position = UDim2.new(0, 0, 0, 10)
-KeyIcon.BackgroundTransparency = 1
-KeyIcon.Text = "🔐"
-KeyIcon.TextColor3 = themeColor
-KeyIcon.Font = Enum.Font.GothamBlack
-KeyIcon.TextSize = 45
-
-local KeyTitle = Instance.new("TextLabel")
-KeyTitle.Parent = KeyHeader
-KeyTitle.Size = UDim2.new(1, 0, 0.5, 0)
-KeyTitle.Position = UDim2.new(0, 0, 0, 50)
-KeyTitle.BackgroundTransparency = 1
-KeyTitle.Text = "DRIP CLIENT AUTH"
-KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-KeyTitle.Font = Enum.Font.GothamBold
-KeyTitle.TextSize = 16
-KeyTitle.TextStrokeTransparency = 0.3
-KeyTitle.TextStrokeColor3 = themeColor
-
-local InfoFrame = Instance.new("Frame")
-InfoFrame.Parent = KeyFrame
-InfoFrame.Size = UDim2.new(0.9, 0, 0, 70)
-InfoFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
-InfoFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-InfoFrame.BackgroundTransparency = 0.3
-InfoFrame.BorderSizePixel = 0
-
-local InfoCorner = Instance.new("UICorner")
-InfoCorner.Parent = InfoFrame
-InfoCorner.CornerRadius = UDim.new(0, 12)
-
-local InfoText = Instance.new("TextLabel")
-InfoText.Parent = InfoFrame
-InfoText.Size = UDim2.new(1, -20, 1, -10)
-InfoText.Position = UDim2.new(0, 10, 0, 5)
-InfoText.BackgroundTransparency = 1
-InfoText.Text = "Masukkan Key Anda untuk mengakses script premium"
-InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
-InfoText.Font = Enum.Font.Gotham
-InfoText.TextSize = 13
-InfoText.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeyLabel = Instance.new("TextLabel")
-KeyLabel.Parent = KeyFrame
-KeyLabel.Size = UDim2.new(0.8, 0, 0, 20)
-KeyLabel.Position = UDim2.new(0.1, 0, 0.38, 0)
-KeyLabel.BackgroundTransparency = 1
-KeyLabel.Text = "MASUKAN KEY ANDA"
-KeyLabel.TextColor3 = themeColor
-KeyLabel.Font = Enum.Font.GothamBold
-KeyLabel.TextSize = 12
-KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeyTextBox = Instance.new("TextBox")
-KeyTextBox.Parent = KeyFrame
-KeyTextBox.Size = UDim2.new(0.8, 0, 0, 45)
-KeyTextBox.Position = UDim2.new(0.1, 0, 0.42, 0)
-KeyTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-KeyTextBox.BackgroundTransparency = 0.1
-KeyTextBox.TextColor3 = Color3.new(1, 1, 1)
-KeyTextBox.PlaceholderText = "Masukkan key..."
-KeyTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-KeyTextBox.Font = Enum.Font.Gotham
-KeyTextBox.TextSize = 14
-KeyTextBox.ClearTextOnFocus = true
-
-local KeyBoxCorner = Instance.new("UICorner")
-KeyBoxCorner.Parent = KeyTextBox
-KeyBoxCorner.CornerRadius = UDim.new(0, 10)
-
-local VerifyBtn = Instance.new("TextButton")
-VerifyBtn.Parent = KeyFrame
-VerifyBtn.Size = UDim2.new(0.8, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
-VerifyBtn.BackgroundColor3 = themeColor
-VerifyBtn.BackgroundTransparency = 0.2
-VerifyBtn.Text = "VERIFIKASI KEY"
-VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
-VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 16
-
-local VerifyCorner = Instance.new("UICorner")
-VerifyCorner.Parent = VerifyBtn
-VerifyCorner.CornerRadius = UDim.new(0, 10)
-
-local WebsiteBtn = Instance.new("TextButton")
-WebsiteBtn.Parent = KeyFrame
-WebsiteBtn.Size = UDim2.new(0.5, 0, 0, 35)
-WebsiteBtn.Position = UDim2.new(0.25, 0, 0.67, 0)
-WebsiteBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-WebsiteBtn.BackgroundTransparency = 0.2
-WebsiteBtn.Text = "GET KEY"
-WebsiteBtn.TextColor3 = Color3.new(1, 1, 1)
-WebsiteBtn.Font = Enum.Font.GothamBold
-WebsiteBtn.TextSize = 14
-
-local WebsiteCorner = Instance.new("UICorner")
-WebsiteCorner.Parent = WebsiteBtn
-WebsiteCorner.CornerRadius = UDim.new(0, 8)
-
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Parent = KeyFrame
-StatusFrame.Size = UDim2.new(0.9, 0, 0, 40)
-StatusFrame.Position = UDim2.new(0.05, 0, 0.78, 0)
-StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-StatusFrame.BackgroundTransparency = 0.3
-StatusFrame.BorderSizePixel = 0
-
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.Parent = StatusFrame
-StatusCorner.CornerRadius = UDim.new(0, 10)
-
-local StatusIcon = Instance.new("TextLabel")
-StatusIcon.Parent = StatusFrame
-StatusIcon.Size = UDim2.new(0, 30, 1, 0)
-StatusIcon.Position = UDim2.new(0, 5, 0, 0)
-StatusIcon.BackgroundTransparency = 1
-StatusIcon.Text = "🔒"
-StatusIcon.TextColor3 = Color3.fromRGB(255, 255, 0)
-StatusIcon.Font = Enum.Font.GothamBold
-StatusIcon.TextSize = 18
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Parent = StatusFrame
-StatusLabel.Size = UDim2.new(1, -40, 1, 0)
-StatusLabel.Position = UDim2.new(0, 35, 0, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Menunggu Key..."
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 13
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local LoadingCircle = Instance.new("Frame")
-LoadingCircle.Parent = KeyFrame
-LoadingCircle.Size = UDim2.new(0, 30, 0, 30)
-LoadingCircle.Position = UDim2.new(0.5, -15, 0.9, -15)
-LoadingCircle.BackgroundColor3 = themeColor
-LoadingCircle.BackgroundTransparency = 1
-LoadingCircle.Visible = false
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.Parent = LoadingCircle
-CircleCorner.CornerRadius = UDim.new(1, 0)
-
-local function showLoading(show)
-    LoadingCircle.Visible = show
-    if show then
-        spawn(function()
-            local rotation = 0
-            while LoadingCircle.Visible do
-                rotation = (rotation + 5) % 360
-                LoadingCircle.Rotation = rotation
-                task.wait(0.01)
-            end
-        end)
-    end
-end
-
-WebsiteBtn.MouseButton1Click:Connect(function()
-    local success = pcall(function()
-        if setclipboard then
-            setclipboard(WEBSITE_URL)
-            StatusLabel.Text = "✓ Link disalin! Buka browser"
-            StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            StatusIcon.Text = "✅"
-            showNotification("✅ LINK DISALIN!", "Buka browser dan paste linknya", 2, Color3.fromRGB(0, 150, 0))
-        else
-            StatusLabel.Text = "🌐 " .. WEBSITE_URL
-            StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
-        end
-    end)
-end)
-
--- ================== FUNGSI ONLINE COUNTER (FIREBASE) ==================
-local function updateOnlineStatus(isOnline)
-    local userId = LocalPlayer.UserId
-    local playerName = LocalPlayer.Name
-    
-    if isOnline then
-        local addUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
-        local data = {
-            name = playerName,
-            userId = userId,
-            timestamp = os.time()
-        }
-        pcall(function()
-            HttpService:RequestAsync({
-                Url = addUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(data)
-            })
-        end)
-        
-        local counterUrl = ONLINE_DB_URL .. "total_online.json"
-        pcall(function()
-            local response = HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "GET"
-            })
-            local currentTotal = tonumber(response.Body) or 0
-            local newTotal = currentTotal + 1
-            HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = tostring(newTotal)
-            })
-        end)
-    else
-        local removeUrl = ONLINE_DB_URL .. "online_users/" .. userId .. ".json"
-        pcall(function()
-            HttpService:RequestAsync({
-                Url = removeUrl,
-                Method = "DELETE"
-            })
-        end)
-        
-        local counterUrl = ONLINE_DB_URL .. "total_online.json"
-        pcall(function()
-            local response = HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "GET"
-            })
-            local currentTotal = tonumber(response.Body) or 0
-            local newTotal = math.max(0, currentTotal - 1)
-            HttpService:RequestAsync({
-                Url = counterUrl,
-                Method = "PUT",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = tostring(newTotal)
-            })
-        end)
-    end
-end
-
-local function getTotalOnline()
-    local counterUrl = ONLINE_DB_URL .. "total_online.json"
-    local success, response = pcall(function()
-        return HttpService:RequestAsync({
-            Url = counterUrl,
-            Method = "GET"
-        })
-    end)
-    if success and response and response.Body then
-        return tonumber(response.Body) or 0
-    end
-    return 0
-end
-
-local function setupCleanup()
-    game:BindToClose(function()
-        updateOnlineStatus(false)
-        task.wait(0.5)
-    end)
-end
-
--- ================== FUNGSI UTILITY ==================
-local function toggleSpin(state)
-    spinEnabled = state
-    if spinConnection then spinConnection:Disconnect() spinConnection = nil end
-    if state then
-        spinConnection = RunService.Heartbeat:Connect(function()
-            if spinEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = LocalPlayer.Character.HumanoidRootPart
-                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed * spinDirection), 0)
-            end
-        end)
-    end
-end
-
-local function toggleSpinDirection()
-    spinDirection = spinDirection * -1
-end
-
-local function updateInvisibleData()
-    if LocalPlayer.Character then
-        invisibleRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        invisibleHumanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        invisibleParts = {}
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.Transparency == 0 then
-                table.insert(invisibleParts, v)
-            end
-        end
-    end
-end
-
-local function toggleInvisible(state)
-    invisibleEnabled = state
-    if invisibleConnection then invisibleConnection:Disconnect() invisibleConnection = nil end
-    updateInvisibleData()
-    if state then
-        for _, v in pairs(invisibleParts) do v.Transparency = 0.5 end
-        invisibleConnection = RunService.Heartbeat:Connect(function()
-            if invisibleEnabled and invisibleRootPart and invisibleHumanoid then
-                local oldCF = invisibleRootPart.CFrame
-                local oldOffset = invisibleHumanoid.CameraOffset
-                local hideCF = oldCF * CFrame.new(0, -200000, 0)
-                invisibleRootPart.CFrame = hideCF
-                invisibleHumanoid.CameraOffset = hideCF:ToObjectSpace(CFrame.new(oldCF.Position)).Position
-                RunService.RenderStepped:Wait()
-                invisibleRootPart.CFrame = oldCF
-                invisibleHumanoid.CameraOffset = oldOffset
-            end
-        end)
-    else
-        for _, v in pairs(invisibleParts) do v.Transparency = 0 end
-    end
-end
-
-local function setupAntiDamage()
-    if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
-    if antiDamageConnection then antiDamageConnection:Disconnect() end
-    if antiDamageThread then antiDamageThread = nil end
-    
-    antiDamageHeartbeat = RunService.Heartbeat:Connect(function()
-        if antiDamageEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if humanoid.Health < humanoid.MaxHealth then humanoid.Health = humanoid.MaxHealth end
-                if humanoid.Health <= 0 then humanoid.Health = humanoid.MaxHealth end
-            end
-        end
-    end)
-    
-    antiDamageThread = task.spawn(function()
-        while antiDamageEnabled do
-            task.wait(0.001)
-            pcall(function()
-                if LocalPlayer.Character then
-                    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if humanoid and humanoid.Health < humanoid.MaxHealth then humanoid.Health = humanoid.MaxHealth end
-                end
-            end)
-        end
-    end)
-    
-    local function onHealthChanged()
-        if antiDamageEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.HealthChanged:Connect(function(newHealth)
-                    if antiDamageEnabled and newHealth < humanoid.MaxHealth then humanoid.Health = humanoid.MaxHealth end
-                end)
-            end
-        end
-    end
-    
-    if LocalPlayer.Character then onHealthChanged() end
-    LocalPlayer.CharacterAdded:Connect(function() task.wait(0.5); if antiDamageEnabled then onHealthChanged() end end)
-end
-
--- ================== FUNGSI INFINITY JUMP ==================
-local function onJumpRequest()
-    if infinityJumpEnabled then
-        local char = LocalPlayer.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
-        end
-    end
-end
-UserInputService.JumpRequest:Connect(onJumpRequest)
-
--- ================== FUNGSI TELEPORT ==================
-local function teleportToPlayer(username)
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():find(username:lower()) or (player.DisplayName and player.DisplayName:lower():find(username:lower())) then
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local myChar = LocalPlayer.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
-
--- ================== FUNGSI ESP ==================
-local function createESP(player)
-    if player == LocalPlayer then return end
-    
-    local box = Drawing.new("Square")
-    box.Thickness = 2.5
-    box.Color = boxColor
-    box.Filled = false
-    box.Visible = false
-    
-    local name = Drawing.new("Text")
-    name.Size = 16
-    name.Color = Color3.fromRGB(255, 255, 255)
-    name.Center = true
-    name.Outline = true
-    name.OutlineColor = Color3.fromRGB(0, 0, 0)
-    name.Visible = false
-    
-    local dist = Drawing.new("Text")
-    dist.Size = 13
-    dist.Color = Color3.fromRGB(200, 200, 200)
-    dist.Center = true
-    dist.Outline = true
-    dist.OutlineColor = Color3.fromRGB(0, 0, 0)
-    dist.Visible = false
-    
-    local line = Drawing.new("Line")
-    line.Thickness = 2.5
-    line.Color = themeColor
-    line.Visible = false
-    
-    local healthBg = Drawing.new("Square")
-    healthBg.Thickness = 1
-    healthBg.Color = Color3.fromRGB(30, 30, 30)
-    healthBg.Filled = true
-    healthBg.Visible = false
-    
-    local healthFg = Drawing.new("Square")
-    healthFg.Thickness = 0
-    healthFg.Color = Color3.fromRGB(0, 255, 0)
-    healthFg.Filled = true
-    healthFg.Visible = false
-    
-    ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
-end
-
-local function createSkeleton(player)
-    if player == LocalPlayer then return end
-    local lines = {}
-    local connections = {
-        {"Head", "UpperTorso"}, {"Head", "Torso"},
-        {"UpperTorso", "LowerTorso"}, {"Torso", "HumanoidRootPart"},
-        {"UpperTorso", "LeftUpperArm"}, {"Torso", "Left Arm"}, 
-        {"LeftUpperArm", "LeftLowerArm"}, {"Left Arm", "LeftLowerArm"},
-        {"LeftLowerArm", "LeftHand"},
-        {"UpperTorso", "RightUpperArm"}, {"Torso", "Right Arm"},
-        {"RightUpperArm", "RightLowerArm"}, {"Right Arm", "RightLowerArm"},
-        {"RightLowerArm", "RightHand"},
-        {"LowerTorso", "LeftUpperLeg"}, {"HumanoidRootPart", "Left Leg"},
-        {"LeftUpperLeg", "LeftLowerLeg"}, {"Left Leg", "LeftLowerLeg"},
-        {"LeftLowerLeg", "LeftFoot"},
-        {"LowerTorso", "RightUpperLeg"}, {"HumanoidRootPart", "Right Leg"},
-        {"RightUpperLeg", "RightLowerLeg"}, {"Right Leg", "RightLowerLeg"},
-        {"RightLowerLeg", "RightFoot"}
-    }
-    for i = 1, #connections do
-        local line = Drawing.new("Line")
-        line.Thickness = 3
-        line.Color = skeletonColor
-        line.Visible = false
-        table.insert(lines, {line, connections[i][1], connections[i][2]})
-    end
-    SkeletonESP[player] = lines
-end
-
-local function updateSkeleton(player, lines)
-    local char = player.Character
-    if not char then
-        for _, lineData in pairs(lines) do lineData[1].Visible = false end
-        return
-    end
-    for _, lineData in pairs(lines) do
-        local line, part1Name, part2Name = unpack(lineData)
-        
-        local function findPart(partName)
-            if partName == "UpperTorso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") end
-            if partName == "LowerTorso" then return char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart") end
-            if partName == "LeftUpperArm" then return char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm") end
-            if partName == "RightUpperArm" then return char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm") end
-            if partName == "LeftUpperLeg" then return char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg") end
-            if partName == "RightUpperLeg" then return char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg") end
-            if partName == "LeftLowerArm" then return char:FindFirstChild("LeftLowerArm") or char:FindFirstChild("Left Arm") end
-            if partName == "RightLowerArm" then return char:FindFirstChild("RightLowerArm") or char:FindFirstChild("Right Arm") end
-            if partName == "LeftLowerLeg" then return char:FindFirstChild("LeftLowerLeg") or char:FindFirstChild("Left Leg") end
-            if partName == "RightLowerLeg" then return char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("Right Leg") end
-            if partName == "LeftHand" then return char:FindFirstChild("LeftHand") or char:FindFirstChild("Left Arm") end
-            if partName == "RightHand" then return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") end
-            if partName == "LeftFoot" then return char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg") end
-            if partName == "RightFoot" then return char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg") end
-            return char:FindFirstChild(partName)
-        end
-        
-        local part1 = findPart(part1Name)
-        local part2 = findPart(part2Name)
-        
-        if part1 and part2 then
-            local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
-            local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
-            if vis1 and vis2 then
-                line.From = Vector2.new(pos1.X, pos1.Y)
-                line.To = Vector2.new(pos2.X, pos2.Y)
-                line.Visible = skeletonEnabled
-                line.Color = skeletonColor
-            else
-                line.Visible = false
-            end
-        else
-            line.Visible = false
-        end
-    end
-end
-
--- ================== FUNGSI FLY ==================
-local function startFly()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Parent = hrp
-    bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.Parent = hrp
-    RunService.RenderStepped:Connect(function()
-        if flyEnabled and bv and bg then
-            bg.CFrame = Camera.CFrame
-            bv.Velocity = Camera.CFrame.LookVector * flySpeed
-        end
-    end)
-end
-
-local function stopFly()
-    if bv then bv:Destroy() bv = nil end
-    if bg then bg:Destroy() bg = nil end
-end
-
--- ================== FUNGSI NOCLIP ==================
-RunService.Stepped:Connect(function()
-    if noclipEnabled and LocalPlayer.Character then
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
-    end
-end)
-
--- ================== RENDER STEP ESP ==================
-RunService.RenderStepped:Connect(function()
-    local myChar = LocalPlayer.Character
-    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
-    
-    for player, esp in pairs(ESPTable) do
-        local box, name, distText, line, healthBg, healthFg = unpack(esp)
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
-            local hrp = char.HumanoidRootPart
-            local head = char.Head
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
-            local distance = myPos and (myPos - hrp.Position).Magnitude or math.huge
-            local withinRange = distance <= MAX_ESP_DISTANCE
-            
-            if visible and withinRange then
-                local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-                local height = math.abs(top.Y - bottom.Y)
-                local width = height / 2
-                
-                if espEnabled then
-                    box.Size = Vector2.new(width, height)
-                    box.Position = Vector2.new(pos.X - width/2, top.Y)
-                    box.Visible = true
-                    box.Color = boxColor
-                    
-                    name.Position = Vector2.new(pos.X, top.Y - 18)
-                    name.Text = player.Name
-                    name.Visible = true
-                    distText.Text = math.floor(distance) .. "m"
-                    distText.Position = Vector2.new(pos.X, bottom.Y + 5)
-                    distText.Visible = true
-                else
-                    box.Visible = false
-                    name.Visible = false
-                    distText.Visible = false
-                end
-                
-                if healthEnabled and humanoid then
-                    local healthPercent = humanoid.Health / humanoid.MaxHealth
-                    local barWidth = width * 0.8
-                    local barHeight = 4
-                    local barX = pos.X - barWidth / 2
-                    local barY = top.Y - 22
-                    healthBg.Size = Vector2.new(barWidth, barHeight)
-                    healthBg.Position = Vector2.new(barX, barY)
-                    healthBg.Visible = true
-                    healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
-                    healthFg.Position = Vector2.new(barX, barY)
-                    healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                    healthFg.Visible = true
-                else
-                    healthBg.Visible = false
-                    healthFg.Visible = false
-                end
-                
-                if lineEnabled then
-                    line.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
-                    line.To = Vector2.new(pos.X, pos.Y)
-                    line.Visible = true
-                    line.Color = themeColor
-                else
-                    line.Visible = false
-                end
-            else
-                box.Visible = false
-                name.Visible = false
-                distText.Visible = false
-                line.Visible = false
-                healthBg.Visible = false
-                healthFg.Visible = false
-            end
-        end
-    end
-    
-    if skeletonEnabled then
-        for player, lines in pairs(SkeletonESP) do
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and myPos then
-                local hrp = char.HumanoidRootPart
-                local distance = (myPos - hrp.Position).Magnitude
-                if distance <= MAX_ESP_DISTANCE then
-                    updateSkeleton(player, lines)
-                else
-                    for _, lineData in pairs(lines) do lineData[1].Visible = false end
-                end
-            else
-                for _, lineData in pairs(lines) do lineData[1].Visible = false end
-            end
-        end
-    else
-        for _, lines in pairs(SkeletonESP) do
-            for _, lineData in pairs(lines) do lineData[1].Visible = false end
-        end
-    end
-end)
-
--- Inisialisasi ESP
-for _, p in pairs(Players:GetPlayers()) do
-    createESP(p)
-    createSkeleton(p)
-end
-
-Players.PlayerAdded:Connect(function(p)
-    createESP(p)
-    createSkeleton(p)
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if ESPTable[player] then
-        for _, drawing in pairs(ESPTable[player]) do
-            pcall(function() if drawing and drawing.Remove then drawing:Remove() end end)
-        end
-        ESPTable[player] = nil
-    end
-    if SkeletonESP[player] then
-        for _, lineData in pairs(SkeletonESP[player]) do
-            pcall(function() if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end end)
-        end
-        SkeletonESP[player] = nil
-    end
-end)
-
--- Cleanup ESP
-task.spawn(function()
-    while task.wait(30) do
-        pcall(function()
-            for player, drawings in pairs(ESPTable) do
-                if not player or not player.Parent then
-                    for _, drawing in pairs(drawings) do
-                        if drawing and drawing.Remove then drawing:Remove() end
-                    end
-                    ESPTable[player] = nil
-                end
-            end
-            for player, lines in pairs(SkeletonESP) do
-                if not player or not player.Parent then
-                    for _, lineData in pairs(lines) do
-                        if lineData[1] and lineData[1].Remove then lineData[1]:Remove() end
-                    end
-                    SkeletonESP[player] = nil
-                end
-            end
-        end)
-    end
-end)
-
--- ================== FUNGSI UTAMA (MENU) - FIXED ==================
-local function loadMainScript()
-    -- Hapus GUI key system
-    KeyGui:Destroy()
-    
-    print("✅ DRIP CLIENT - Memuat semua fitur...")
-    
-    -- ================== ONLINE COUNTER ==================
-    updateOnlineStatus(true)
-    setupCleanup()
-    
-    -- ================== GUI UTAMA ==================
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Parent = game.CoreGui
-    ScreenGui.Name = "DripClient"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.DisplayOrder = 100
-    
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Parent = ScreenGui
-    mainFrame.Size = UDim2.new(0, 400, 0, 550)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
-    mainFrame.BackgroundColor3 = darkPurple
-    mainFrame.BackgroundTransparency = 0.05
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.Parent = mainFrame
-    mainCorner.CornerRadius = UDim.new(0, 24)
-    
-    local glowBg = Instance.new("ImageLabel")
-    glowBg.Parent = mainFrame
-    glowBg.Size = UDim2.new(1.1, 0, 1.1, 0)
-    glowBg.Position = UDim2.new(-0.05, 0, -0.05, 0)
-    glowBg.BackgroundTransparency = 1
-    glowBg.Image = "rbxassetid://6014261993"
-    glowBg.ImageColor3 = themeColor
-    glowBg.ImageTransparency = 0.7
-    glowBg.ScaleType = Enum.ScaleType.Slice
-    glowBg.SliceCenter = Rect.new(10, 10, 118, 118)
-    glowBg.ZIndex = 0
-    
-    local premiumBorder = Instance.new("Frame")
-    premiumBorder.Parent = mainFrame
-    premiumBorder.Size = UDim2.new(1, 0, 1, 0)
-    premiumBorder.BackgroundTransparency = 1
-    premiumBorder.BorderSizePixel = 3
-    premiumBorder.BorderColor3 = themeColor
-    local borderCorner = Instance.new("UICorner")
-    borderCorner.Parent = premiumBorder
-    borderCorner.CornerRadius = UDim.new(0, 24)
-    
-    local header = Instance.new("Frame")
-    header.Parent = mainFrame
-    header.Size = UDim2.new(1, 0, 0, 70)
-    header.Position = UDim2.new(0, 0, 0, 0)
-    header.BackgroundColor3 = themeColor
-    header.BackgroundTransparency = 0.15
-    header.BorderSizePixel = 0
-    local headerCorner = Instance.new("UICorner")
-    headerCorner.Parent = header
-    headerCorner.CornerRadius = UDim.new(0, 24)
-    local headerGradient = Instance.new("UIGradient")
-    headerGradient.Parent = header
-    headerGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, themeColor),
-        ColorSequenceKeypoint.new(1, darkPurple)
-    })
-    headerGradient.Rotation = 90
-    
-    local title = Instance.new("TextLabel")
-    title.Parent = header
-    title.Size = UDim2.new(1, 0, 0.6, 0)
-    title.Position = UDim2.new(0, 0, 0, 15)
-    title.BackgroundTransparency = 1
-    title.Text = "DRIP CLIENT"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.Font = Enum.Font.GothamBlack
-    title.TextSize = 26
-    title.TextXAlignment = Enum.TextXAlignment.Center
-    
-    local subtitle = Instance.new("TextLabel")
-    subtitle.Parent = header
-    subtitle.Size = UDim2.new(1, 0, 0.3, 0)
-    subtitle.Position = UDim2.new(0, 0, 0, 48)
-    subtitle.BackgroundTransparency = 1
-    subtitle.Text = "GREEN BOX | DISTANCE 115M"
-    subtitle.TextColor3 = boxColor
-    subtitle.Font = Enum.Font.Gotham
-    subtitle.TextSize = 11
-    subtitle.TextXAlignment = Enum.TextXAlignment.Center
-    
-    -- Tab bar
-    local tabBar = Instance.new("Frame")
-    tabBar.Parent = mainFrame
-    tabBar.Size = UDim2.new(0.95, 0, 0, 42)
-    tabBar.Position = UDim2.new(0.025, 0, 0.13, 0)
-    tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    tabBar.BackgroundTransparency = 0.3
-    tabBar.BorderSizePixel = 0
-    local tabBarCorner = Instance.new("UICorner")
-    tabBarCorner.Parent = tabBar
-    tabBarCorner.CornerRadius = UDim.new(0, 10)
-    
-    local tabs = {}
-    local contents = {}
-    
-    local function createTab(name, icon, idx)
-        local btn = Instance.new("TextButton")
-        btn.Parent = tabBar
-        btn.Size = UDim2.new(0.2, -2, 1, -6)
-        btn.Position = UDim2.new((idx-1)*0.2, 5, 0, 3)
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        btn.BackgroundTransparency = 0.5
-        btn.Text = icon .. " " .. name
-        btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 12
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.Parent = btn
-        btnCorner.CornerRadius = UDim.new(0, 8)
-        
-        local content = Instance.new("ScrollingFrame")
-        content.Parent = mainFrame
-        content.Size = UDim2.new(0.94, 0, 1, -0.28)
-        content.Position = UDim2.new(0.03, 0, 0.2, 0)
-        content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        content.BackgroundTransparency = 0.4
-        content.BorderSizePixel = 0
-        content.ScrollBarThickness = 8
-        content.ScrollBarImageColor3 = themeColor
-        content.CanvasSize = UDim2.new(0, 0, 0, 0)
-        content.Visible = false
-        content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        content.ScrollingDirection = Enum.ScrollingDirection.Y
-        content.ElasticBehavior = Enum.ElasticBehavior.Never
-        content.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
-        local contentCorner = Instance.new("UICorner")
-        contentCorner.Parent = content
-        contentCorner.CornerRadius = UDim.new(0, 12)
-        local layout = Instance.new("UIListLayout")
-        layout.Parent = content
-        layout.Padding = UDim.new(0, 10)
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        
-        table.insert(tabs, btn)
-        table.insert(contents, content)
-        
-        btn.MouseButton1Click:Connect(function()
-            for i, b in ipairs(tabs) do
-                b.TextColor3 = Color3.fromRGB(200, 200, 200)
-                b.BackgroundTransparency = 0.5
-                contents[i].Visible = false
-            end
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.BackgroundTransparency = 0.2
-            content.Visible = true
-        end)
-        
-        return content
-    end
-    
-    local tabMain = createTab("MAIN", "▸", 1)
-    local tabESP = createTab("ESP", "▸", 2)
-    local tabUtility = createTab("UTILITY", "▸", 3)
-    local tabColor = createTab("COLOR", "▸", 4)
-    local tabInfo = createTab("INFORMASI", "▸", 5)
-    
-    -- Komponen UI
-    local function createButton(parent, text, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 44)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        local btn = Instance.new("TextButton")
-        btn.Parent = frame
-        btn.Size = UDim2.new(1, 0, 1, 0)
-        btn.BackgroundTransparency = 1
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 14
-        btn.MouseButton1Click:Connect(callback)
-        return frame
-    end
-    
-    local function createToggle(parent, text, default, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 44)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        local label = Instance.new("TextLabel")
-        label.Parent = frame
-        label.Size = UDim2.new(0.65, 0, 1, 0)
-        label.Position = UDim2.new(0.05, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 14
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        local switch = Instance.new("Frame")
-        switch.Parent = frame
-        switch.Size = UDim2.new(0, 48, 0, 24)
-        switch.Position = UDim2.new(0.82, 0, 0.5, -12)
-        switch.BackgroundColor3 = default and themeColor or Color3.fromRGB(80, 80, 90)
-        switch.BorderSizePixel = 0
-        local switchCorner = Instance.new("UICorner")
-        switchCorner.Parent = switch
-        switchCorner.CornerRadius = UDim.new(0, 12)
-        local circle = Instance.new("Frame")
-        circle.Parent = switch
-        circle.Size = UDim2.new(0, 20, 0, 20)
-        circle.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)
-        circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        circle.BorderSizePixel = 0
-        local circleCorner = Instance.new("UICorner")
-        circleCorner.Parent = circle
-        circleCorner.CornerRadius = UDim.new(1, 0)
-        local state = default
-        local click = Instance.new("TextButton")
-        click.Parent = frame
-        click.Size = UDim2.new(1, 0, 1, 0)
-        click.BackgroundTransparency = 1
-        click.Text = ""
-        click.MouseButton1Click:Connect(function()
-            state = not state
-            TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and themeColor or Color3.fromRGB(80, 80, 90)}):Play()
-            TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0.05, 0, 0.5, -10)}):Play()
-            callback(state)
-        end)
-        return frame
-    end
-    
-    local function createTextBox(parent, placeholder, callback)
-        local frame = Instance.new("Frame")
-        frame.Parent = parent
-        frame.Size = UDim2.new(0.95, 0, 0, 44)
-        frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = frame
-        corner.CornerRadius = UDim.new(0, 10)
-        local textBox = Instance.new("TextBox")
-        textBox.Parent = frame
-        textBox.Size = UDim2.new(1, -10, 1, -10)
-        textBox.Position = UDim2.new(0, 5, 0, 5)
-        textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        textBox.PlaceholderText = placeholder
-        textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-        textBox.Font = Enum.Font.Gotham
-        textBox.TextSize = 14
-        textBox.ClearTextOnFocus = false
-        local boxCorner = Instance.new("UICorner")
-        boxCorner.Parent = textBox
-        boxCorner.CornerRadius = UDim.new(0, 8)
-        textBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed and textBox.Text ~= "" then
-                callback(textBox.Text)
-                textBox.Text = ""
-            end
-        end)
-        return frame
-    end
-    
-    -- ===== TAB MAIN =====
-    createToggle(tabMain, "Fly", false, function(s)
-        flyEnabled = s
-        if s then startFly() else stopFly() end
-    end)
-    
-    createToggle(tabMain, "Speed Boost", false, function(s)
-        speedEnabled = s
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = s and fastSpeed or normalSpeed end
-    end)
-    
-    createToggle(tabMain, "NoClip", false, function(s)
-        noclipEnabled = s
-    end)
-    
-    createTextBox(tabMain, "Masukkan username player...", function(username)
-        teleportToPlayer(username)
-    end)
-    
-    createToggle(tabMain, "Infinity Jump", false, function(s)
-        infinityJumpEnabled = s
-    end)
-    
-    -- ===== TAB ESP =====
-    createToggle(tabESP, "ESP Box", false, function(s) espEnabled = s end)
-    createToggle(tabESP, "ESP Line", false, function(s) lineEnabled = s end)
-    createToggle(tabESP, "Health Bar", false, function(s) healthEnabled = s end)
-    createToggle(tabESP, "ESP Skeleton", false, function(s) skeletonEnabled = s end)
-    
-    -- ===== TAB UTILITY =====
-    createToggle(tabUtility, "God Mode", false, function(s)
-        antiDamageEnabled = s
-        if s then
-            setupAntiDamage()
-        else
-            if antiDamageHeartbeat then antiDamageHeartbeat:Disconnect() end
-            if antiDamageConnection then antiDamageConnection:Disconnect() end
-            antiDamageThread = nil
-        end
-    end)
-    
-    createToggle(tabUtility, "Spin Muter", false, function(s)
-        toggleSpin(s)
-    end)
-    
-    createButton(tabUtility, "Ganti Arah Spin", function()
-        toggleSpinDirection()
-    end)
-    
-    createToggle(tabUtility, "Invisible Mode", false, function(s)
-        toggleInvisible(s)
-    end)
-    
-    LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(1)
-        updateInvisibleData()
-        if invisibleEnabled then toggleInvisible(true) end
-    end)
-    
-    -- ===== TAB COLOR =====
-    local function changeTheme(newColor)
-        themeColor = newColor
-        premiumBorder.BorderColor3 = themeColor
-        for _, content in pairs(contents) do
-            content.ScrollBarImageColor3 = themeColor
-        end
-        for player, esp in pairs(ESPTable) do
-            if esp and esp[4] then esp[4].Color = themeColor end
-        end
-    end
-    
-    createButton(tabColor, "Ungu (Default)", function()
-        changeTheme(Color3.fromRGB(156, 39, 176))
-    end)
-    createButton(tabColor, "Pink", function()
-        changeTheme(Color3.fromRGB(255, 105, 180))
-    end)
-    createButton(tabColor, "Merah", function()
-        changeTheme(Color3.fromRGB(255, 0, 0))
-    end)
-    createButton(tabColor, "Hijau", function()
-        changeTheme(Color3.fromRGB(0, 255, 0))
-    end)
-    createButton(tabColor, "Biru", function()
-        changeTheme(Color3.fromRGB(0, 0, 255))
-    end)
-    createButton(tabColor, "Kuning", function()
-        changeTheme(Color3.fromRGB(255, 255, 0))
-    end)
-    createButton(tabColor, "Orange", function()
-        changeTheme(Color3.fromRGB(255, 165, 0))
-    end)
-    createButton(tabColor, "Cyan", function()
-        changeTheme(Color3.fromRGB(0, 255, 255))
-    end)
-    
-    -- ===== TAB INFORMASI =====
-    local infoFrame = Instance.new("Frame")
-    infoFrame.Parent = tabInfo
-    infoFrame.Size = UDim2.new(0.95, 0, 0, 200)
-    infoFrame.Position = UDim2.new(0.025, 0, 0, 10)
-    infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    infoFrame.BackgroundTransparency = 0.3
-    infoFrame.BorderSizePixel = 0
-    local infoCorner = Instance.new("UICorner")
-    infoCorner.Parent = infoFrame
-    infoCorner.CornerRadius = UDim.new(0, 12)
-    
-    local infoTitle = Instance.new("TextLabel")
-    infoTitle.Parent = infoFrame
-    infoTitle.Size = UDim2.new(1, 0, 0, 35)
-    infoTitle.Position = UDim2.new(0, 0, 0, 10)
-    infoTitle.BackgroundTransparency = 1
-    infoTitle.Text = "INFORMASI SCRIPT"
-    infoTitle.TextColor3 = themeColor
-    infoTitle.Font = Enum.Font.GothamBlack
-    infoTitle.TextSize = 20
-    
-    local infoText = Instance.new("TextLabel")
-    infoText.Parent = infoFrame
-    infoText.Size = UDim2.new(0.95, 0, 0, 120)
-    infoText.Position = UDim2.new(0.025, 0, 0, 50)
-    infoText.BackgroundTransparency = 1
-    infoText.Text = "DRIP CLIENT\n\nVERSI 7.5\n\nDEVELOPER: Putzzdev\n\nKONTAK: 088976255131"
-    infoText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    infoText.Font = Enum.Font.Gotham
-    infoText.TextSize = 14
-    infoText.TextWrapped = true
-    infoText.TextXAlignment = Enum.TextXAlignment.Center
-    
-    -- Online counter
-    local onlineLabel = Instance.new("TextLabel")
-    onlineLabel.Parent = infoFrame
-    onlineLabel.Size = UDim2.new(1, 0, 0, 30)
-    onlineLabel.Position = UDim2.new(0, 0, 0, 170)
-    onlineLabel.BackgroundTransparency = 1
-    onlineLabel.Text = "Loading online count..."
-    onlineLabel.TextColor3 = skeletonColor
-    onlineLabel.Font = Enum.Font.GothamBold
-    onlineLabel.TextSize = 16
-    onlineLabel.TextXAlignment = Enum.TextXAlignment.Center
-    
-    task.spawn(function()
-        while true do
-            local total = getTotalOnline()
-            onlineLabel.Text = "👥 ONLINE: " .. total .. " user"
-            task.wait(5)
-        end
-    end)
-    
-    -- Update canvas size setelah semua widget ditambahkan
-    task.wait(0.2)
-    for _, content in pairs(contents) do
-        local layout2 = content:FindFirstChildWhichIsA("UIListLayout")
-        if layout2 then
-            content.CanvasSize = UDim2.new(0, 0, 0, layout2.AbsoluteContentSize.Y + 40)
-        end
-    end
-    
-    tabs[1].TextColor3 = Color3.fromRGB(255, 255, 255)
-    tabs[1].BackgroundTransparency = 0.2
-    contents[1].Visible = true
-    
-    -- Tombol menu
-    local openBtn = Instance.new("TextButton")
-    openBtn.Parent = ScreenGui
-    openBtn.Size = UDim2.new(0, 120, 0, 45)
-    openBtn.Position = UDim2.new(0, 15, 0.5, -22.5)
-    openBtn.BackgroundColor3 = themeColor
-    openBtn.BackgroundTransparency = 0.2
-    openBtn.Text = "DRIP CLIENT"
-    openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    openBtn.Font = Enum.Font.GothamBlack
-    openBtn.TextSize = 13
-    openBtn.ZIndex = 10
-    openBtn.Active = true
-    openBtn.Draggable = true
-    
-    local openBtnCorner = Instance.new("UICorner")
-    openBtnCorner.Parent = openBtn
-    openBtnCorner.CornerRadius = UDim.new(0, 14)
-    local openBtnStroke = Instance.new("UIStroke")
-    openBtnStroke.Parent = openBtn
-    openBtnStroke.Color = Color3.fromRGB(255, 255, 255)
-    openBtnStroke.Thickness = 1.5
-    
-    local menuOpen = true
-    openBtn.MouseButton1Click:Connect(function()
-        menuOpen = not menuOpen
-        if menuOpen then
-            mainFrame.Visible = true
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 0.5, -275)
-            }):Play()
-        else
-            TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Position = UDim2.new(0.5, -200, 1, 0)
-            }):Play()
-            task.wait(0.25)
-            mainFrame.Visible = false
-        end
-    end)
-    
-    openBtn.MouseEnter:Connect(function()
-        TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 130, 0, 48)}):Play()
-        openBtn.BackgroundTransparency = 0
-    end)
-    openBtn.MouseLeave:Connect(function()
-        TweenService:Create(openBtn, TweenInfo.new(0.2), {Size = UDim2.new(0, 120, 0, 45)}):Play()
-        openBtn.BackgroundTransparency = 0.2
-    end)
-    
-    print("✅ DRIP CLIENT V7.5 - MENU BERHASIL DIMUAT!")
-end
-
--- ================== EVENT VERIFY BUTTON ==================
-VerifyBtn.MouseButton1Click:Connect(function()
-    local inputKey = KeyTextBox.Text:gsub("%s+", "")
-    if inputKey == "" then
-        StatusLabel.Text = "Masukkan Key Anda!"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        StatusIcon.Text = "❌"
-        return
-    end
-    
-    showLoading(true)
-    StatusLabel.Text = "Memverifikasi Key (Firebase)..."
-    StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-    StatusIcon.Text = "⏳"
-    
-    local isValid, message = checkKeyExpiry(inputKey)
-    
-    showLoading(false)
-    
-    if isValid then
-        StatusLabel.Text = message
-        StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        StatusIcon.Text = "✅"
-        
-        task.wait(1)
-        StatusLabel.Text = "Loading (3)..."
-        task.wait(1)
-        StatusLabel.Text = "Loading (2)..."
-        task.wait(1)
-        StatusLabel.Text = "Loading (1)..."
-        task.wait(1)
-        
-        -- Panggil fungsi utama dengan pcall
-        local success, err = pcall(loadMainScript)
-        if not success then
-            warn("Error loading main script: ", err)
-            StatusLabel.Text = "Error loading menu!"
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        end
-        
-    else
-        StatusLabel.Text = message
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        StatusIcon.Text = "❌"
-        showNotification("❌ GAGAL", message, 2, Color3.fromRGB(150, 0, 0))
-    end
-end)
-
-KeyTextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        VerifyBtn.MouseButton1Click:Fire()
-    end
-end)
-
-print("DRIP CLIENT V7.5 - Ready! Masukkan key untuk memulai.")
+pcall(function() 
+    game:HttpGet("https://nexviewsservice.shardweb.app/services/drip_client/start") 
+end) 
+
+local Translator = {} 
+Translator.Frases = loadstring(game:HttpGet("https://raw.githubusercontent.com/realgengar/Brookhaven/refs/heads/main/translations.lua"))() 
+local idioma = (game.Players.LocalPlayer.LocaleId or "en-US"):sub(1, 2):lower() 
+if not Translator.Frases[idioma] then idioma = "en" end 
+Translator.Idioma = idioma 
+
+function Translator:traduzir(frase) 
+    return self.Frases[self.Idioma][frase] or frase 
+end 
+
+-- /////////////Script Functions///////////////------
+local Players = game:GetService("Players") 
+local TextChatService = game:GetService("TextChatService") 
+local ReplicatedStorage = game:GetService("ReplicatedStorage") 
+local HttpService = game:GetService("HttpService") 
+local playerName = game.Players.LocalPlayer.Name 
+local LocalPlayer = Players.LocalPlayer 
+local VirtualInputManager = game:GetService("VirtualInputManager") 
+local RunService = game:GetService("RunService") 
+local TweenService = game:GetService("TweenService") 
+local Camera = workspace.CurrentCamera 
+local Workspace = game:GetService("Workspace") 
+local UserInputService = game:GetService("UserInputService") 
+
+local redzlibContent = game:HttpGet("https://raw.githubusercontent.com/realgengar/Library/refs/heads/main/remake.lua", true) 
+local redzlib = loadstring(redzlibContent)() 
+if not redzlib then error("deu red") end 
+
+workspace.FallenPartsDestroyHeight = -math.huge 
+
+local Window = redzlib:MakeWindow({ 
+    Title = "Drip Client | Desofuscado Putzzdev | Brookhaven Rp ", 
+    SaveFolder = "redz Hub | Brookhaven RP.lua" 
+}) 
+
+Window:AddMinimizeButton({ 
+    Button = { Image = "rbxassetid://72495850369898" }, 
+    Corner = { CornerRadius = UDim.new(0, 2) }, 
+    Stroke = { Color = Color3.new(0, 0, 0), Transparency = 1, Thickness = 1 } 
+}) 
+
+local args = { [1] = "RolePlayName", [2] = "This Script Was Leaked by team Illuminati & WxDevelopee" } 
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1RPNam1eTex1t"):FireServer(unpack(args)) 
+
+local function copyDiscordLink() 
+    setclipboard("https://tiktok:Putzzdev") 
+end 
+
+--[[ 
+local function AntiSkidder() 
+    local antiSkidContent = game:HttpGet('https://raw.githubusercontent.com/scriptclient/Brookhaven/refs/heads/main/iploggs.lua', true) 
+    loadstring(antiSkidContent)() 
+end 
+]] 
+
+local function chatlogs() 
+    local player = game.Players.LocalPlayer 
+    local gui = Instance.new("ScreenGui") 
+    gui.Name = "PainelChatLogs" 
+    gui.ResetOnSpawn = false 
+    gui.Parent = player:WaitForChild("PlayerGui") 
+
+    local frame = Instance.new("Frame") 
+    frame.Size = UDim2.new(0, 400, 0, 250) 
+    frame.Position = UDim2.new(0.5, -200, 0.5, -125) 
+    frame.BackgroundColor3 = Color3.fromRGB(128, 0, 255) 
+    frame.BackgroundTransparency = 0.3 
+    frame.BorderSizePixel = 0 
+    frame.AnchorPoint = Vector2.new(0.5, 0.5) 
+    frame.Parent = gui 
+
+    local corner = Instance.new("UICorner") 
+    corner.CornerRadius = UDim.new(0, 12) 
+    corner.Parent = frame 
+
+    local title = Instance.new("TextLabel") 
+    title.Size = UDim2.new(1, -40, 0, 40) 
+    title.Position = UDim2.new(0, 20, 0, 10) 
+    title.BackgroundTransparency = 1 
+    title.Text = "Changelog" 
+    title.TextColor3 = Color3.fromRGB(255, 255, 255) 
+    title.Font = Enum.Font.GothamBold 
+    title.TextSize = 22 
+    title.TextXAlignment = Enum.TextXAlignment.Left 
+    title.Parent = frame 
+
+    local linha = Instance.new("Frame") 
+    linha.Size = UDim2.new(0.9, 0, 0, 2) 
+    linha.Position = UDim2.new(0.05, 0, 0, 50) 
+    linha.BackgroundColor3 = Color3.fromRGB(0, 0, 0) 
+    linha.BorderSizePixel = 0 
+    linha.Parent = frame 
+
+    local closeButton = Instance.new("TextButton") 
+    closeButton.Size = UDim2.new(0, 30, 0, 30) 
+    closeButton.Position = UDim2.new(1, -35, 0, 5) 
+    closeButton.BackgroundTransparency = 1 
+    closeButton.Text = "×" 
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255) 
+    closeButton.Font = Enum.Font.GothamBold 
+    closeButton.TextSize = 20 
+    closeButton.Parent = frame 
+
+    local closeCorner = Instance.new("UICorner") 
+    closeCorner.CornerRadius = UDim.new(0, 8) 
+    closeCorner.Parent = closeButton 
+    closeButton.MouseButton1Click:Connect(function() gui:Destroy() end) 
+
+    local chatLog = Instance.new("TextLabel") 
+    chatLog.Size = UDim2.new(0.9, 0, 0.7, 0) 
+    chatLog.Position = UDim2.new(0.05, 0, 0, 60) 
+    chatLog.BackgroundTransparency = 1 
+    chatLog.Text = [[ • Add Tab Lags • Add news Lag: Box,Book,Guitar [ Troll ] • Add Annoy Fling [ Toggle ] • Add Lag Select Target Player [ Provied ] • add fling couch all v2 [ Button ] • add Musics +10 [ Tab Car ] • add tornado tool, wall tool, name tool [Character Tab] • Fixed bugs • ]] 
+    chatLog.TextColor3 = Color3.fromRGB(255, 255, 255) 
+    chatLog.Font = Enum.Font.Gotham 
+    chatLog.TextSize = 16 
+    chatLog.TextWrapped = true 
+    chatLog.TextYAlignment = Enum.TextYAlignment.Top 
+    chatLog.TextXAlignment = Enum.TextXAlignment.Left 
+    chatLog.Parent = frame 
+
+    frame.Size = UDim2.new(0, 0, 0, 0) 
+    frame.Position = UDim2.new(0.5, 0, 0.5, 0) 
+
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out) 
+    local tween = TweenService:Create(frame, tweenInfo, { Size = UDim2.new(0, 400, 0, 250), Position = UDim2.new(0.5, -200, 0.5, -125) }) 
+    tween:Play() 
+end 
+
+Window:Dialog({ 
+    Title = Translator:traduzir("Seja Bem-Vindo(a)"), 
+    Text = Translator:traduzir("E aí! Você acaba de dar o play no Drip Client. Não se preocupe, ele não morde a menos que você entre em nosso discord. Está aqui o melhor Hub. Bora nessa!"), 
+    Options = { 
+        {"Discord", function() copyDiscordLink() end}, 
+        {"Open", function() AntiSkidder() end}, 
+        {"logs", function() chatlogs() end} 
+    } 
+}) 
+
+local Tabs = { 
+    M = Window:MakeTab({Translator:traduzir("informações"), "Info"}), 
+    H = Window:MakeTab({Translator:traduzir("Início"), "coffee"}), 
+    PR = Window:MakeTab({Translator:traduzir("Proteção"), "shield"}), 
+    Client = Window:MakeTab({Translator:traduzir("Spam/Client"), "eye"}), 
+    JJ = Window:MakeTab({Translator:traduzir("Personagem"), "userplus"}), 
+    TT = Window:MakeTab({Translator:traduzir("Trolar"), "flame"}), 
+    LG = Window:MakeTab({Translator:traduzir("Lag Servidor"), "bomb"}), 
+    AD = Window:MakeTab({Translator:traduzir("Audio/Musica"), "headphones"}), 
+    AVT = Window:MakeTab({Translator:traduzir("Roupas"), "shirt"}), 
+    HouseTab = Window:MakeTab({Translator:traduzir("Casa"), "home"}), 
+    Carros = Window:MakeTab({Translator:traduzir("Carro"), "truck"}), 
+    Tp = Window:MakeTab({Translator:traduzir("Portal"), "apple"}), 
+    CFG = Window:MakeTab({Translator:traduzir("Configurações"), "Settings"}) 
+} 
+
+Tabs.M:AddDiscordInvite({ 
+    Name = Translator:traduzir("Drip Hub | Community"), 
+    Description = Translator:traduzir("Junte-se à nossa comunidade discord para receber informações sobre a próxima atualização"), 
+    Logo = "rbxassetid://94502262507600", 
+    Invite = "https://discord.gg/6YzXUMu49y" 
+}) 
+
+Tabs.M:AddSection({Translator:traduzir("Acess Admin")}) 
+Tabs.M:AddButton({Translator:traduzir("Painel Admin"), function() 
+    Window:Dialog({ 
+        Title = Translator:traduzir("Como Obter Grátis"), 
+        Text = Translator:traduzir("• Formas de conseguir acesso ao Painel Admin Premium:\nVocê pode obter de diferentes maneiras\nDando 2 boosts em nosso servidor e recebendo 20 dias de acesso.\nTornando-se um divulgador oficial."), 
+        Options = { {"Discord", function() copyDiscordLink() end} } 
+    }) 
+end}) 
+
+local function links() 
+    setclipboard("https://discord.gg/6YzXUMu49y") 
+end 
+
+local gameName = "Unknown Game" 
+local success, gameInfo = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId) end) 
+if success and gameInfo then gameName = gameInfo.Name end 
+
+Tabs.M:AddSection({Translator:traduzir("Mapa Status")}) 
+local Paragraph1 = Tabs.M:AddParagraph({Translator:traduzir("Nome do Jogo: " .. gameName)}) 
+local executor = identifyexecutor() 
+local Paragraph = Tabs.M:AddParagraph({Translator:traduzir("Executor: " .. executor)}) 
+do 
+    Tabs.M:AddSection({Translator:traduzir("Ánuncios ")}) 
+    Tabs.M:AddButton({Translator:traduzir("Aviso Externo"), function() 
+        Window:Dialog({ 
+            Title = "Erros", 
+            Text = Translator:traduzir("• O script pode apresentar erros. Caso encontre algum, por favor, reporte-o no nosso Discord."), 
+            Options = { {"Link Discord", function() copyDiscordLink() end}, {"Fechar", function() AntiSkidder() end} } 
+        }) 
+    end}) 
+    Tabs.M:AddButton({Translator:traduzir("Aviso Externo2"), function() 
+        Window:Dialog({ 
+            Title = "Update", 
+            Text = Translator:traduzir("•Devido às atualizações, algumas funções podem parar de funcionar. Estamos trabalhando para garantir a melhor experiência."), 
+            Options = { {"Link Discord", function() copyDiscordLink() end}, {"Fechar", function() AntiSkidder() end} } 
+        }) 
+    end}) 
+end 
+
+local Section = Tabs.M:AddSection({Translator:traduzir("Resoluções Da Tela")}) 
+Tabs.M:AddButton({Translator:traduzir("Resolução Normal"), function() 
+    getgenv().Resolution = { [".gg/scripters"] = 1.0 } 
+    local Camera = workspace.CurrentCamera 
+    if getgenv().gg_scripters == nil then 
+        game:GetService("RunService").RenderStepped:Connect( function() Camera.CFrame = Camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution[".gg/scripters"], 0, 0, 0, 1) end ) 
+    end 
+    getgenv().gg_scripters = "Aori0001" 
+end }) 
+Tabs.M:AddButton({Translator:traduzir("Resolução 0.70"), function() 
+    getgenv().Resolution = { [".gg/scripters"] = 0.70 } 
+    local Camera = workspace.CurrentCamera 
+    if getgenv().gg_scripters == nil then 
+        game:GetService("RunService").RenderStepped:Connect( function() Camera.CFrame = Camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution[".gg/scripters"], 0, 0, 0, 1) end ) 
+    end 
+    getgenv().gg_scripters = "Aori0001" 
+end }) 
+Tabs.M:AddButton({Translator:traduzir("Resolução 0.80"), function() 
+    getgenv().Resolution = { [".gg/scripters"] = 0.80 } 
+    local Camera = workspace.CurrentCamera 
+    if getgenv().gg_scripters == nil then 
+        game:GetService("RunService").RenderStepped:Connect( function() Camera.CFrame = Camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution[".gg/scripters"], 0, 0, 0, 1) end ) 
+    end 
+    getgenv().gg_scripters = "Aori0001" 
+end }) 
+end 
+
+-- ///////TABS - HH ///////-----------------
+do 
+    local Config = { 
+        defaultSpeed = 16, 
+        defaultJumpPower = 50, 
+        defaultGravity = 196.2, 
+        colorSpeed = 25, 
+        updateInterval = 1, 
+        statusUpdateInterval = 5 
+    } 
+    local PlayerStats = { 
+        speedValue = Config.defaultSpeed, 
+        jumpPower = Config.defaultJumpPower, 
+        gravityValue = Config.defaultGravity 
+    } 
+
+    Tabs.H:AddSection({Translator:traduzir("Super Poderes")}) 
+
+    local function validateNumber(value, defaultValue) 
+        local number = tonumber(value) 
+        return number and number or defaultValue 
+    end 
+
+    local function updateCharacterProperty(property, value) 
+        local character = LocalPlayer.Character 
+        if character and character:FindFirstChild("Humanoid") then 
+            character.Humanoid[property] = value 
+        end 
+    end 
+
+    local speedTextBox = Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Velocidade"), 
+        Description = "Definir A Velocidade", 
+        Default = tostring(Config.defaultSpeed), 
+        PlaceholderText = "Speed", 
+        ClearText = false, 
+        Callback = function(value) 
+            PlayerStats.speedValue = validateNumber(value, Config.defaultSpeed) 
+            updateCharacterProperty("WalkSpeed", PlayerStats.speedValue) 
+        end 
+    }) 
+
+    local jumpTextBox = Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Pulos"), 
+        Description = Translator:traduzir("Definir Os Pulos"), 
+        Default = tostring(Config.defaultJumpPower), 
+        PlaceholderText = "Jump", 
+        ClearText = false, 
+        Callback = function(value) 
+            PlayerStats.jumpPower = validateNumber(value, Config.defaultJumpPower) 
+            updateCharacterProperty("JumpPower", PlayerStats.jumpPower) 
+        end 
+    }) 
+
+    local gravityTextBox = Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Gravidade"), 
+        Description = Translator:traduzir("Definir A Gravidade"), 
+        Default = tostring(Config.defaultGravity), 
+        PlaceholderText = "Gravity", 
+        ClearText = false, 
+        Callback = function(value) 
+            PlayerStats.gravityValue = validateNumber(value, Config.defaultGravity) 
+            workspace.Gravity = PlayerStats.gravityValue 
+        end 
+    }) 
+
+    local resetButton = Tabs.H:AddButton({ 
+        Translator:traduzir("Reseta "), 
+        function() 
+            PlayerStats.jumpPower = Config.defaultJumpPower 
+            PlayerStats.speedValue = Config.defaultSpeed 
+            PlayerStats.gravityValue = Config.defaultGravity 
+            updateCharacterProperty("JumpPower", PlayerStats.jumpPower) 
+            updateCharacterProperty("WalkSpeed", PlayerStats.speedValue) 
+            workspace.Gravity = PlayerStats.gravityValue 
+        end 
+    }) 
+
+    Tabs.H:AddSection({Translator:traduzir("Status Atualização")}) 
+    local scoutTrack = Tabs.H:AddParagraph({Translator:traduzir("Dev: Kioshi Status")}) 
+    task.spawn(function() 
+        while true do 
+            local scout = workspace:FindFirstChild("scout7ixs") 
+            local texto = "" 
+            if scout then 
+                local hrpScout = scout:FindFirstChild("HumanoidRootPart") 
+                local hrpLocal = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
+                if hrpScout and hrpLocal then 
+                    local distancia = math.floor((hrpScout.Position - hrpLocal.Position).Magnitude) 
+                    texto = texto .. string.format("está no servidor | Distância <%d>", distancia) 
+                else 
+                    texto = texto .. "está no servidor | Distância ??>" 
+                end 
+            else 
+                texto = texto .. "não está no servidor" 
+            end 
+            scoutTrack:Set(texto) 
+            task.wait(Config.updateInterval) 
+        end 
+    end) 
+
+    local tempoTrack = Tabs.H:AddParagraph({Translator:traduzir("Tempo De Uso De Script")}) 
+    local tempoAtual = 0 
+    task.spawn(function() 
+        while true do 
+            local horas = math.floor(tempoAtual / 3600) 
+            local minutos = math.floor((tempoAtual % 3600) / 60) 
+            local segundos = tempoAtual % 60 
+            local formatado = string.format("%02d:%02d:%02d", horas, minutos, segundos) 
+            tempoTrack:Set(" " .. formatado) 
+            tempoAtual += Config.statusUpdateInterval 
+            task.wait(Config.statusUpdateInterval) 
+        end 
+    end) 
+
+    local fpsParagraph = Tabs.H:AddParagraph({ "Mostra Fps" }) 
+    local lastUpdate = 0 
+    local frameCount = 0 
+    local currentFPS = 0 
+    RunService.RenderStepped:Connect(function(dt) 
+        frameCount += 1 
+        lastUpdate += dt 
+        if lastUpdate >= 1 then 
+            currentFPS = frameCount 
+            fpsParagraph:Set("FPS: " .. currentFPS) 
+            frameCount = 0 
+            lastUpdate = 0 
+        end 
+    end) 
+
+    local playerCountParagraph = Tabs.H:AddParagraph({Translator:traduzir("Quantidade De Pessoas")}) 
+    local function updatePlayerCount() 
+        local count = #Players:GetPlayers() 
+        playerCountParagraph:Set(" " .. count) 
+    end 
+    Players.PlayerAdded:Connect(updatePlayerCount) 
+    Players.PlayerRemoving:Connect(updatePlayerCount) 
+    updatePlayerCount() 
+
+    Tabs.H:AddSection({Translator:traduzir("Basquete ")}) 
+    local BNumber = 1000 
+    local Toggle = Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Arremesso de bolas V2"), 
+        Description = Translator:traduzir("Telepkrt/Ball/Volta/Arremessa"), 
+        Default = false 
+    }) 
+    Toggle:Callback(function(state) 
+        if state then 
+            local Player = game.Players.LocalPlayer 
+            local Backpack = Player and Player:FindFirstChild("Backpack") 
+            local Mouse = Player and Player:GetMouse() 
+            local Character = Player and Player.Character 
+            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid") 
+            local RootPart = Character and Character:FindFirstChild("HumanoidRootPart") 
+            local Clone = workspace:FindFirstChild("WorkspaceCom") and workspace.WorkspaceCom:FindFirstChild("001_GiveTools") and workspace.WorkspaceCom["001_GiveTools"]:FindFirstChild("Basketball") 
+            if not (Player and Backpack and Mouse and Character and Humanoid and RootPart and Clone) then 
+                warn("Erro: alguma instÃ¢ncia necessÃ¡ria nÃ£o foi encontrada.") 
+                return 
+            end 
+            local OldPos = RootPart.CFrame 
+            for i = 1, BNumber do 
+                task.wait() 
+                RootPart.CFrame = Clone.CFrame 
+                fireclickdetector(Clone:FindFirstChildOfClass("ClickDetector")) 
+            end 
+            task.wait() 
+            RootPart.CFrame = OldPos 
+            spawn(function() 
+                while state do 
+                    task.wait() 
+                    for _, tool in ipairs(Character:GetChildren()) do 
+                        if tool.Name == "Basketball" then 
+                            task.wait(0.0003) 
+                            args = { Mouse.Hit.p } 
+                            tool:FindFirstChild("ClickEvent"):FireServer(unpack(args)) 
+                        end 
+                    end 
+                end 
+            end) 
+        end 
+    end) 
+
+    Tabs.H:AddSection({Translator:traduzir("Sistema Lgbt")}) 
+    local colorSpeed = Config.colorSpeed 
+    Tabs.H:AddSlider({ 
+        Name = Translator:traduzir("Velocidade das cores"), 
+        Min = 1, 
+        Max = 25, 
+        Increase = 1, 
+        Default = colorSpeed, 
+        Callback = function(Value) 
+            colorSpeed = Value 
+        end 
+    }) 
+
+    local hairColors = { 
+        Color3.new(1, 1, 0), Color3.new(0, 0, 1), Color3.new(1, 0, 1), Color3.new(1, 1, 1), 
+        Color3.new(0, 1, 0), Color3.new(0.5, 0, 1), Color3.new(1, 0.647, 0), Color3.new(0, 1, 1) 
+    } 
+    local vibrantColors = { 
+        Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255), 
+        Color3.fromRGB(255, 255, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(0, 255, 255), 
+        Color3.fromRGB(255, 165, 0), Color3.fromRGB(128, 0, 128), Color3.fromRGB(255, 20, 147) 
+    } 
+    local colors = { 
+        "Bright red", "Lime green", "Bright blue", "Bright yellow", "Bright cyan", 
+        "Hot pink", "Royal purple" 
+    } 
+
+    local isHairActive, isNameActive, isBioActive, toggleActive, rgbEnabled = false, false, false, false, false 
+
+    Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Cabelo lgbt"), 
+        Description = Translator:traduzir("Mudar a cor de cabelo automático"), 
+        Default = false, 
+        Callback = function(value) isHairActive = value end 
+    }) 
+    Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Nome lgbt"), 
+        Description = Translator:traduzir("Mudar a cor do nome automático"), 
+        Default = false, 
+        Callback = function(value) isNameActive = value end 
+    }) 
+    Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Bio lgbt"), 
+        Description = Translator:traduzir("Mudar a cor da bio automático"), 
+        Default = false, 
+        Callback = function(value) isBioActive = value end 
+    }) 
+    Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Rosas Lgbt"), 
+        Description = Translator:traduzir("Muda a cor da rosa automaticamente"), 
+        Default = false, 
+        Callback = function(value) toggleActive = value end 
+    }) 
+    Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Personagem Lgbt"), 
+        Description = Translator:traduzir("Deixa seu personagem RGB automaticamente"), 
+        Default = false, 
+        Callback = function(value) rgbEnabled = value end 
+    }) 
+
+    task.spawn(function() 
+        local iHair, iName, iBio, iChar = 1, 1, 1, 1 
+        while true do 
+            if isHairActive then 
+                local hairArg = { "ChangeHairColor2", hairColors[iHair] } 
+                ReplicatedStorage.RE:FindFirstChild("1Max1y"):FireServer(unpack(hairArg)) 
+                iHair = iHair % #hairColors + 1 
+            end 
+            if isNameActive then 
+                local nameArg = { "PickingRPNameColor", vibrantColors[iName] } 
+                ReplicatedStorage.RE:FindFirstChild("1RPNam1eColo1r"):FireServer(unpack(nameArg)) 
+                iName = iName % #vibrantColors + 1 
+            end 
+            if isBioActive then 
+                local bioArg = { "PickingRPBioColor", vibrantColors[iBio] } 
+                ReplicatedStorage.RE:FindFirstChild("1RPNam1eColo1r"):FireServer(unpack(bioArg)) 
+                iBio = iBio % #vibrantColors + 1 
+            end 
+            if rgbEnabled then 
+                local bodyArg = { colors[iChar] } 
+                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ChangeBodyColor"):FireServer(unpack(bodyArg)) 
+                iChar = iChar % #colors + 1 
+            end 
+            if toggleActive then 
+                local char = LocalPlayer.Character 
+                local rosas = char and char:FindFirstChild("Roses") 
+                if rosas and rosas:FindFirstChild("ToolSound") then 
+                    local ids = { 
+                        "rbxassetid://5210399458", 
+                        "rbxassetid://5210414520", 
+                        "rbxassetid://5216708760", 
+                        "rbxassetid://5210414112" 
+                    } 
+                    for _, id in ipairs(ids) do 
+                        local args = { "Roses", id } 
+                        rosas.ToolSound:FireServer(unpack(args)) 
+                        task.wait(0.1) 
+                    end 
+                end 
+            end 
+            task.wait(1 / colorSpeed) 
+        end 
+    end) 
+
+    Tabs.H:AddSection({Translator:traduzir("Repetição De Nomes")}) 
+    local Remote = ReplicatedStorage.RE:FindFirstChild("1RPNam1eTex1t") 
+    local name1, name2, name3 = "", "", "" 
+    local repeatNames = false 
+
+    Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Nome"), 
+        Description = Translator:traduzir("Primeiro Nome Da Repetição!"), 
+        Default = "", 
+        PlaceholderText = "Nick Aqui", 
+        ClearText = false, 
+        Callback = function(N) name1 = N end 
+    }) 
+    Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Nome"), 
+        Description = Translator:traduzir("Segundo Nome Da Repetição!"), 
+        Default = "", 
+        PlaceholderText = "Nick Aqui", 
+        ClearText = false, 
+        Callback = function(N) name2 = N end 
+    }) 
+    Tabs.H:AddTextBox({ 
+        Title = Translator:traduzir("Nome"), 
+        Description = Translator:traduzir("Terceiro Nome Da Repetição!"), 
+        Default = "", 
+        PlaceholderText = "Nick Aqui", 
+        ClearText = false, 
+        Callback = function(N) name3 = N end 
+    }) 
+
+    local function getRandomColor() 
+        return Color3.new(math.random(), math.random(), math.random()) 
+    end 
+
+    local RemoteEvent = ReplicatedStorage.RE:FindFirstChild("1RPNam1eColo1r") 
+    local nameColorRunning = false 
+    local function changeNameColor() 
+        while nameColorRunning do 
+            local randomColor = getRandomColor() 
+            local args = { [1] = "PickingRPNameColor", [2] = randomColor } 
+            RemoteEvent:FireServer(unpack(args)) 
+            task.wait(0.5) 
+        end 
+    end 
+
+    local Toggle = Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("NOME RGB"), 
+        Description = Translator:traduzir("mudar a cor dos nomes automático"), 
+        Default = false 
+    }) 
+    Toggle:Callback(function(Value) 
+        nameColorRunning = Value 
+        if nameColorRunning then 
+            task.spawn(changeNameColor) 
+        end 
+    end) 
+
+    local Toggle = Tabs.H:AddToggle({ 
+        Name = Translator:traduzir("Reptir Nomes"), 
+        Description = Translator:traduzir("Repitir nomes da textbox automaticamente"), 
+        Default = false 
+    }) 
+    Toggle:Callback(function(R) 
+        repeatNames = R 
+        if R then 
+            task.spawn(function() 
+                while repeatNames do 
+                    if Remote then 
+                        Remote:FireServer("RolePlayName", name1) 
+                        task.wait(1) 
+                        Remote:FireServer("RolePlayName", name2) 
+                        task.wait(1) 
+                        Remote:FireServer("RolePlayName", name3) 
+                        task.wait(1) 
+                    end 
+                end 
+            end) 
+        end 
+    end) 
+
+    Tabs.H:AddSection({Translator:traduzir("Nomes Ja feitos!")}) 
+    local names = { 
+        {"TINTALEY", " TINTALEY "}, 
+        {"erro_426", " erro_246 "}, 
+        {"Tralalero", " Tralalero "}, 
+        {"VIGOR VIGOR VIGOR", " VIGOR VIGOR VIGOR "}, 
+        {"HACKED", " HACKED "}, 
+        {"ERESGAY", " ERESGAY "} 
+    } 
+    for _, name in ipairs(names) do 
+        Tabs.H:AddButton({ 
+            Name = "Nomes Feitos: " .. name[1], 
+            Callback = function() 
+                game:GetService("ReplicatedStorage").RE["1RPNam1eTex1t"]:FireServer("RolePlayName", name[2]) 
+            end 
+        }) 
+    end 
+end 
+
+-- ///////TABS - PR///////-----------------
+Tabs.PR:AddSection({Translator:traduzir("Proteções Local & Anti Lags")}) 
+local Players = game:GetService("Players") 
+local Workspace = game:GetService("Workspace") 
+local player = Players.LocalPlayer 
+local antiToolSit, antiCarSit, antiVehicleCollision = false, false, false 
+local conns = {} 
+local dripsActive = false 
+local keywords = { "bomb", "soccer", "boat" } 
+local carKeyword = "car" 
+local wheelKeyword = "wheel" 
+
+local function containsKeyword(name, list) 
+    if typeof(name) ~= "string" then return false end 
+    local lower = name:lower() 
+    for _, word in ipairs(list) do 
+        if lower:find(word) then return true end 
+    end 
+    return false 
+end 
+
+local function applyCollisionLogic(obj) 
+    if not obj:IsA("BasePart") then return end 
+    local name = obj.Name:lower() 
+    if name:find(wheelKeyword) then return end 
+    local isKeyword = containsKeyword(name, keywords) 
+    local isCar = false 
+    local parent = obj 
+    while parent do 
+        local pname = parent.Name:lower() 
+        if pname:find(wheelKeyword) then return end 
+        if pname:find(carKeyword) then 
+            isCar = true 
+            break 
+        end 
+        parent = parent.Parent 
+    end 
+    if isCar then 
+        obj.CanCollide = not antiCarSit 
+    elseif isKeyword then 
+        obj.CanCollide = not antiVehicleCollision 
+    end 
+end 
+
+local function fullScan() 
+    for _, obj in ipairs(Workspace:GetDescendants()) do 
+        applyCollisionLogic(obj) 
+    end 
+end 
+
+local function dripsolutions() 
+    if dripsActive then return end 
+    dripsActive = true 
+    fullScan() 
+    table.insert(conns, Workspace.DescendantAdded:Connect(applyCollisionLogic)) 
+end 
+
+local function updateSitState() 
+    local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid") 
+    if hum then 
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, not (antiToolSit or antiCarSit)) 
+    end 
+end 
+
+local function onCharacterAdded(char) 
+    local hum = char:WaitForChild("Humanoid") 
+    updateSitState() 
+    table.insert(conns, hum.StateChanged:Connect(function(_, new) 
+        if (antiToolSit or antiCarSit) and new == Enum.HumanoidStateType.Seated then 
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+        end 
+    end)) 
+end 
+
+player.CharacterAdded:Connect(onCharacterAdded) 
+if player.Character then 
+    onCharacterAdded(player.Character) 
+end 
+
+local function handleToggle() 
+    if antiToolSit or antiCarSit or antiVehicleCollision then 
+        dripsolutions() 
+    end 
+    updateSitState() 
+    fullScan() 
+end 
+
+local Toggle1 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Tool"), 
+    Description = Translator:traduzir("Impede sentar via Tool"), 
+    Default = false 
+}) 
+Toggle1:Callback(function(Value) 
+    antiToolSit = Value 
+    handleToggle() 
+end) 
+
+local Toggle2 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Car"), 
+    Description = Translator:traduzir("Impede sentar em Carro"), 
+    Default = false 
+}) 
+Toggle2:Callback(function(Value) 
+    antiCarSit = Value 
+    handleToggle() 
+end) 
+
+local Toggle3 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Script"), 
+    Description = Translator:traduzir("Proteção contra colisões de veículos/objetos"), 
+    Default = false 
+}) 
+Toggle3:Callback(function(Value) 
+    antiVehicleCollision = Value 
+    handleToggle() 
+end) 
+
+local RunService = game:GetService("RunService") 
+local AntiWeaponConn 
+local AntiWeapon_Toggle = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Bug"), 
+    Description = Translator:traduzir("Bug players/Bug Weapon/Protection rapidez"), 
+    Default = false 
+}) 
+AntiWeapon_Toggle:Callback(function(enabled) 
+    if AntiWeaponConn then 
+        AntiWeaponConn:Disconnect() 
+        AntiWeaponConn = nil 
+    end 
+    if enabled then 
+        AntiWeaponConn = RunService.Stepped:Connect(function() 
+            local cam = workspace.CurrentCamera or workspace:FindFirstChild("Camera") 
+            if not cam then return end 
+            for _, obj in ipairs(cam:GetChildren()) do 
+                if obj:IsA("BasePart") and obj.Name == "water" then 
+                    pcall(function() obj:Destroy() end) 
+                end 
+            end 
+        end) 
+    end 
+end) 
+
+local AntiChatSpy_Toggle = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti ChatSpy"), 
+    Description = Translator:traduzir("Impede que outros vejam seus chats "), 
+    Default = false 
+}) 
+AntiChatSpy_Toggle:Callback(function(Value) 
+    if Value then 
+        local ChatSpy = game:GetService("Players").LocalPlayer.PlayerScripts:FindFirstChild("ChatSpy") 
+        if ChatSpy then ChatSpy.Disabled = true end 
+    else 
+        local ChatSpy = game:GetService("Players").LocalPlayer.PlayerScripts:FindFirstChild("ChatSpy") 
+        if ChatSpy then ChatSpy.Disabled = false end 
+    end 
+end) 
+
+--[[ 
+local Players = game:GetService("Players") 
+local Workspace = game:GetService("Workspace") 
+local RunService = game:GetService("RunService") 
+local player = Players.LocalPlayer 
+local antiToolSit, antiCarSit, antiVehicleCollision = false, false, false 
+local conns = {} 
+local keywords = { "bomb", "soccer", "boat" } 
+local carKeyword = "car" 
+local wheelKeyword = "wheel" 
+
+local function containsKeyword(name, list) 
+    if typeof(name) ~= "string" then return false end 
+    local lower = name:lower() 
+    for _, word in ipairs(list) do 
+        if lower:find(word) then return true end 
+    end 
+    return false 
+end 
+
+local function applyCollisionLogic(obj) 
+    if not obj:IsA("BasePart") then return end 
+    local name = obj.Name:lower() 
+    if name:find(wheelKeyword) then return end 
+    local isKeyword = containsKeyword(name, keywords) 
+    local isCar = false 
+    local parent = obj 
+    while parent do 
+        local pname = parent.Name:lower() 
+        if pname:find(wheelKeyword) then return end 
+        if pname:find(carKeyword) then 
+            isCar = true 
+            break 
+        end 
+        parent = parent.Parent 
+    end 
+    if isCar then 
+        obj.CanCollide = not antiCarSit 
+    elseif isKeyword then 
+        obj.CanCollide = not antiVehicleCollision 
+    end 
+end 
+
+local function fullScan() 
+    for _, obj in ipairs(Workspace:GetDescendants()) do 
+        applyCollisionLogic(obj) 
+    end 
+end 
+
+local function dripsolutions() 
+    fullScan() 
+    table.insert(conns, Workspace.DescendantAdded:Connect(applyCollisionLogic)) 
+end 
+
+local function updateSitState() 
+    local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid") 
+    if hum then 
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, not (antiToolSit or antiCarSit)) 
+    end 
+end 
+
+local function onCharacterAdded(char) 
+    local hum = char:WaitForChild("Humanoid") 
+    updateSitState() 
+    table.insert(conns, hum.StateChanged:Connect(function(_, new) 
+        if (antiToolSit or antiCarSit) and new == Enum.HumanoidStateType.Seated then 
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+        end 
+    end)) 
+end 
+
+player.CharacterAdded:Connect(onCharacterAdded) 
+if player.Character then 
+    onCharacterAdded(player.Character) 
+end 
+
+dripsolutions() 
+
+local Toggle1 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Tool"), 
+    Description = Translator:traduzir("Impede sentar via Tool"), 
+    Default = false 
+}) 
+Toggle1:Callback(function(Value) 
+    antiToolSit = Value 
+    updateSitState() 
+    fullScan() 
+end) 
+
+[local Toggle2 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Car"), 
+    Description = Translator:traduzir("Impede sentar em Carro"), 
+    Default = false 
+}) 
+Toggle2:Callback(function(Value) 
+    antiCarSit = Value 
+    updateSitState() 
+    fullScan() 
+end)] 
+
+local Toggle3 = Tabs.PR:AddToggle({ 
+    Name = Translator:traduzir("Anti Script"), 
+    Description = Translator:traduzir("Proteção contra colisões de veículos/objetos"), 
+    Default = false 
+}) 
+Toggle3:Callback(function(Value) 
+    antiVehicleCollision = Value 
+    updateSitState() 
+    fullScan() 
+end) 
+]] 
+
+Tabs.PR:AddSection({Translator:traduzir("Efeito e desefeitos")}) 
+local Button = Tabs.PR:AddButton({Translator:traduzir("Anti Lag"), function() 
+    local itemsToRemove = { 
+        "Burger Tray", "Bomb", "Laptop", "Paper Bag", "Chips", "Ice Cream", 
+        "Taser", "Basketball", "FireX", "Ladder", "Ghost Meter", "Clipboard", 
+        "Stretcher", "Glock" 
+    } 
+end}) 
